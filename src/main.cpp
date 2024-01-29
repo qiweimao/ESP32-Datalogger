@@ -14,57 +14,43 @@ const int daylightOffset_sec = 3600;       // Daylight saving time offset in sec
 const char *filename = "/flash_size_log.txt";
 
 void logFlashSize();
+String getCurrentTime();
+void setUpTime();
+void setUpWiFi();
 
 void setup() {
   Serial.begin(115200);
 
-  // Connect to Wi-Fi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
-  Serial.println("Connected to WiFi");
-
-  // Set up time
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  struct tm timeinfo;
-  while (!getLocalTime(&timeinfo)) {
-      delay(1000); // Wait for 1 second before checking again
-      Serial.println("Syncing with NTP...");
-  }
-  Serial.println("Time configured");
+  setUpWiFi();
+  setUpTime();
 
   // Mount SPIFFS filesystem
-  // Allocate space for SPIFFS
   if (!SPIFFS.begin(true)) {
     Serial.println("SPIFFS allocation failed");
     return;
   }
 
-  // Serial.println("SPIFFS Mounted");
-  // size_t spiffsTotal = SPIFFS.totalBytes();
-  // size_t spiffsTotalMB = spiffsTotal / (1024 * 1024); // Convert bytes to megabytes
-
-  // Serial.print("SPIFFS total size: ");
-  // Serial.print(spiffsTotalMB);
-  // Serial.println(" MB");
+  // Check if the file already exists
+  if (!SPIFFS.exists(filename)) {
+    // If the file doesn't exist, create it and write the header
+    File file = SPIFFS.open(filename, "w");
+    if (!file) {
+      Serial.println("Failed to open file for writing");
+      return;
+    }
+    file.println("Time, fSize, SPIFFS Used, SPIFFS Total");
+    Serial.println("Time, fSize, SPIFFS Used, SPIFFS Total");
+    file.close();
+  }
+  
 }
 
 void loop() {
   // Call the function to print the current time in ETZ USA
   logFlashSize();
-  delay(1000);
+  delay(100);
   // Other loop code, if any
 }
-
-
-  // struct tm timeinfo;
-  // if (getLocalTime(&timeinfo)) {
-  //   Serial.printf("%04d-%02d-%02d %02d:%02d:%02d\n", 
-  //                 timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-  //                 timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-
 
 void logFlashSize() {
   // Open file in append mode
@@ -74,23 +60,51 @@ void logFlashSize() {
     return;
   }
 
-  // Get Current Time
-  struct tm timeinfo;
-  char formattedTime[25];
-  if (getLocalTime(&timeinfo)) {
-    strftime(formattedTime, sizeof(formattedTime), "%Y-%m-%d %H:%M:%S", &timeinfo);
-  }
-  else{
-    Serial.printf("Failed to get current time");
-  }
+  String formattedTime = getCurrentTime();
 
-  size_t freeSpace = ESP.getFreeSketchSpace();
-  for (size_t i = 0; i < 100; i++)
-  {
-    file.println(String(formattedTime) + " - File Size: " + String(file.size()) + " bytes" + " - Total flash size: " + ESP.getFlashChipSize());
+  // Get FLash Space
+  size_t fileSize = file.size();
+  size_t spiffsTotal = SPIFFS.totalBytes();
+  size_t spiffsUsed = SPIFFS.usedBytes();
+
+  if(!file.println(String(formattedTime) + "," + String(fileSize) + "," + spiffsUsed + "," + spiffsTotal)){
+    Serial.println("Error Writing file");
   }
   
-  Serial.println(String(formattedTime) + " - File Size: " + String(file.size()) + " bytes" + " - Total flash size: " + ESP.getFlashChipSize());
-
+  Serial.println(String(formattedTime) + "," + String(fileSize) + "," + spiffsUsed + "," + spiffsTotal);
+  
   file.close();
+}
+
+String getCurrentTime() {
+  struct tm timeinfo;
+  
+  if (getLocalTime(&timeinfo)) {
+    char buffer[20]; // Adjust the buffer size based on your format
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    return buffer;
+  } else {
+    Serial.println("Failed to get current time");
+    return ""; // Return an empty string in case of failure
+  }
+  return ""; // Return an empty string in case of failure
+}
+
+void setUpTime(){
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  while (!getLocalTime(&timeinfo)) {
+      delay(1000); // Wait for 1 second before checking again
+      Serial.println("Syncing with NTP...");
+  }
+  Serial.println("Time configured");
+}
+
+void setUpWiFi() {
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
 }
