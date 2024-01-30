@@ -1,4 +1,5 @@
 # ESP32 Data Logger
+intro here
 
 ## Internet Connection
 
@@ -8,3 +9,12 @@ The logger should sync with the NTP server upon power-up using `configTime ` fro
 ## Flash Memory Partition
 Espressif documentation on partition tables: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/partition-tables.html
 If using PlatformIO, the default partition can be found in this directory: `.platformio/packages/framework-arduinoespressif32/tools/partitions`
+
+## WiFi Reconnect Capability
+In the `setup()` function, the `connectToWiFi()` function is called to initiate the initial WiFi connection. The `WiFi.onEvent()` function is used to register a callback function, `WiFiEvent`, which will be invoked when WiFi events occur. In the WiFiEvent function, we check for the `SYSTEM_EVENT_STA_DISCONNECTED` event, indicating a WiFi disconnection. When this event occurs, we call `reconnectToWiFi()` to attempt reconnection. The `reconnectToWiFi()` function can be customized to include any necessary cleanup or reconfiguration steps before attempting to reconnect. In this example, it simply prints a message and calls `connectToWiFi()`. This way, the reconnection logic is encapsulated in the WiFiEvent callback, keeping the loop() function free of reconnection-related code.
+
+## Server Setup
+An instance of AsyncWebServer is created on port 80. A Callback function is set up to handle incoming HTTP GET requests at the root ("/") by responding with the content of a file stored in the SPIFFS file system. Adjust the filename variable to match the desired file. After configuring the server, it is started with `server.begin()`.
+
+## Useful References
+Random Nerd Tutorials: https://randomnerdtutorials.com/projects-esp32/
