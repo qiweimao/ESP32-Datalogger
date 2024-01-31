@@ -16,6 +16,7 @@ The `WiFi.onEvent()` function is used to register a callback function, `WiFiEven
 ## Server Setup
 An instance of AsyncWebServer is created on port 80. A Callback function is set up to handle incoming HTTP GET requests at the root ("/") by responding with the content of a file stored in the SPIFFS file system. Adjust the filename variable to match the desired file. After configuring the server, it is started with `server.begin()`.
 
+<<<<<<< HEAD
 
 ## OTA
 Placeholder
@@ -23,6 +24,12 @@ Placeholder
 ## ESP-Prog
 MAC OS driver issue:
 https://arduino.stackexchange.com/questions/91111/how-to-install-ftdi-serial-drivers-on-mac
+=======
+## Domain Name and IP Address
+ESP32 should request static IP from the access point (e.g. WiFi router, LTE router); Another approach is to set static IP in router admin page for the ESP32.
+The router might have dynamic IP address which might expire every few days, unless a static IP is purchased from the ISP.
+*** TODO *** Figure out how DDNS works on Namecheap
+>>>>>>> 4e6006ca2f6fcb5f42b909301333f7c7a24b8cf0
 
 ## Useful References
 Random Nerd Tutorials: https://randomnerdtutorials.com/projects-esp32/
