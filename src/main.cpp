@@ -5,11 +5,17 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 
+const int LOG_INTERVAL = 60000;
+// WiFi
 const char *ssid = "Verizon_F4ZD39";
 const char *password = "aft9-grid-knot";
+// Static IP configuration
+IPAddress staticIP(192, 168, 1, 100);  // Change this to your desired static IP
+IPAddress gateway(192, 168, 0, 1);    // Change this to your router's IP
+IPAddress subnet(255, 255, 255, 0);   // Change this to match your network's subnet mask
 
-// const char *ntpServer = "pool.ntp.org";
-const char *ntpServer = "time.google.com";
+const char *ntpServer = "pool.ntp.org";
+// const char *ntpServer = "time.google.com";
 const long gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
 const int daylightOffset_sec = 3600;       // Daylight saving time offset in seconds
 const char *filename = "/flash_size_log.txt";
@@ -20,6 +26,7 @@ void setUpTime();
 void connectToWiFi();
 void WiFiEvent(WiFiEvent_t event);
 void reconnectToWiFi();
+void serveIndexPage(AsyncWebServerRequest *request);
 
 // Create an instance of the server
 AsyncWebServer server(80);
@@ -33,8 +40,6 @@ void setup() {
   // Register the WiFi event handler
   WiFi.onEvent(WiFiEvent);
   
-  // Sync With NTP Time Server
-  setUpTime();
 
   // Mount SPIFFS filesystem
   Serial.println("Mounting SPIFFS filesystem");
@@ -60,19 +65,26 @@ void setup() {
 
   // Serve the text file
   Serial.println("Setting Server Callback function:");
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/all", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, filename, "text/plain");
   });
+
+  // Serve the index.html file
+  server.on("/", HTTP_GET, serveIndexPage);
+
+
   // Start server
   Serial.println("Starting server...");
   server.begin();
   Serial.println("***Serve On***");
+
+  // Sync With NTP Time Server
+  setUpTime();
 }
 
 void loop() {
   // Call the function to print the current time in ETZ USA
   logFlashSize();
-  delay(1000);
   // Other loop code, if any
 }
 
@@ -94,10 +106,9 @@ void logFlashSize() {
   if(!file.println(String(formattedTime) + "," + String(fileSize) + "," + spiffsUsed + "," + spiffsTotal)){
     Serial.println("Error Writing file");
   }
-  
-  // Serial.println(String(formattedTime) + "," + String(fileSize) + "," + spiffsUsed + "," + spiffsTotal);
-  
+    
   file.close();
+  delay(LOG_INTERVAL);
 }
 
 String getCurrentTime() {
@@ -126,6 +137,7 @@ void setUpTime(){
 
 void connectToWiFi() {
   Serial.println("Connecting to WiFi");
+  // WiFi.config(staticIP, gateway, subnet);
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -158,4 +170,32 @@ void reconnectToWiFi() {
   // Implement any necessary cleanup or reconfiguration here
   
   connectToWiFi();
+}
+
+void serveIndexPage(AsyncWebServerRequest *request) {
+  // Open the file in read mode
+  File file = SPIFFS.open("/index.html", "r");
+
+  if (!file) {
+    // If the file doesn't exist, send a 404 Not Found response
+    request->send(404, "text/plain", "File not found");
+  } else {
+    // If the file exists, read its contents and send as the response
+    size_t fileSize = file.size();
+    String fileContent;
+
+    // Reserve enough space in the string for the file content
+    fileContent.reserve(fileSize);
+
+    // Read the file content into the string
+    while (file.available()) {
+      fileContent += char(file.read());
+    }
+
+    // Send the file content as the response with the appropriate content type
+    request->send(200, "text/html", fileContent);
+  }
+
+  // Close the file
+  file.close();
 }
