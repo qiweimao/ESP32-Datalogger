@@ -6,3 +6,5 @@
 examples/example.cpp
 .gitignore
 examples/ESP32-Web-Server .cpp
+arch.drawio
+arch.drawio

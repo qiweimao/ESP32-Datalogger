@@ -9,6 +9,7 @@ const int LOG_INTERVAL = 60000;
 // WiFi
 const char *ssid = "Verizon_F4ZD39";
 const char *password = "aft9-grid-knot";
+// Verizon password = XLVMPN434
 // Static IP configuration
 IPAddress staticIP(192, 168, 1, 100);  // Change this to your desired static IP
 IPAddress gateway(192, 168, 0, 1);    // Change this to your router's IP
