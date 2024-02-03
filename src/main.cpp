@@ -2,10 +2,13 @@
 #include <time.h>
 #include <FS.h>
 #include <SPIFFS.h>
+#include <SPI.h>
+#include <SD.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <HTTPClient.h>
 
+const int CS = 5;
 const int LOG_INTERVAL = 60000;
 // WiFi
 const char *ssid = "Verizon_F4ZD39";
@@ -31,9 +34,9 @@ void WiFiEvent(WiFiEvent_t event);
 void reconnectToWiFi();
 void serveIndexPage(AsyncWebServerRequest *request);
 void serveCompleteFile(AsyncWebServerRequest *request);
-void stopHandshake(AsyncWebServerRequest *request);
-void sendIPToEC2();
 void setupSPIFFS();
+void WriteFile(const char * path, const char * message);
+void ReadFile(const char * path);
 String getPublicIP();
 
 // Create an instance of the server
@@ -45,9 +48,17 @@ void setup() {
   WiFi.onEvent(WiFiEvent);// Register the WiFi event handler
   setupSPIFFS();// Setup SPIFFS
 
+  Serial.println("Initializing SD card...");
+  if (!SD.begin(CS)) {
+    Serial.println("initialization failed!");
+    return;
+  }
+  Serial.println("initialization done.");
+  WriteFile("/test.txt", "ElectronicWings.com");
+  ReadFile("/test.txt");
+
   server.on("/all", HTTP_GET, serveCompleteFile);// Serve the text file
   server.on("/", HTTP_GET, serveIndexPage);// Serve the index.html file
-  server.on("/ipconfirm", HTTP_POST, stopHandshake);// Serve the index.html file
   server.begin();  // Start server
   Serial.printf("Server Started @ IP: %s\n", WiFi.localIP().toString().c_str());
 
@@ -203,41 +214,6 @@ void serveCompleteFile(AsyncWebServerRequest *request){
   request->send(SPIFFS, filename, "text/plain");
 }
 
-void sendIPToEC2() {
-  while(1){
-    WiFiClient client;
-    HTTPClient http;
-    
-
-    // Prepare the POST data
-    String postData = "ip=" + getPublicIP();
-    Serial.println("postData = " + postData);
-
-    http.begin(client,"http://lelelumon.shop/esp32handshake");
-    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-
-    // Send the POST request
-    int httpResponseCode = http.POST(postData);
-
-    // Check the response
-    if (httpResponseCode > 0) {
-      Serial.print("HTTP Response code: ");
-      Serial.println(httpResponseCode);
-    } else {
-      Serial.println("HTTP Request failed");
-    }
-
-    // Free resources
-    http.end();
-
-    delay(5000);
-  }
-}
-
-void stopHandshake(AsyncWebServerRequest *request){
-
-}
-
 void setupSPIFFS(){
   // Mount SPIFFS filesystem
   Serial.println("Mounting SPIFFS filesystem");
@@ -259,5 +235,40 @@ void setupSPIFFS(){
     file.println("Time, fSize, SPIFFS Used, SPIFFS Total");
     Serial.println("Time, fSize, SPIFFS Used, SPIFFS Total");
     file.close();
+  }
+}
+
+void WriteFile(const char * path, const char * message){
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+  File myFile = SD.open(path, FILE_WRITE);
+  // if the file opened okay, write to it:
+  if (myFile) {
+    Serial.printf("Writing to %s ", path);
+    myFile.println(message);
+    myFile.close(); // close the file:
+    Serial.println("completed.");
+  } 
+  // if the file didn't open, print an error:
+  else {
+    Serial.println("error opening file ");
+    Serial.println(path);
+  }
+}
+
+void ReadFile(const char * path){
+  // open the file for reading:
+  File myFile = SD.open(path);
+  if (myFile) {
+     Serial.printf("Reading file from %s\n", path);
+     // read from the file until there's nothing else in it:
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    myFile.close(); // close the file:
+  } 
+  else {
+    // if the file didn't open, print an error:
+    Serial.println("error opening test.txt");
   }
 }
