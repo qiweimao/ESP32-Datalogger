@@ -16,6 +16,16 @@ The `WiFi.onEvent()` function is used to register a callback function, `WiFiEven
 ## Server Setup
 An instance of AsyncWebServer is created on port 80. A Callback function is set up to handle incoming HTTP GET requests at the root ("/") by responding with the content of a file stored in the SPIFFS file system. Adjust the filename variable to match the desired file. After configuring the server, it is started with `server.begin()`.
 
+## SD Card Setup
+```
+ https://www.electronicwings.com/
+  SD Card Interface code for ESP32
+  SPI Pins of ESP32 SD card as follows:
+  CS    = 5;
+  MOSI  = 23;
+  MISO  = 19;
+  SCK   = 18; 
+```
 
 ## OTA
 Placeholder
@@ -32,5 +42,4 @@ The router might have dynamic IP address which might expire every few days, unle
 
 ## Useful References
 Random Nerd Tutorials: https://randomnerdtutorials.com/projects-esp32/
-
 Dashboard: https://github.com/ayushsharma82/ESP-DASH
