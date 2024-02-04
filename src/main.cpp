@@ -1,46 +1,34 @@
-#include <WiFi.h>
-#include <time.h>
+// #include <WiFi.h>
+// #include <time.h>
 #include <FS.h>
-#include <SPIFFS.h>
-#include <SPI.h>
-#include <SD.h>
+// #include <SPIFFS.h>
+// #include <SPI.h>
+// #include <SD.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
 
-const int CS = 5;
-const int LOG_INTERVAL = 60000;
-// WiFi
-const char *ssid = "Verizon_F4ZD39";
-const char *password = "aft9-grid-knot";
-// Verizon password = XLVMPN434
-// Static IP configuration
-IPAddress staticIP(192, 168, 1, 100);  // Change this to your desired static IP
-IPAddress gateway(192, 168, 0, 1);    // Change this to your router's IP
-IPAddress subnet(255, 255, 255, 0);   // Change this to match your network's subnet mask
+#include "Secrets.h"
+#include "aws_mqtt.h"
+#include "datalogging.h"
+#include "utils.h"
 
-
-const char *ntpServer = "pool.ntp.org";
 const char *AWSEC2 = "lelelumon.shop";
-const long gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
-const int daylightOffset_sec = 3600;       // Daylight saving time offset in seconds
 const char *filename = "/flash_size_log.txt";
+const long gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
+const int daylightOffset_sec = 3600;  
+const int LOG_INTERVAL = 1000;
 
-void logFlashSize();
-String getCurrentTime();
-void setUpTime();
-void connectToWiFi();
-void WiFiEvent(WiFiEvent_t event);
-void reconnectToWiFi();
 void serveIndexPage(AsyncWebServerRequest *request);
 void serveCompleteFile(AsyncWebServerRequest *request);
-void setupSPIFFS();
-void WriteFile(const char * path, const char * message);
-void ReadFile(const char * path);
-String getPublicIP();
 
 // Create an instance of the server
 AsyncWebServer server(80);
+
+WiFiClientSecure net = WiFiClientSecure();
+PubSubClient client(net);
 
 void setup() {
   Serial.begin(115200);
@@ -48,136 +36,27 @@ void setup() {
   WiFi.onEvent(WiFiEvent);// Register the WiFi event handler
   setupSPIFFS();// Setup SPIFFS
 
-  Serial.println("Initializing SD card...");
-  if (!SD.begin(CS)) {
-    Serial.println("initialization failed!");
-    return;
-  }
-  Serial.println("initialization done.");
-  WriteFile("/test.txt", "ElectronicWings.com");
-  ReadFile("/test.txt");
+  SD_initialize();
+  SDWriteFile("/test.txt", "ElectronicWings.com");
+  SDReadFile("/test.txt");
 
   server.on("/all", HTTP_GET, serveCompleteFile);// Serve the text file
   server.on("/", HTTP_GET, serveIndexPage);// Serve the index.html file
   server.begin();  // Start server
   Serial.printf("Server Started @ IP: %s\n", WiFi.localIP().toString().c_str());
 
+  // connectAWS();
+
   setUpTime();// Sync With NTP Time Server
 
-  /* TO DO*/
-  // xTaskCreate((TaskFunction_t)sendIPToEC2, "Task1", 4096, NULL, 1, NULL);
+  /* Tasks */
 }
 
 void loop() {
   // Call the function to print the current time in ETZ USA
   logFlashSize();
+  // publishMessage();
   // Other loop code, if any
-}
-
-void logFlashSize() {
-  // Open file in append mode
-  File file = SPIFFS.open(filename, "a");
-  if (!file) {
-    Serial.println("Failed to open file for appending");
-    return;
-  }
-
-  String formattedTime = getCurrentTime();
-
-  // Get FLash Space
-  size_t fileSize = file.size();
-  size_t spiffsTotal = SPIFFS.totalBytes();
-  size_t spiffsUsed = SPIFFS.usedBytes();
-
-  if(!file.println(String(formattedTime) + "," + String(fileSize) + "," + spiffsUsed + "," + spiffsTotal)){
-    Serial.println("Error Writing file");
-  }
-    
-  file.close();
-  delay(LOG_INTERVAL);
-}
-
-String getCurrentTime() {
-  struct tm timeinfo;
-  
-  if (getLocalTime(&timeinfo)) {
-    char buffer[20]; // Adjust the buffer size based on your format
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &timeinfo);
-    return buffer;
-  } else {
-    Serial.println("Failed to get current time");
-    return ""; // Return an empty string in case of failure
-  }
-  return ""; // Return an empty string in case of failure
-}
-
-void setUpTime(){
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  struct tm timeinfo;
-  while (!getLocalTime(&timeinfo)) {
-      delay(1000); // Wait for 1 second before checking again
-      Serial.println("Syncing with NTP...");
-  }
-  Serial.println("Time configured");
-}
-
-void connectToWiFi() {
-  // Serial.println("Connecting to WiFi");
-  // WiFi.config(staticIP, gateway, subnet);
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    // Serial.println("Connecting to WiFi...");
-  }
-
-  // Serial.println("Connected to WiFi");
-  // Serial.print("IP Address: ");
-  // Serial.println(WiFi.localIP());
-}
-
-void WiFiEvent(WiFiEvent_t event) {
-  switch (event) {
-    case SYSTEM_EVENT_STA_CONNECTED:
-      Serial.println("WiFi connected");
-      break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-      Serial.println("WiFi disconnected");
-      reconnectToWiFi();
-      break;
-    default:
-      break;
-  }
-}
-
-void reconnectToWiFi() {
-  Serial.println("Reconnecting to WiFi");
-  
-  // Implement any necessary cleanup or reconfiguration here
-  
-  connectToWiFi();
-}
-
-String getPublicIP() {
-  HTTPClient http;
-
-  // Make a GET request to api.ipify.org to get the public IP
-  http.begin("https://api.ipify.org");
-
-  // Send the request
-  int httpCode = http.GET();
-
-  // Check for a successful response
-  if (httpCode == HTTP_CODE_OK) {
-    String publicIP = http.getString();
-    return publicIP;
-  } else {
-    Serial.printf("HTTP request failed with error code %d\n", httpCode);
-    return "Error";
-  }
-
-  // End the request
-  http.end();
 }
 
 void serveIndexPage(AsyncWebServerRequest *request) {
@@ -212,63 +91,4 @@ void serveIndexPage(AsyncWebServerRequest *request) {
 void serveCompleteFile(AsyncWebServerRequest *request){
   Serial.println("Client requested complete file.");
   request->send(SPIFFS, filename, "text/plain");
-}
-
-void setupSPIFFS(){
-  // Mount SPIFFS filesystem
-  Serial.println("Mounting SPIFFS filesystem");
-  if (!SPIFFS.begin(true)) {
-    Serial.println("SPIFFS allocation failed");
-    return;
-  }
-
-  // Check if the file already exists
-  Serial.println("Checking if file exists");
-  if (!SPIFFS.exists(filename)) {
-    Serial.println("Doesn't exist");
-    // If the file doesn't exist, create it and write the header
-    File file = SPIFFS.open(filename, "w");
-    if (!file) {
-      Serial.println("Failed to open file for writing");
-      return;
-    }
-    file.println("Time, fSize, SPIFFS Used, SPIFFS Total");
-    Serial.println("Time, fSize, SPIFFS Used, SPIFFS Total");
-    file.close();
-  }
-}
-
-void WriteFile(const char * path, const char * message){
-  // open the file. note that only one file can be open at a time,
-  // so you have to close this one before opening another.
-  File myFile = SD.open(path, FILE_WRITE);
-  // if the file opened okay, write to it:
-  if (myFile) {
-    Serial.printf("Writing to %s ", path);
-    myFile.println(message);
-    myFile.close(); // close the file:
-    Serial.println("completed.");
-  } 
-  // if the file didn't open, print an error:
-  else {
-    Serial.println("error opening file ");
-    Serial.println(path);
-  }
-}
-
-void ReadFile(const char * path){
-  // open the file for reading:
-  File myFile = SD.open(path);
-  if (myFile) {
-     Serial.printf("Reading file from %s\n", path);
-     // read from the file until there's nothing else in it:
-    while (myFile.available()) {
-      Serial.write(myFile.read());
-    }
-    myFile.close(); // close the file:
-  } 
-  else {
-    // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
-  }
 }
