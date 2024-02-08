@@ -5,8 +5,10 @@
 
 #include "utils.h"
 
-extern WiFiClientSecure net;
-extern PubSubClient client;
+
+
+WiFiClientSecure net = WiFiClientSecure();
+PubSubClient client(net);
 
 #define AWS_IOT_PUBLISH_TOPIC   "esp32/pub"
 #define AWS_IOT_SUBSCRIBE_TOPIC "esp32/sub"

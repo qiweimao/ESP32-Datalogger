@@ -3,6 +3,16 @@
 const int CS = 5;
 const char *ntpServer = "pool.ntp.org";
 
+void setUpTime(){
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  while (!getLocalTime(&timeinfo)) {
+      delay(1000); // Wait for 1 second before checking again
+      Serial.println("Syncing with NTP...");
+  }
+  Serial.printf("Time configured, the current time is: %s\n", getCurrentTime().c_str());
+}
+
 String getCurrentTime() {
   struct tm timeinfo;
   
@@ -15,16 +25,6 @@ String getCurrentTime() {
     return ""; // Return an empty string in case of failure
   }
   return ""; // Return an empty string in case of failure
-}
-
-void setUpTime(){
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  struct tm timeinfo;
-  while (!getLocalTime(&timeinfo)) {
-      delay(1000); // Wait for 1 second before checking again
-      Serial.println("Syncing with NTP...");
-  }
-  Serial.println("Time configured");
 }
 
 void connectToWiFi() {
@@ -42,14 +42,6 @@ void connectToWiFi() {
   // Serial.println(WiFi.localIP());
 }
 
-void reconnectToWiFi() {
-  Serial.println("Reconnecting to WiFi");
-  
-  // Implement any necessary cleanup or reconfiguration here
-  
-  connectToWiFi();
-}
-
 void WiFiEvent(WiFiEvent_t event) {
   switch (event) {
     case SYSTEM_EVENT_STA_CONNECTED:
@@ -57,7 +49,7 @@ void WiFiEvent(WiFiEvent_t event) {
       break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
       Serial.println("WiFi disconnected");
-      reconnectToWiFi();
+      connectToWiFi();
       break;
     default:
       break;
@@ -88,30 +80,16 @@ String getPublicIP() {
 
 void setupSPIFFS(){
   // Mount SPIFFS filesystem
-  Serial.println("Mounting SPIFFS filesystem");
+  Serial.printf("Mounting SPIFFS filesystem......");
   if (!SPIFFS.begin(true)) {
     Serial.println("SPIFFS allocation failed");
     return;
   }
-
-  // Check if the file already exists
-  Serial.println("Checking if file exists");
-  if (!SPIFFS.exists(filename)) {
-    Serial.println("Doesn't exist");
-    // If the file doesn't exist, create it and write the header
-    File file = SPIFFS.open(filename, "w");
-    if (!file) {
-      Serial.println("Failed to open file for writing");
-      return;
-    }
-    file.println("Time, fSize, SPIFFS Used, SPIFFS Total");
-    Serial.println("Time, fSize, SPIFFS Used, SPIFFS Total");
-    file.close();
-  }
+  Serial.printf("Successfull.\n");
 }
 
 void SD_initialize(){
-  Serial.println("Initializing SD card...");
+  Serial.printf("Initializing SD card...");
   if (!SD.begin(CS)) {
     Serial.println("initialization failed!");
     return;
@@ -119,38 +97,162 @@ void SD_initialize(){
   Serial.println("initialization done.");
 }
 
+String listDir(fs::FS &fs, const char * dirname, uint8_t levels){
+  Serial.printf("Listing directory: %s\n", dirname);
+  String fileList = "";
+  File root = fs.open(dirname);
+  if(!root){
+    Serial.println("Failed to open directory");
+    return "error";
+  }
+  if(!root.isDirectory()){
+    Serial.println("Not a directory");
+    return "error";
+  }
 
-void SDWriteFile(const char * path, const char * message){
-  // open the file. note that only one file can be open at a time,
-  // so you have to close this one before opening another.
-  File myFile = SD.open(path, FILE_WRITE);
-  // if the file opened okay, write to it:
-  if (myFile) {
-    Serial.printf("Writing to %s ", path);
-    myFile.println(message);
-    myFile.close(); // close the file:
-    Serial.println("completed.");
-  } 
-  // if the file didn't open, print an error:
-  else {
-    Serial.println("error opening file ");
-    Serial.println(path);
+  File file = root.openNextFile();
+  while(file){
+    if(file.isDirectory()){
+      Serial.print("  DIR : ");
+      Serial.println(file.name());
+      if(levels){
+        listDir(fs, file.name(), levels -1);
+      }
+    } else {
+      fileList += file.name();
+      Serial.print("  FILE: ");
+      Serial.print(file.name());
+      Serial.print("  SIZE: ");
+      Serial.println(file.size());
+    }
+    file = root.openNextFile();
+  }
+
+  return fileList;
+}
+
+void createDir(fs::FS &fs, const char * path){
+  Serial.printf("Creating Dir: %s\n", path);
+  if(fs.mkdir(path)){
+    Serial.println("Dir created");
+  } else {
+    Serial.println("mkdir failed");
   }
 }
 
-void SDReadFile(const char * path){
-  // open the file for reading:
-  File myFile = SD.open(path);
-  if (myFile) {
-     Serial.printf("Reading file from %s\n", path);
-     // read from the file until there's nothing else in it:
-    while (myFile.available()) {
-      Serial.write(myFile.read());
-    }
-    myFile.close(); // close the file:
-  } 
-  else {
-    // if the file didn't open, print an error:
-    Serial.println("error opening test.txt");
+void removeDir(fs::FS &fs, const char * path){
+  Serial.printf("Removing Dir: %s\n", path);
+  if(fs.rmdir(path)){
+    Serial.println("Dir removed");
+  } else {
+    Serial.println("rmdir failed");
   }
+}
+
+void readFile(fs::FS &fs, const char * path){
+  Serial.printf("Reading file: %s\n", path);
+
+  File file = fs.open(path);
+  if(!file){
+    Serial.println("Failed to open file for reading");
+    return;
+  }
+
+  Serial.print("Read from file: ");
+  while(file.available()){
+    Serial.write(file.read());
+  }
+  file.close();
+}
+
+void writeFile(fs::FS &fs, const char * path, const char * message){
+  Serial.printf("Writing file: %s\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if(!file){
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+  if(file.print(message)){
+    Serial.println("File written");
+  } else {
+    Serial.println("Write failed");
+  }
+  file.close();
+}
+
+void appendFile(fs::FS &fs, const char * path, const char * message){
+  // Serial.printf("Appending to file: %s\n", path);
+
+  File file = fs.open(path, FILE_APPEND);
+  if(!file){
+    Serial.println("Failed to open file for appending");
+    return;
+  }
+  if(file.print(message)){
+      // Serial.println("Message appended");
+  } else {
+    Serial.println("Append failed");
+  }
+  file.close();
+}
+
+void renameFile(fs::FS &fs, const char * path1, const char * path2){
+  Serial.printf("Renaming file %s to %s\n", path1, path2);
+  if (fs.rename(path1, path2)) {
+    Serial.println("File renamed");
+  } else {
+    Serial.println("Rename failed");
+  }
+}
+
+void deleteFile(fs::FS &fs, const char * path){
+  Serial.printf("Deleting file: %s\n", path);
+  if(fs.remove(path)){
+    Serial.println("File deleted");
+  } else {
+    Serial.println("Delete failed");
+  }
+}
+
+void testFileIO(fs::FS &fs, const char * path){
+  File file = fs.open(path);
+  static uint8_t buf[512];
+  size_t len = 0;
+  uint32_t start = millis();
+  uint32_t end = start;
+  if(file){
+    len = file.size();
+    size_t flen = len;
+    start = millis();
+    while(len){
+      size_t toRead = len;
+      if(toRead > 512){
+        toRead = 512;
+      }
+      file.read(buf, toRead);
+      len -= toRead;
+    }
+    end = millis() - start;
+    Serial.printf("%u bytes read for %u ms\n", flen, end);
+    file.close();
+  } else {
+    Serial.println("Failed to open file for reading");
+  }
+
+
+  file = fs.open(path, FILE_WRITE);
+  if(!file){
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+
+  size_t i;
+  start = millis();
+  for(i=0; i<2048; i++){
+    file.write(buf, 512);
+  }
+  end = millis() - start;
+  Serial.printf("%u bytes written for %u ms\n", 2048 * 512, end);
+  file.close();
 }

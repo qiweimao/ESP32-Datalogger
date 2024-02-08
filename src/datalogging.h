@@ -4,6 +4,15 @@
 extern const char *filename;
 extern const int LOG_INTERVAL;
 
-void logFlashSize();
+extern SemaphoreHandle_t logMutex;
+
+enum LogErrorCode {
+  LOG_SUCCESS,
+  FILE_OPEN_ERROR,
+  FILE_WRITE_ERROR
+  // Add more error codes as needed
+};
+
+LogErrorCode logFlashSize();
 
 #endif

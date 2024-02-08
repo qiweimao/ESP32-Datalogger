@@ -3,31 +3,35 @@
 #include "utils.h"
 #include "datalogging.h"
 
-// extern const char *filename;
-// extern const int LOG_INTERVAL;
-
-void logFlashSize() {
-  Serial.println("Logging flash size.");
-  // Open file in append mode
-  File file = SPIFFS.open(filename, "a");
-  if (!file) {
-    Serial.println("Failed to open file for appending");
-    return;
+LogErrorCode logFlashSize() {
+  // Serial.println("Logging flash size.");
+  File file;
+  if (!SD.exists(filename)) {
+    Serial.println("File does not exist");
+    const char* message = "Time, Used SD (KB), SD Total (KB), SD Used (%), FreeRAM, TotalRAM, maxAllocatableRAMl\n";
+    writeFile(SD, filename, message);
   }
 
-  Serial.println("Getting current time.");
+  // Get Data
+
+  // Get information about RAM
+  size_t freeRAM = ESP.getFreeHeap();
+  size_t totalRAM = ESP.getHeapSize();
+  size_t maxAllocatableRAM = ESP.getMaxAllocHeap();
+
+  size_t totalSpace = SD.totalBytes();
+  size_t usedSpace = SD.usedBytes();
+  float percentUsed = (float)usedSpace / totalSpace * 100.0;
+
   String formattedTime = getCurrentTime();
 
-  // Get FLash Space
-  size_t fileSize = file.size();
-  size_t spiffsTotal = SPIFFS.totalBytes();
-  size_t spiffsUsed = SPIFFS.usedBytes();
+  String data = String(formattedTime) + "," + String(usedSpace) + "," + String(totalSpace) + "," + String(percentUsed) + "%," +
+                String(freeRAM) + "," + String(totalRAM) + "," + String(maxAllocatableRAM) + "\n";
+  const char* data_char = data.c_str();
+  Serial.printf("%s", data_char);
+  appendFile(SD, filename, data_char);
 
-  if(!file.println(String(formattedTime) + "," + String(fileSize) + "," + spiffsUsed + "," + spiffsTotal)){
-    Serial.println("Error Writing file");
-  }
-    
-  file.close();
   delay(LOG_INTERVAL);
-  Serial.println("Finished Logging");
+  // Serial.println("Finished Logging");
+  return LOG_SUCCESS;
 }
