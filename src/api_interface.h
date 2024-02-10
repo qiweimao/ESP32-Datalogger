@@ -9,6 +9,9 @@ extern AsyncWebServer server;
 void startServer();
 
 void serveIndexPage(AsyncWebServerRequest *request);
+void serveJS(AsyncWebServerRequest *request);
+void serveCSS(AsyncWebServerRequest *request);
+
 void serveCompleteFile(AsyncWebServerRequest *request);
 void serveLogList(AsyncWebServerRequest *request);
 void serveRebootLogger(AsyncWebServerRequest *request);

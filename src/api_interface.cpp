@@ -8,6 +8,9 @@ AsyncWebServer server(80);
 void startServer(){
 
   server.on("/", HTTP_GET, serveIndexPage);// Serve the index.html file
+  server.on("/script.js", HTTP_GET, serveJS);// Serve the index.html file
+  server.on("/styles.css", HTTP_GET, serveCSS);// Serve the index.html file
+
   server.on("/data", HTTP_GET, serveCompleteFile);// Serve the text file
   server.on("/listdir", HTTP_GET, serveLogList);// Serve the text file
   server.on("/reboot", HTTP_GET, serveRebootLogger);// Serve the text file
@@ -43,6 +46,64 @@ void serveIndexPage(AsyncWebServerRequest *request) {
 
     // Send the file content as the response with the appropriate content type
     request->send(200, "text/html", fileContent);
+  }
+
+  // Close the file
+  file.close();
+}
+
+void serveJS(AsyncWebServerRequest *request) {
+
+  // Open the file in read mode
+  File file = SPIFFS.open("/script.js", "r");
+
+  if (!file) {
+    // If the file doesn't exist, send a 404 Not Found response
+    request->send(404, "text/plain", "File not found");
+  } else {
+    // If the file exists, read its contents and send as the response
+    size_t fileSize = file.size();
+    String fileContent;
+
+    // Reserve enough space in the string for the file content
+    fileContent.reserve(fileSize);
+
+    // Read the file content into the string
+    while (file.available()) {
+      fileContent += char(file.read());
+    }
+
+    // Send the file content as the response with the appropriate content type
+    request->send(200, "application/javascript", fileContent);
+  }
+
+  // Close the file
+  file.close();
+}
+
+void serveCSS(AsyncWebServerRequest *request) {
+
+  // Open the file in read mode
+  File file = SPIFFS.open("/styles.css", "r");
+
+  if (!file) {
+    // If the file doesn't exist, send a 404 Not Found response
+    request->send(404, "text/plain", "File not found");
+  } else {
+    // If the file exists, read its contents and send as the response
+    size_t fileSize = file.size();
+    String fileContent;
+
+    // Reserve enough space in the string for the file content
+    fileContent.reserve(fileSize);
+
+    // Read the file content into the string
+    while (file.available()) {
+      fileContent += char(file.read());
+    }
+
+    // Send the file content as the response with the appropriate content type
+    request->send(200, "text/css", fileContent);
   }
 
   // Close the file
