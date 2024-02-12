@@ -8,6 +8,8 @@
 #include <SPIFFS.h>
 #include <Arduino.h>
 #include <SD.h>
+#include <TelnetStream.h>
+#include <AsyncTCP.h>
 #include "Secrets.h"
 
 extern const char *filename;

@@ -4,6 +4,7 @@
 #include <pgmspace.h>
  
 #define SECRET
+
 #define THINGNAME "ESP32_Datalogger"//AWS Thing Name
  
 const char WIFI_SSID[] = "Verizon_F4ZD39";

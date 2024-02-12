@@ -1,5 +1,4 @@
 #include <FS.h>
-#include <AsyncTCP.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
@@ -26,7 +25,6 @@ SemaphoreHandle_t logMutex;
 
 void setup() {
   Serial.begin(115200);
-  delay(5000);
   Serial.println("-------------------------------------\nBooting...");
   
   logMutex = xSemaphoreCreateMutex();  // Initialize the mutex
@@ -41,15 +39,19 @@ void setup() {
 
   setUpTime();// Sync With NTP Time Server
   Serial.println("-------------------------------------");
+  Serial.println("Data Acquisition Started...");
+
 }
 
 void loop() {
 
-if(!loggingPaused){
-  if (xSemaphoreTake(logMutex, portMAX_DELAY)) {
-    LogErrorCode result = logFlashSize();
-    xSemaphoreGive(logMutex);
+  if(!loggingPaused){
+    if (xSemaphoreTake(logMutex, portMAX_DELAY)) {
+      LogErrorCode result = logFlashSize();
+      xSemaphoreGive(logMutex);
+    }
   }
-}
+
+  ElegantOTA.loop();
 
 }

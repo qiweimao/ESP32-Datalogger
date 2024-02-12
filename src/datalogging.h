@@ -4,8 +4,6 @@
 extern const char *filename;
 extern const int LOG_INTERVAL;
 
-extern SemaphoreHandle_t logMutex;
-
 enum LogErrorCode {
   LOG_SUCCESS,
   FILE_OPEN_ERROR,
