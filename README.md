@@ -16,28 +16,25 @@ The `WiFi.onEvent()` function is used to register a callback function, `WiFiEven
 ## Server Setup
 An instance of AsyncWebServer is created on port 80. A Callback function is set up to handle incoming HTTP GET requests at the root ("/") by responding with the content of a file stored in the SPIFFS file system. Adjust the filename variable to match the desired file. After configuring the server, it is started with `server.begin()`.
 
+## External RTC Setup
+TODO Model No.: DS1307 AT24C32 Real Time Clock Module For AVR ARM PIC NEW
+
 ## SD Card Setup
-```
- https://www.electronicwings.com/
-  SD Card Interface code for ESP32
-  SPI Pins of ESP32 SD card as follows:
-  CS    = 5;
-  MOSI  = 23;
-  MISO  = 19;
-  SCK   = 18; 
-```
+
+https://components101.com/modules/micro-sd-card-module-pinout-features-datasheet-alternatives
+https://www.electronicwings.com/esp32/microsd-card-interfacing-with-esp32
 
 ## OTA
-Placeholder
+Currently ElegantOTA free version is used without licensing for commercial applications. Documentaion: https://docs.elegantota.pro/
+For commercial applications, a simple Arduino OTA wrapper library can be developed to avoid ElegantOTA.
 
 ## ESP-Prog
 MAC OS driver issue:
 https://arduino.stackexchange.com/questions/91111/how-to-install-ftdi-serial-drivers-on-mac
-=======
+
 ## Domain Name and IP Address
 ESP32 should request static IP from the access point (e.g. WiFi router, LTE router); Another approach is to set static IP in router admin page for the ESP32.
 The router might have dynamic IP address which might expire every few days, unless a static IP is purchased from the ISP.
-*** TODO *** Figure out how DDNS works on Namecheap
 
 ## Useful References
 Random Nerd Tutorials: https://randomnerdtutorials.com/projects-esp32/
