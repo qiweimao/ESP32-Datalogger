@@ -1,5 +1,5 @@
-# ESP32 Data Logger
-intro here
+# Datalogger-ESP32
+The ESP32 Data Logger is a cost efficient data acquisition system that supports vibrating wire sensors and other sensors with RS-485, TTL protocol. To set up the data logger as an end user, you can plug it into your computer, and configure the logger in a website using the browser. For advanced configurations, you can program your own code and flash the logger on PC, using PlatformIO or Arduino IDE.
 
 ## Internet Connection
 
@@ -12,6 +12,9 @@ If using PlatformIO, the default partition can be found in this directory: `.pla
 
 ## WiFi Reconnect Capability
 The `WiFi.onEvent()` function is used to register a callback function, `WiFiEvent`, which will be invoked when WiFi events occur. In the WiFiEvent function, we check for the `SYSTEM_EVENT_STA_DISCONNECTED` event, indicating a WiFi disconnection. When this event occurs, we call `reconnectToWiFi()` to attempt reconnection. This way, the reconnection logic is encapsulated in the WiFiEvent callback, keeping the loop() function free of reconnection-related code.
+
+## WiFi Manager
+TODO. This function is triggered when the physical push button switch is clicked, the ESP32 will start as a WiFi access point to allow the user to connect to it via WiFi. A device configuration website will be served over WiFi.
 
 ## Server Setup
 An instance of AsyncWebServer is created on port 80. A Callback function is set up to handle incoming HTTP GET requests at the root ("/") by responding with the content of a file stored in the SPIFFS file system. Adjust the filename variable to match the desired file. After configuring the server, it is started with `server.begin()`.
