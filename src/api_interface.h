@@ -14,8 +14,6 @@ void serveJS(AsyncWebServerRequest *request);
 void serveCSS(AsyncWebServerRequest *request);
 void servefavicon(AsyncWebServerRequest *request);
 
-void serveCompleteFile(AsyncWebServerRequest *request);
-void serveLogList(AsyncWebServerRequest *request);
 void serveRebootLogger(AsyncWebServerRequest *request);
 void pauseLoggingHandler(AsyncWebServerRequest *request);
 void resumeLoggingHandler(AsyncWebServerRequest *request);

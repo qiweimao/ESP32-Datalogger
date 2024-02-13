@@ -3,7 +3,6 @@
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include "Secrets.h"
-#include "aws_mqtt.h"
 #include "datalogging.h"
 #include "utils.h"
 #include "api_interface.h"
@@ -17,16 +16,11 @@ const int LOG_INTERVAL = 1000;
 
 /* Do not modify below */
 bool loggingPaused = false;
-extern AsyncWebServer server;
-extern WiFiClientSecure net;
-extern PubSubClient client;
-
 SemaphoreHandle_t logMutex;
 
 void setup() {
   Serial.begin(115200);
   Serial.println("-------------------------------------\nBooting...");
-  
   logMutex = xSemaphoreCreateMutex();  // Initialize the mutex
 
   connectToWiFi();// Set up WiFi connection

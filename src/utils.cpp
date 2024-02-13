@@ -88,6 +88,10 @@ void setupSPIFFS(){
   Serial.printf("Successfull.\n");
 }
 
+// ==============================================================
+// File IO Functions
+// ==============================================================
+
 void SD_initialize(){
   Serial.printf("Initializing SD card...");
   if (!SD.begin(CS)) {
@@ -95,40 +99,6 @@ void SD_initialize(){
     return;
   }
   Serial.println("initialization done.");
-}
-
-String listDir(fs::FS &fs, const char * dirname, uint8_t levels){
-  Serial.printf("Listing directory: %s\n", dirname);
-  String fileList = "";
-  File root = fs.open(dirname);
-  if(!root){
-    Serial.println("Failed to open directory");
-    return "error";
-  }
-  if(!root.isDirectory()){
-    Serial.println("Not a directory");
-    return "error";
-  }
-
-  File file = root.openNextFile();
-  while(file){
-    if(file.isDirectory()){
-      Serial.print("  DIR : ");
-      Serial.println(file.name());
-      if(levels){
-        listDir(fs, file.name(), levels -1);
-      }
-    } else {
-      fileList += file.name();
-      Serial.print("  FILE: ");
-      Serial.print(file.name());
-      Serial.print("  SIZE: ");
-      Serial.println(file.size());
-    }
-    file = root.openNextFile();
-  }
-
-  return fileList;
 }
 
 void createDir(fs::FS &fs, const char * path){
