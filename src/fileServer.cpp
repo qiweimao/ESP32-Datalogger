@@ -11,10 +11,6 @@
 const char* http_username = "admin";
 const char* http_password = "admin";
 
-// Set a server logical name, this gets translated to the physical IP address e.g. http://192.168.0.22
-// NOTE: ONLY works if your browser supports this function
-const char* ServerName    = "fileserver";
-
 //################  VERSION  ###########################################
 String    Version = "2.0";   // Programme version, see change log at end
 //################ VARIABLES ###########################################
@@ -39,10 +35,10 @@ void startFileServer(){
   server.on("/file", HTTP_GET, [](AsyncWebServerRequest * request) {
     Serial.println("Home Page...");
 
-  #ifdef AccessControl
-      if (!request->authenticate(http_username, http_password)) // Comment out to remove need for login username & password
-        return request->requestAuthentication();                // Comment out to remove need for login username & password
-  #endif
+    #ifdef AccessControl
+        if (!request->authenticate(http_username, http_password)) // Comment out to remove need for login username & password
+          return request->requestAuthentication();                // Comment out to remove need for login username & password
+    #endif
 
     Home(); // Build webpage ready for display
     request->send(200, "text/html", webpage);
