@@ -9,10 +9,14 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
   - [File System](#file-system)
     - [Flash Memory Partition](#flash-memory-partition)
     - [SD Card Setup](#sd-card-setup)
+    - [Database for Timeseries Data](#database-for-timeseries-data)
   - [Internet Access](#internet-access)
     - [WiFi Reconnect Capability](#wifi-reconnect-capability)
     - [WiFi Manager](#wifi-manager)
     - [Dynamic IP Address](#dynamic-ip-address)
+  - [Data Logging Functions](#data-logging-functions)
+    - [Sensor Type Supported](#sensor-type-supported)
+    - [Logging Configuration](#logging-configuration)
   - [OTA](#ota)
   - [Troubleshooting](#troubleshooting)
     - [Telnet](#telnet)
@@ -39,6 +43,8 @@ If using PlatformIO, the default partition can be found in this directory: `.pla
 ### SD Card Setup
 https://components101.com/modules/micro-sd-card-module-pinout-features-datasheet-alternatives
 https://www.electronicwings.com/esp32/microsd-card-interfacing-with-esp32
+### Database for Timeseries Data
+
 ## Internet Access
 ### WiFi Reconnect Capability
 The `WiFi.onEvent()` function is used to register a callback function, `WiFiEvent`, which will be invoked when WiFi events occur. In the WiFiEvent function, we check for the `SYSTEM_EVENT_STA_DISCONNECTED` event, indicating a WiFi disconnection. When this event occurs, we call `reconnectToWiFi()` to attempt reconnection. This way, the reconnection logic is encapsulated in the WiFiEvent callback, keeping the loop() function free of reconnection-related code.
@@ -47,6 +53,13 @@ TODO. This function is triggered when the physical push button switch is clicked
 ### Dynamic IP Address
 ESP32 should request static IP from the access point (e.g. WiFi router, LTE router); Another approach is to set static IP in router admin page for the ESP32.
 The router might have dynamic IP address which might expire every few days, unless a static IP is purchased from the ISP. TODO: esp32 API to update IP to management server.
+## Data Logging Functions
+The data logging function should support different logging modes
+### Sensor Type Supported
+TODO not tested yet vibrating wire sensors, analog sensors, SAAs.
+I want to have the same capabilities: https://www.geo-instruments.com/technology/wireless-logger-networks/
+### Logging Configuration
+Logging interval, database, 
 ## OTA
 Currently ElegantOTA free version is used without licensing for commercial applications. Documentaion: https://docs.elegantota.pro/
 For commercial applications, a simple Arduino OTA wrapper library can be developed to avoid ElegantOTA.
@@ -69,6 +82,10 @@ TODO update API
 TODO UI Update
 ## Data Requests
 ### Timeseries request
+The logger should liten on route `/api/readings` for timeseries requests. The client can specify the `sensorId`, `start` and `end`, and `readingsOptions`. A sample request should look like the following:
+```
+/api/readings?sensorId=238&start=2024-02-06T13:40:00&end=2024-02-13T13:40:00&readingsOptions=0
+```
 # Useful References
 Random Nerd Tutorials: https://randomnerdtutorials.com/projects-esp32/
 Dashboard: https://github.com/ayushsharma82/ESP-DASH
