@@ -16,6 +16,7 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
     - [Dynamic IP Address](#dynamic-ip-address)
   - [Data Logging Functions](#data-logging-functions)
     - [Sensor Type Supported](#sensor-type-supported)
+      - [VM501](#vm501)
     - [Logging Configuration](#logging-configuration)
   - [OTA](#ota)
   - [Troubleshooting](#troubleshooting)
@@ -29,6 +30,7 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
   - [Data Requests](#data-requests)
     - [Timeseries request](#timeseries-request)
 - [Useful References](#useful-references)
+- [Issue Tracking](#issue-tracking)
 
 # Architecture
 ## Time
@@ -58,6 +60,15 @@ The data logging function should support different logging modes
 ### Sensor Type Supported
 TODO not tested yet vibrating wire sensors, analog sensors, SAAs.
 I want to have the same capabilities: https://www.geo-instruments.com/technology/wireless-logger-networks/
+#### VM501
+Use ESP32 VIN out for power supply, multimeter shows a voltage of approximately 4.5V. Connect ESP32 VIN to V33 on VM501, GND to GND. Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX. Run `HardwareSerial VM(1);` to configure the UART port on ESP32. Run `  VM.begin(9600, SERIAL_8N1, 16, 17);` to initialize UART port 1 with GPIO16 as RX and GPIO17 as TX.
+
+VM.Serial UART Protocol functions implemented in this project are based on the MODBUS protocol:
+- Read registers from VM501
+- Write registers to VM501
+- CRC Algorithm
+- Special Instructions
+
 ### Logging Configuration
 Logging interval, database, 
 ## OTA
@@ -89,3 +100,13 @@ The logger should liten on route `/api/readings` for timeseries requests. The cl
 # Useful References
 Random Nerd Tutorials: https://randomnerdtutorials.com/projects-esp32/
 Dashboard: https://github.com/ayushsharma82/ESP-DASH
+
+# Issue Tracking
+- server on public ip may not start sometimes:
+```
+Server Started @ IP: 192.168.0.167
+[ 16620][E][ssl_client.cpp:37] _handle_error(): [start_ssl_client():273]: (-29312) SSL - The connection indicated an EOF
+[ 16620][E][WiFiClientSecure.cpp:144] connect(): start_ssl_client: -29312
+HTTP request failed with error code -1
+Public IP Address: Error
+```
