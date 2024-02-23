@@ -35,4 +35,9 @@ void renameFile(fs::FS &fs, const char * path1, const char * path2);
 void deleteFile(fs::FS &fs, const char * path);
 void testFileIO(fs::FS &fs, const char * path);
 
+void sendCommandVM501(void *parameter);
+void parseCommand(const char* command);
+void VM501ListenTaskFunc(void *parameter);
+unsigned int crc16(unsigned char *dat, unsigned int len);
+
 #endif
