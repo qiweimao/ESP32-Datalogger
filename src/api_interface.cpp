@@ -8,7 +8,7 @@ AsyncWebServer server(80);
 
 void startServer(){
 
-  TelnetStream.begin();
+  TelnetStream.begin(); /* DANGEROUS */
 
   ElegantOTA.begin(&server);
 
