@@ -11,6 +11,7 @@ const char *ntpServers[] = {
 const int MAX_COMMANDSIZE = 6;
 const int numNtpServers = sizeof(ntpServers) / sizeof(ntpServers[0]);
 extern HardwareSerial VM; // UART port 1 on ESP32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 void setUpTime() {
   // Attempt synchronization with each NTP server in the list
@@ -349,4 +350,23 @@ unsigned int crc16(unsigned char *dat, unsigned int len)
         dat++;
     }
     return crc;
+}
+
+void initializeOLED() {
+
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
+      Serial.println(F("SSD1306 allocation failed"));
+      return;
+  }
+
+  delay(2000);
+  display.clearDisplay();
+
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 10);
+  // Display static text
+  display.println("Booting...");
+  display.display(); 
+
 }

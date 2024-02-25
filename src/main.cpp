@@ -28,10 +28,10 @@ TaskHandle_t vmListeningTask; // Task handle for the VM listening task
 
 void setup() {
   Serial.begin(115200);
-  // 0x01 0x03 0x00 0x00 0x00 0x0A 0xC5 0xCD
   xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
-  // xTaskCreatePinnedToCore(VM501ListenTaskFunc, "ParsingTask", 4096, NULL, 1, &vmListeningTask, 1);
   VM.begin(9600, SERIAL_8N1, 16, 17); // Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX
+
+  initializeOLED();
 
   Serial.println("-------------------------------------\nBooting...");
   logMutex = xSemaphoreCreateMutex();  // Initialize the mutex
@@ -60,18 +60,5 @@ void loop() {
   }
 
   ElegantOTA.loop();
-
-  // Read data from UART port
-  // if (VM.available()) {
-  //   String receivedChar = VM.readString();
-  //   Serial.print("VM501 Response:\n");
-  //   Serial.println(receivedChar);
-  // }
-
-
-  // // Read Data from PC Keyboard
-  // if (Serial.available()) {
-  //   sendMODBUSCommand(0x01, 0x03, 0x00, 0x00, 0x00, 0x0A, 0xC5, 0xCD);
-  // }
 
 }
