@@ -11,6 +11,6 @@ enum LogErrorCode {
   // Add more error codes as needed
 };
 
-LogErrorCode logFlashSize();
+LogErrorCode logData();
 
 #endif

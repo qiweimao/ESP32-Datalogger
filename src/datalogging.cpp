@@ -4,7 +4,7 @@
 #include "VM_501.h"
 #include "datalogging.h"
 
-LogErrorCode logFlashSize() {
+LogErrorCode logData() {
   File file;
   if (!SD.exists(filename)) {
     Serial.println("File does not exist");
