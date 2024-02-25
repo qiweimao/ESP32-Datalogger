@@ -61,7 +61,7 @@ The data logging function should support different logging modes
 TODO not tested yet vibrating wire sensors, analog sensors, SAAs.
 I want to have the same capabilities: https://www.geo-instruments.com/technology/wireless-logger-networks/
 #### VM501
-Use ESP32 VIN out for power supply, multimeter shows a voltage of approximately 4.5V. Connect ESP32 VIN to V33 on VM501, GND to GND. Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX. Run `HardwareSerial VM(1);` to configure the UART port on ESP32. Run `  VM.begin(9600, SERIAL_8N1, 16, 17);` to initialize UART port 1 with GPIO16 as RX and GPIO17 as TX.
+Use ESP32 VIN out for power supply, multimeter shows a voltage of approximately 4.5V. Connect ESP32 VIN to V33 on VM501, GND to GND. Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX. Run `HardwareSerial VM(1);` to configure the UART port on ESP32. Run `VM.begin(9600, SERIAL_8N1, 16, 17);` to initialize UART port 1 with GPIO16 as RX and GPIO17 as TX.
 
 VM.Serial UART Protocol functions implemented in this project are based on the MODBUS protocol:
 - Read registers from VM501
