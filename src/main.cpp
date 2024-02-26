@@ -18,13 +18,22 @@ HardwareSerial VM(1); // UART port 1 on ESP32
 const char *filename = "/log.txt";
 const long gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
 const int daylightOffset_sec = 3600;  
-const int LOG_INTERVAL = 3000;
+const int LOG_INTERVAL = 1000;
 
 /* Do not modify below */
-bool loggingPaused = false;
+bool loggingPaused = true;
 SemaphoreHandle_t logMutex;
 TaskHandle_t parsingTask; // Task handle for the parsing task
 TaskHandle_t vmListeningTask; // Task handle for the VM listening task
+
+// Task function to initialize NTP
+void initNTPTask(void *parameter) {
+  // Call the initNTP function
+  initNTP();
+
+  // Delete the task once initialization is complete
+  vTaskDelete(NULL);
+}
 
 void setup() {
   /* Essentials for Remote Access */
@@ -32,18 +41,19 @@ void setup() {
   Serial.begin(115200);
   setupSPIFFS();// Setup SPIFFS -- Flash File System
   SD_initialize();//SD card file system initialization
-  logMutex = xSemaphoreCreateMutex();  // Initialize the mutex
 
   connectToWiFi();// Set up WiFi connection
   WiFi.onEvent(WiFiEvent);// Register the WiFi event handler
   startServer();// start Async server with api-interfaces
 
   /* Logging Capabilities */
-  xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
+  logMutex = xSemaphoreCreateMutex();  // Initialize the mutex
   VM.begin(9600, SERIAL_8N1, 16, 17); // Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX
-  setUpTime();// Sync With NTP Time Server
+  initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   initializeOLED();
 
+  xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
+  xTaskCreate(initNTPTask, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("-------------------------------------");
   Serial.println("Data Acquisition Started...");
 }
@@ -58,5 +68,21 @@ void loop() {
   }
 
   ElegantOTA.loop();
+
+  DateTime now = rtc.now();
+  Serial.print("ESP32 RTC Date Time: ");
+  Serial.print(now.year(), DEC);
+  Serial.print('/');
+  Serial.print(now.month(), DEC);
+  Serial.print('/');
+  Serial.print(now.day(), DEC);
+  Serial.print(" (");
+  Serial.print(now.dayOfTheWeek());
+  Serial.print(") ");
+  Serial.print(now.hour(), DEC);
+  Serial.print(':');
+  Serial.print(now.minute(), DEC);
+  Serial.print(':');
+  Serial.println(now.second(), DEC);
 
 }

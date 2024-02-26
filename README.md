@@ -37,7 +37,8 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
 ### NTP Server
 The logger should sync with the NTP server upon power-up using `configTime ` from the `time.h` library. Use `getLocalTime(&timeinfo)` to get the current time. This function should be called within the logging function to get the exact time. However, time would not be kept if power is lost. A RTC module is needed to provide time without WiFi after powerloss.
 ### External RTC Setup
-TODO Model No.: DS1307 AT24C32 Real Time Clock Module For AVR ARM PIC NEW
+Note that both the DS1307 and the OLED screen are connected to the I2C bus, same bus but different address. The libraries are designed such that they can scan the I2C bus for common addresses.
+Use this guide: https://esp32io.com/tutorials/esp32-ds1307-rtc-module
 ## File System
 ### Flash Memory Partition
 Espressif documentation on partition tables: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/partition-tables.html
