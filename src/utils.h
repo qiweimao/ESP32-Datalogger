@@ -2,6 +2,7 @@
 #define UTILS_h
 
 #include <time.h>
+#include <RTClib.h>
 #include <FS.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -22,11 +23,13 @@ extern const int daylightOffset_sec;       // Daylight saving time offset in sec
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-// extern Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+extern RTC_DS1307 rtc;
+extern char daysOfWeek[7][12];
 
 String getCurrentTime();
-void setUpTime();
+void initDS1307();
+void initNTP();
 void connectToWiFi();
 void WiFiEvent(WiFiEvent_t event);
 String getPublicIP();

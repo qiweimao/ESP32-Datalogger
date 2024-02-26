@@ -12,8 +12,32 @@ const int MAX_COMMANDSIZE = 6;
 const int numNtpServers = sizeof(ntpServers) / sizeof(ntpServers[0]);
 extern HardwareSerial VM; // UART port 1 on ESP32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+RTC_DS1307 rtc;
 
-void setUpTime() {
+char daysOfWeek[7][12] = {
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday"
+};
+
+void initDS1307(){
+
+  if (! rtc.begin()) {
+    Serial.println("RTC module is NOT found");
+    Serial.flush();
+    return;
+  }
+
+  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+
+}
+
+void initNTP() {
+
   // Attempt synchronization with each NTP server in the list
   for (int i = 0; i < numNtpServers; i++) {
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServers[i]);
