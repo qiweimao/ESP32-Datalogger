@@ -21,14 +21,16 @@ LogErrorCode logData() {
   }
 
   String data = readVM();
-  String formattedTime = getCurrentTime();
+  DateTime now = rtc.now();
 
-  String row = String(formattedTime) + "," + String(data);//+ "\n";
-  const char* row_char = row.c_str();
-  Serial.printf("%s", row_char);
+  // Format the data row
+  String row = String(now.year()) + "-" + String(now.month()) + "-" + String(now.day()) + " " +
+               String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second()) + ", " +
+               data + "\n";
 
-  TelnetStream.printf("%s", row_char);
-  appendFile(SD, filename, row_char);
+  TelnetStream.println(row);
+  Serial.println(row);
+  appendFile(SD, filename, row.c_str());
 
   delay(LOG_INTERVAL);
   return LOG_SUCCESS;

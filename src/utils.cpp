@@ -35,6 +35,11 @@ void initVM501() {
   VM.begin(9600, SERIAL_8N1, 16, 17); // Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX
 }
 
+DateTime tmToDateTime(struct tm timeinfo) {
+  return DateTime(timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
+                  timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+}
+
 void initDS1307(){
 
   if (! rtc.begin()) {
@@ -43,8 +48,42 @@ void initDS1307(){
     return;
   }
 
-  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  DateTime now = rtc.now();
+  Serial.print("RTC time: ");
+  printDateTime(now);
+}
 
+void syncDS1307WithNTP(){
+  // Synchronize DS1307 RTC with NTP time
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)) {
+    DateTime ntpTime = tmToDateTime(timeinfo);
+    rtc.adjust(ntpTime);
+    Serial.println("DS1307 RTC synchronized with NTP time.");
+    DateTime now = rtc.now();
+    Serial.print("RTC time: ");
+    printDateTime(now);
+    return; // Exit the function if synchronization is successful
+  } else {
+    Serial.printf("Failed to get NTP Time for DS1307\n");
+    return;
+  }
+}
+
+void printDateTime(DateTime dt) {
+  // Print date and time components
+  Serial.print(dt.year(), DEC);
+  Serial.print('/');
+  Serial.print(dt.month(), DEC);
+  Serial.print('/');
+  Serial.print(dt.day(), DEC);
+  Serial.print(" ");
+  Serial.print(dt.hour(), DEC);
+  Serial.print(':');
+  Serial.print(dt.minute(), DEC);
+  Serial.print(':');
+  Serial.print(dt.second(), DEC);
+  Serial.println();
 }
 
 void initNTP() {
@@ -56,7 +95,8 @@ void initNTP() {
     Serial.printf("Syncing with NTP server %s...\n", ntpServers[i]);
     if (getLocalTime(&timeinfo)) {
       Serial.printf("Time synchronized successfully with NTP server %s\n", ntpServers[i]);
-      Serial.printf("The current time is: %s\n", getCurrentTime().c_str());
+      Serial.printf("NTP Time: %s\n", getCurrentTime().c_str());
+      syncDS1307WithNTP();
       return; // Exit the function if synchronization is successful
     } else {
       Serial.printf("Failed to synchronize with NTP server %s\n", ntpServers[i]);
@@ -65,7 +105,6 @@ void initNTP() {
   // If synchronization fails with all servers
   Serial.println("Failed to synchronize with any NTP server.");
 }
-
 
 String getCurrentTime() {
   struct tm timeinfo;
@@ -90,10 +129,6 @@ void connectToWiFi() {
     delay(1000);
     // Serial.println("Connecting to WiFi...");
   }
-
-  // Serial.println("Connected to WiFi");
-  // Serial.print("IP Address: ");
-  // Serial.println(WiFi.localIP());
 }
 
 void WiFiEvent(WiFiEvent_t event) {
@@ -111,16 +146,12 @@ void WiFiEvent(WiFiEvent_t event) {
 }
 
 String getPublicIP() {
+
   HTTPClient http;
+  http.begin("https://api.ipify.org");  // Make a GET request to api.ipify.org to get the public IP
+  int httpCode = http.GET();  // Send the request
 
-  // Make a GET request to api.ipify.org to get the public IP
-  http.begin("https://api.ipify.org");
-
-  // Send the request
-  int httpCode = http.GET();
-
-  // Check for a successful response
-  if (httpCode == HTTP_CODE_OK) {
+  if (httpCode == HTTP_CODE_OK) {  // Check for a successful response
     String publicIP = http.getString();
     return publicIP;
   } else {
@@ -128,8 +159,7 @@ String getPublicIP() {
     return "Error";
   }
 
-  // End the request
-  http.end();
+  http.end();  // End the request
 }
 
 void setupSPIFFS(){

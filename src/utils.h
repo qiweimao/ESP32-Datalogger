@@ -21,6 +21,7 @@ extern char daysOfWeek[7][12];
 
 String getCurrentTime();
 void initDS1307();
+void printDateTime(DateTime dt);
 void initNTP();
 void connectToWiFi();
 void WiFiEvent(WiFiEvent_t event);

@@ -44,7 +44,6 @@ void setup() {
 
 void loop() {
 
-
   LogErrorCode result = logData();
 
   ElegantOTA.loop();
