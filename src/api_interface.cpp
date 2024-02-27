@@ -32,7 +32,7 @@ void startServer(){
 void serveIndexPage(AsyncWebServerRequest *request) {
 
   // Open the file in read mode
-  File file = SPIFFS.open("/index.html", "r");
+  File file = SPIFFS.open("/static/index.html", "r");
 
   if (!file) {
     // If the file doesn't exist, send a 404 Not Found response
@@ -61,7 +61,7 @@ void serveIndexPage(AsyncWebServerRequest *request) {
 void serveJS(AsyncWebServerRequest *request) {
 
   // Open the file in read mode
-  File file = SPIFFS.open("/script.js", "r");
+  File file = SPIFFS.open("/static/script.js", "r");
 
   if (!file) {
     // If the file doesn't exist, send a 404 Not Found response
@@ -90,7 +90,7 @@ void serveJS(AsyncWebServerRequest *request) {
 void serveCSS(AsyncWebServerRequest *request) {
 
   // Open the file in read mode
-  File file = SPIFFS.open("/styles.css", "r");
+  File file = SPIFFS.open("/static/styles.css", "r");
 
   if (!file) {
     // If the file doesn't exist, send a 404 Not Found response
@@ -119,7 +119,7 @@ void serveCSS(AsyncWebServerRequest *request) {
 void servefavicon(AsyncWebServerRequest *request) {
 
   // Open the file in read mode
-  File file = SPIFFS.open("/favicon.svg", "r");
+  File file = SPIFFS.open("/static/favicon.svg", "r");
 
   if (!file) {
     // If the file doesn't exist, send a 404 Not Found response

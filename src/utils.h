@@ -16,14 +16,6 @@
 #include <Adafruit_SSD1306.h>
 #include "Secrets.h"
 
-extern const char *filename;
-extern const char *ntpServer;
-extern const long gmtOffset_sec;  // GMT offset in seconds (Eastern Time Zone)
-extern const int daylightOffset_sec;       // Daylight saving time offset in seconds
-
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-
 extern RTC_DS1307 rtc;
 extern char daysOfWeek[7][12];
 
@@ -46,6 +38,7 @@ void renameFile(fs::FS &fs, const char * path1, const char * path2);
 void deleteFile(fs::FS &fs, const char * path);
 void testFileIO(fs::FS &fs, const char * path);
 
+void initVM501();
 void sendCommandVM501(void *parameter);
 void parseCommand(const char* command);
 void VM501ListenTaskFunc(void *parameter);

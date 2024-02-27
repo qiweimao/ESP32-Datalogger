@@ -36,6 +36,9 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
 ## Time
 ### NTP Server
 The logger should sync with the NTP server upon power-up using `configTime ` from the `time.h` library. Use `getLocalTime(&timeinfo)` to get the current time. This function should be called within the logging function to get the exact time. However, time would not be kept if power is lost. A RTC module is needed to provide time without WiFi after powerloss.
+
+Note: not sure if the current implementation (RTClib) will poll the ntp server periodically. However, offical implementations by Espressif does poll periodically. https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/system_time.html
+
 ### External RTC Setup
 Note that both the DS1307 and the OLED screen are connected to the I2C bus, same bus but different address. The libraries are designed such that they can scan the I2C bus for common addresses.
 Use this guide: https://esp32io.com/tutorials/esp32-ds1307-rtc-module
@@ -53,6 +56,7 @@ https://www.electronicwings.com/esp32/microsd-card-interfacing-with-esp32
 The `WiFi.onEvent()` function is used to register a callback function, `WiFiEvent`, which will be invoked when WiFi events occur. In the WiFiEvent function, we check for the `SYSTEM_EVENT_STA_DISCONNECTED` event, indicating a WiFi disconnection. When this event occurs, we call `reconnectToWiFi()` to attempt reconnection. This way, the reconnection logic is encapsulated in the WiFiEvent callback, keeping the loop() function free of reconnection-related code.
 ### WiFi Manager
 TODO. This function is triggered when the physical push button switch is clicked, the ESP32 will start as a WiFi access point to allow the user to connect to it via WiFi. A device configuration website will be served over WiFi.
+https://dronebotworkshop.com/wifimanager/
 ### Dynamic IP Address
 ESP32 should request static IP from the access point (e.g. WiFi router, LTE router); Another approach is to set static IP in router admin page for the ESP32.
 The router might have dynamic IP address which might expire every few days, unless a static IP is purchased from the ISP. TODO: esp32 API to update IP to management server.

@@ -4,7 +4,15 @@
 #include "VM_501.h"
 #include "datalogging.h"
 
+bool loggingPaused = true;
+const int LOG_INTERVAL = 3000;
+
 LogErrorCode logData() {
+
+  if(loggingPaused){
+    return PAUSED;
+  }
+
   File file;
   if (!SD.exists(filename)) {
     Serial.println("File does not exist");

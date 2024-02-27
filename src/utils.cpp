@@ -1,18 +1,25 @@
 #include "utils.h"
 
-const int CS = 5;
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+/* Time */
 const char *ntpServers[] = {
   "pool.ntp.org",
   "time.google.com",
   "time.windows.com",
   "time.nist.gov",  // Add more NTP servers as needed
 };
-
-const int MAX_COMMANDSIZE = 6;
 const int numNtpServers = sizeof(ntpServers) / sizeof(ntpServers[0]);
-extern HardwareSerial VM; // UART port 1 on ESP32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+const long gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
+const int daylightOffset_sec = 3600;
 RTC_DS1307 rtc;
+
+const char *filename = "/log.txt";
+const int CS = 5; // SD Card chip select
+const int MAX_COMMANDSIZE = 6;
+HardwareSerial VM(1); // UART port 1 on ESP32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 char daysOfWeek[7][12] = {
   "Sunday",
@@ -23,6 +30,10 @@ char daysOfWeek[7][12] = {
   "Friday",
   "Saturday"
 };
+
+void initVM501() {
+  VM.begin(9600, SERIAL_8N1, 16, 17); // Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX
+}
 
 void initDS1307(){
 
