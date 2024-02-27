@@ -11,11 +11,12 @@ const char *ntpServers[] = {
   "time.nist.gov",  // Add more NTP servers as needed
 };
 const int numNtpServers = sizeof(ntpServers) / sizeof(ntpServers[0]);
-const long gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
-const int daylightOffset_sec = 3600;
+long gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
+int daylightOffset_sec = 3600;
 RTC_DS1307 rtc;
 
 const char *filename = "/log.txt";
+const char *configFile = "/system/config.csv";
 const int CS = 5; // SD Card chip select
 const int MAX_COMMANDSIZE = 6;
 HardwareSerial VM(1); // UART port 1 on ESP32
@@ -30,6 +31,35 @@ char daysOfWeek[7][12] = {
   "Friday",
   "Saturday"
 };
+
+void loadConfiguration(){
+
+  // Open the CSV file in read mode
+  File file = SPIFFS.open(configFile, "r");
+  if (!file) {
+    Serial.println("Failed to open config file");
+    return;
+  }
+
+  // Read and discard the header row
+  file.readStringUntil('\n');
+
+  // Read second line from the file
+  String line;
+  line = file.readStringUntil('\n');
+
+  // Extract values from the CSV line
+  sscanf(line.c_str(), "%d,%d,%ld,%d", &loggingPaused, &LOG_INTERVAL, &gmtOffset_sec, &daylightOffset_sec);
+
+  // Do something with the parsed values (e.g., store them in global variables)
+  // For demonstration, we'll just print them
+  Serial.printf("Logging Paused: %d, Logging Interval: %d, GMT Offset: %ld, Daylight Offset: %d\n",
+                loggingPaused, LOG_INTERVAL, gmtOffset_sec, daylightOffset_sec);
+
+  // Close the file
+  file.close();
+}
+
 
 void initVM501() {
   VM.begin(9600, SERIAL_8N1, 16, 17); // Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX

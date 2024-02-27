@@ -15,10 +15,12 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include "Secrets.h"
+#include "datalogging.h"
 
 extern RTC_DS1307 rtc;
 extern char daysOfWeek[7][12];
 
+void loadConfiguration();
 String getCurrentTime();
 void initDS1307();
 void printDateTime(DateTime dt);

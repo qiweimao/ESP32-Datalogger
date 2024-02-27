@@ -5,7 +5,7 @@
 #include "datalogging.h"
 
 bool loggingPaused = true;
-const int LOG_INTERVAL = 3000;
+int LOG_INTERVAL = 3000;
 
 LogErrorCode logData() {
 

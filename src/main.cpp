@@ -21,8 +21,8 @@ void initNTPTask(void *parameter) {
 
 void setup() {
   /* Essentials for Remote Access */
-  Serial.println("-------------------------------------\nBooting...");
   Serial.begin(115200);
+  Serial.println("-------------------------------------\nBooting...");
   setupSPIFFS();// Setup SPIFFS -- Flash File System
   SD_initialize();//SD card file system initialization
 
@@ -35,6 +35,8 @@ void setup() {
   void initVM501();
   initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   initializeOLED();
+
+  loadConfiguration();
 
   xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
   xTaskCreate(initNTPTask, "InitNTPTask", 4096, NULL, 1, NULL);

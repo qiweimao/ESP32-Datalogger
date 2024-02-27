@@ -2,7 +2,7 @@
 #define DATALOGGING_H
 
 extern const char *filename;
-extern const int LOG_INTERVAL;
+extern int LOG_INTERVAL;
 extern bool loggingPaused;
 
 enum LogErrorCode {
