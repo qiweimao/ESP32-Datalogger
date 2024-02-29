@@ -78,11 +78,15 @@ Currently ElegantOTA free version is used without licensing for commercial appli
 For commercial applications, a simple Arduino OTA wrapper library can be developed to avoid ElegantOTA.
 TODO develope own version of OTA to avoid restrictions.
 ## Troubleshooting
+<<<<<<< HEAD
 ### Telnet
 ```DANGEROUS```
 ```DANGEROUS```
 ```DANGEROUS```
 ```DANGEROUS```
+=======
+### Telnet Remove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For Production
+>>>>>>> 7f7ee71249b424377215e09e8a3d5eb0a33565f5
 A port for telnet is opened.
 TODO security check
 ### ESP-Prog
