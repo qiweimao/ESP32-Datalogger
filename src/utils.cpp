@@ -17,6 +17,7 @@ RTC_DS1307 rtc;
 
 const char *filename = "/log.txt";
 const char *configFile = "/system/config.csv";
+const char *backupFile = "/system/config_backup.csv";
 const int CS = 5; // SD Card chip select
 const int MAX_COMMANDSIZE = 6;
 HardwareSerial VM(1); // UART port 1 on ESP32
@@ -58,6 +59,29 @@ void loadConfiguration(){
 
   // Close the file
   file.close();
+}
+
+void saveConfiguration(int loggingPaused, int loggingInterval, long gmtOffset_sec, int daylightOffset_sec) {
+  // Open the backup file in write mode
+  File file = SPIFFS.open(backupFile, "w");
+  if (!file) {
+    Serial.println("Failed to open backup config file for writing");
+    return;
+  }
+
+  // Write the updated configuration to the backup file
+  file.printf("%d,%d,%ld,%d\n", loggingPaused, loggingInterval, gmtOffset_sec, daylightOffset_sec);
+  
+  // Close the backup file
+  file.close();
+
+  // Remove the original config file
+  SPIFFS.remove(configFile);
+
+  // Rename the backup file to the original filename
+  SPIFFS.rename(backupFile, configFile);
+
+  Serial.println("Configuration saved successfully");
 }
 
 
