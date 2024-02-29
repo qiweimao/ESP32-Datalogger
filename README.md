@@ -17,17 +17,16 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
   - [Data Logging Functions](#data-logging-functions)
     - [Sensor Type Supported](#sensor-type-supported)
       - [VM501](#vm501)
-    - [Logging Configuration](#logging-configuration)
   - [OTA](#ota)
   - [Troubleshooting](#troubleshooting)
     - [Telnet](#telnet)
     - [ESP-Prog](#esp-prog)
 - [API](#api)
   - [Logger System Control](#logger-system-control)
-    - [System Info](#system-info)
+    - [System Info TODO](#system-info-todo)
     - [Datalogging Configuration](#datalogging-configuration)
-    - [File system](#file-system-1)
-  - [Data Requests](#data-requests)
+    - [File system TODO](#file-system-todo)
+  - [Data Requests TODO](#data-requests-todo)
     - [Timeseries request](#timeseries-request)
 - [Useful References](#useful-references)
 - [Issue Tracking](#issue-tracking)
@@ -50,7 +49,7 @@ If using PlatformIO, the default partition can be found in this directory: `.pla
 https://components101.com/modules/micro-sd-card-module-pinout-features-datasheet-alternatives
 https://www.electronicwings.com/esp32/microsd-card-interfacing-with-esp32
 ### Database for Timeseries Data
-
+Not sure, store files by date may be sufficient.
 ## Internet Access
 ### WiFi Reconnect Capability
 The `WiFi.onEvent()` function is used to register a callback function, `WiFiEvent`, which will be invoked when WiFi events occur. In the WiFiEvent function, we check for the `SYSTEM_EVENT_STA_DISCONNECTED` event, indicating a WiFi disconnection. When this event occurs, we call `reconnectToWiFi()` to attempt reconnection. This way, the reconnection logic is encapsulated in the WiFiEvent callback, keeping the loop() function free of reconnection-related code.
@@ -59,7 +58,8 @@ TODO. This function is triggered when the physical push button switch is clicked
 https://dronebotworkshop.com/wifimanager/
 ### Dynamic IP Address
 ESP32 should request static IP from the access point (e.g. WiFi router, LTE router); Another approach is to set static IP in router admin page for the ESP32.
-The router might have dynamic IP address which might expire every few days, unless a static IP is purchased from the ISP. TODO: esp32 API to update IP to management server.
+The router might have dynamic IP address which might expire every few days, unless a static IP is purchased from the ISP.
+TODO: esp32 API to update IP to management server.
 ## Data Logging Functions
 The data logging function should support different logging modes
 ### Sensor Type Supported
@@ -73,15 +73,16 @@ VM.Serial UART Protocol functions implemented in this project are based on the M
 - Write registers to VM501
 - CRC Algorithm
 - Special Instructions
-
-### Logging Configuration
-Logging interval, database, 
 ## OTA
 Currently ElegantOTA free version is used without licensing for commercial applications. Documentaion: https://docs.elegantota.pro/
 For commercial applications, a simple Arduino OTA wrapper library can be developed to avoid ElegantOTA.
 TODO develope own version of OTA to avoid restrictions.
 ## Troubleshooting
 ### Telnet
+```DANGEROUS```
+```DANGEROUS```
+```DANGEROUS```
+```DANGEROUS```
 A port for telnet is opened.
 TODO security check
 ### ESP-Prog
@@ -90,13 +91,13 @@ https://arduino.stackexchange.com/questions/91111/how-to-install-ftdi-serial-dri
 # API
 An instance of AsyncWebServer is created on port 80. A Callback function is set up to handle incoming HTTP GET requests at the root ("/") by responding with the content of a file stored in the SPIFFS file system. Adjust the filename variable to match the desired file. After configuring the server, it is started with `server.begin()`.
 ## Logger System Control
-### System Info
+### System Info TODO
 TODO UI Update
 ### Datalogging Configuration
-TODO update API
-### File system
+Use  `saveConfiguration` and `loadConfiguration` to manipulate the `config.csv` file stored in non-volatile flash via SPIFFS. Wear-leveling is implemented in `saveConfiguration` by creating and removing configuration files.
+### File system TODO
 TODO UI Update
-## Data Requests
+## Data Requests TODO
 ### Timeseries request
 The logger should liten on route `/api/readings` for timeseries requests. The client can specify the `sensorId`, `start` and `end`, and `readingsOptions`. A sample request should look like the following:
 ```
