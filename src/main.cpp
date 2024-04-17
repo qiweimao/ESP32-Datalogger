@@ -14,12 +14,17 @@ SemaphoreHandle_t logMutex;
 TaskHandle_t parsingTask; // Task handle for the parsing task
 
 /* Tasks */
-void initNTPTask(void *parameter) {
+void taskInitiNTP(void *parameter) {
   initNTP();  // Call the initNTP function
   vTaskDelete(NULL);  // Delete the task once initialization is complete
 }
 
+void logDataTask(void *parameter) {
+  LogErrorCode result = logData();
+}
+
 void setup() {
+
   /* Essentials for Remote Access */
   Serial.begin(115200);
   Serial.println("-------------------------------------\nBooting...");
@@ -34,19 +39,19 @@ void setup() {
   logMutex = xSemaphoreCreateMutex();  // Mutex for current logging file
   void initVM501();
   initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
-  initializeOLED();
+  // initializeOLED();
 
   loadConfiguration();
 
   xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
-  xTaskCreate(initNTPTask, "InitNTPTask", 4096, NULL, 1, NULL);
+  // xTaskCreatePinnedToCore(logDataTask, "ParsingTask", 4096, NULL, 1, NULL, 1);
+  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("-------------------------------------");
   Serial.println("Data Acquisition Started...");
+
 }
 
 void loop() {
-
-  LogErrorCode result = logData();
 
   ElegantOTA.loop();
 
