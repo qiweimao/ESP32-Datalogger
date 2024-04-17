@@ -13,9 +13,13 @@ TaskHandle_t parsingTask; // Task handle for the parsing task
 FtpServer ftpSrv;   //set #define FTP_DEBUG in ESP8266FtpServer.h to see ftp verbose on serial
 
 /* Tasks */
-void initNTPTask(void *parameter) {
+void taskInitiNTP(void *parameter) {
   initNTP();  // Call the initNTP function
   vTaskDelete(NULL);  // Delete the task once initialization is complete
+}
+
+void logDataTask(void *parameter) {
+  LogErrorCode result = logData();
 }
 
 void logDataTask(void * parameter) {
@@ -66,6 +70,7 @@ void _transferCallback(FtpTransferOperation ftpOperation, const char* name, unsi
 };
 
 void setup() {
+
   /* Essentials for Remote Access */
   Serial.begin(115200);
   Serial.println("-------------------------------------\nBooting...");
@@ -85,15 +90,18 @@ void setup() {
   logMutex = xSemaphoreCreateMutex();  // Mutex for current logging file
   void initVM501();
   initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
-  initializeOLED();
+  // initializeOLED();
 
   loadConfiguration();
 
   xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
+  // xTaskCreatePinnedToCore(logDataTask, "ParsingTask", 4096, NULL, 1, NULL, 1);
+  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   xTaskCreatePinnedToCore(logDataTask, "logDataTask", 4096, NULL, 1, &parsingTask, 0);
   xTaskCreate(initNTPTask, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("-------------------------------------");
   Serial.println("Data Acquisition Started...");
+
 }
 
 void loop() {

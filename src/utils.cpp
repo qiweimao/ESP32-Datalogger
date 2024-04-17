@@ -33,8 +33,7 @@ char daysOfWeek[7][12] = {
   "Saturday"
 };
 
-void loadConfiguration(){
-
+void loadConfiguration() {
   // Open the CSV file in read mode
   File file = SPIFFS.open(configFile, "r");
   if (!file) {
@@ -43,23 +42,45 @@ void loadConfiguration(){
   }
 
   // Read and discard the header row
-  file.readStringUntil('\n');
+  if (!file.readStringUntil('\n')) {
+    Serial.println("Failed to read header row");
+    file.close();
+    return;
+  }
 
   // Read second line from the file
-  String line;
-  line = file.readStringUntil('\n');
+  String line = file.readStringUntil('\n');
+  if (line.length() == 0) {
+    Serial.println("Empty second line in config file");
+    file.close();
+    return;
+  }
 
   // Extract values from the CSV line
-  sscanf(line.c_str(), "%d,%d,%ld,%d", &loggingPaused, &LOG_INTERVAL, &gmtOffset_sec, &daylightOffset_sec);
+  int parsedValues = sscanf(line.c_str(), "%d,%d,%ld,%d", &loggingPaused, &LOG_INTERVAL, &gmtOffset_sec, &daylightOffset_sec);
+  if (parsedValues != 4) {
+    Serial.println("Failed to parse config values");
+    file.close();
+    return;
+  }
 
-  // Do something with the parsed values (e.g., store them in global variables)
-  // For demonstration, we'll just print them
+  // Validate loaded values
+  if (LOG_INTERVAL <= 0) {
+    Serial.println("Invalid logging interval");
+    LOG_INTERVAL = 3000;
+    file.close();
+    return;
+  }
+  // Add more validation if necessary...
+
+  // Print loaded values
   Serial.printf("Logging Paused: %d, Logging Interval: %d, GMT Offset: %ld, Daylight Offset: %d\n",
                 loggingPaused, LOG_INTERVAL, gmtOffset_sec, daylightOffset_sec);
 
   // Close the file
   file.close();
 }
+
 
 void saveConfiguration(int loggingPaused, int loggingInterval, long gmtOffset_sec, int daylightOffset_sec) {
   // Open the backup file in write mode
@@ -70,6 +91,7 @@ void saveConfiguration(int loggingPaused, int loggingInterval, long gmtOffset_se
   }
 
   // Write the updated configuration to the backup file
+  file.printf("loggingPaused,loggingInterval,gmtOffset_sec,daylightOffset_sec\n");
   file.printf("%d,%d,%ld,%d\n", loggingPaused, loggingInterval, gmtOffset_sec, daylightOffset_sec);
   
   // Close the backup file

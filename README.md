@@ -20,6 +20,8 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
   - [OTA](#ota)
   - [Troubleshooting](#troubleshooting)
     - [Telnet](#telnet)
+- [```DANGEROUS```](#dangerous)
+    - [Telnet Remove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For Production](#telnet-remove-for-productionremove-for-productionremove-for-productionremove-for-productionremove-for-productionremove-for-productionremove-for-productionremove-for-production)
     - [ESP-Prog](#esp-prog)
 - [API](#api)
   - [Logger System Control](#logger-system-control)
@@ -41,6 +43,7 @@ Note: not sure if the current implementation (RTClib) will poll the ntp server p
 ### External RTC Setup
 Note that both the DS1307 and the OLED screen are connected to the I2C bus, same bus but different address. The libraries are designed such that they can scan the I2C bus for common addresses.
 Use this guide: https://esp32io.com/tutorials/esp32-ds1307-rtc-module
+Note that the tiny RTC module does not work with 3V3, instead VIN should be supplied.
 ## File System
 ### Flash Memory Partition
 Espressif documentation on partition tables: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/partition-tables.html
