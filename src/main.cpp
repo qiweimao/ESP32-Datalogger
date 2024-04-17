@@ -1,5 +1,3 @@
-#include <FS.h>
-#include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <HardwareSerial.h>
@@ -12,6 +10,7 @@
 /* Do not modify below */
 SemaphoreHandle_t logMutex;
 TaskHandle_t parsingTask; // Task handle for the parsing task
+FtpServer ftpSrv;   //set #define FTP_DEBUG in ESP8266FtpServer.h to see ftp verbose on serial
 
 /* Tasks */
 void taskInitiNTP(void *parameter) {
@@ -22,6 +21,53 @@ void taskInitiNTP(void *parameter) {
 void logDataTask(void *parameter) {
   LogErrorCode result = logData();
 }
+
+void logDataTask(void * parameter) {
+  for (;;) {  // Infinite loop to continuously run the task
+    LogErrorCode result = logData();
+    // You can add error handling or other logic here if needed
+  }
+}
+
+void _callback(FtpOperation ftpOperation, unsigned int freeSpace, unsigned int totalSpace){
+	Serial.print(">>>>>>>>>>>>>>> _callback " );
+	Serial.print(ftpOperation);
+	/* FTP_CONNECT,
+	 * FTP_DISCONNECT,
+	 * FTP_FREE_SPACE_CHANGE
+	 */
+	Serial.print(" ");
+	Serial.print(freeSpace);
+	Serial.print(" ");
+	Serial.println(totalSpace);
+
+	// freeSpace : totalSpace = x : 360
+
+	if (ftpOperation == FTP_CONNECT) Serial.println(F("CONNECTED"));
+	if (ftpOperation == FTP_DISCONNECT) Serial.println(F("DISCONNECTED"));
+};
+void _transferCallback(FtpTransferOperation ftpOperation, const char* name, unsigned int transferredSize){
+	Serial.print(">>>>>>>>>>>>>>> _transferCallback " );
+	Serial.print(ftpOperation);
+	/* FTP_UPLOAD_START = 0,
+	 * FTP_UPLOAD = 1,
+	 *
+	 * FTP_DOWNLOAD_START = 2,
+	 * FTP_DOWNLOAD = 3,
+	 *
+	 * FTP_TRANSFER_STOP = 4,
+	 * FTP_DOWNLOAD_STOP = 4,
+	 * FTP_UPLOAD_STOP = 4,
+	 *
+	 * FTP_TRANSFER_ERROR = 5,
+	 * FTP_DOWNLOAD_ERROR = 5,
+	 * FTP_UPLOAD_ERROR = 5
+	 */
+	Serial.print(" ");
+	Serial.print(name);
+	Serial.print(" ");
+	Serial.println(transferredSize);
+};
 
 void setup() {
 
@@ -35,6 +81,11 @@ void setup() {
   WiFi.onEvent(WiFiEvent);// Register the WiFi event handler
   startServer();// start Async server with api-interfaces
 
+  ftpSrv.setCallback(_callback);
+  ftpSrv.setTransferCallback(_transferCallback);
+
+  ftpSrv.begin("esp8266","esp8266");    //username, password for ftp.   (default 21, 50009 for PASV)
+
   /* Logging Capabilities */
   logMutex = xSemaphoreCreateMutex();  // Mutex for current logging file
   void initVM501();
@@ -46,12 +97,17 @@ void setup() {
   xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
   // xTaskCreatePinnedToCore(logDataTask, "ParsingTask", 4096, NULL, 1, NULL, 1);
   xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
+  xTaskCreatePinnedToCore(logDataTask, "logDataTask", 4096, NULL, 1, &parsingTask, 0);
+  xTaskCreate(initNTPTask, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("-------------------------------------");
   Serial.println("Data Acquisition Started...");
 
 }
 
 void loop() {
+  ftpSrv.handleFTP();        //make sure in loop you call handleFTP()!!
+
+  // LogErrorCode result = logData();
 
   ElegantOTA.loop();
 

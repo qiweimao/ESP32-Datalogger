@@ -254,7 +254,8 @@ void setupSPIFFS(){
 
 void SD_initialize(){
   Serial.printf("Initializing SD card...");
-  if (!SD.begin(CS)) {
+  SPI.begin(18, 19, 23, 5); //SCK, MISO, MOSI,SS
+  if (!SD.begin(CS, SPI)) {
     Serial.println("initialization failed!");
     return;
   }

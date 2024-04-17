@@ -14,6 +14,8 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <SimpleFTPServer.h>
+
 #include "Secrets.h"
 #include "datalogging.h"
 
