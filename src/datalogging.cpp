@@ -8,7 +8,7 @@ bool loggingPaused = true;
 int LOG_INTERVAL = 3000;
 
 LogErrorCode logData() {
-
+  
   if(loggingPaused){
     return PAUSED;
   }
