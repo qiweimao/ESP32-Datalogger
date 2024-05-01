@@ -113,13 +113,4 @@ The logger should liten on route `/api/readings` for timeseries requests. The cl
 # Useful References
 Random Nerd Tutorials: https://randomnerdtutorials.com/projects-esp32/
 Dashboard: https://github.com/ayushsharma82/ESP-DASH
-
-# Issue Tracking
-- server on public ip may not start sometimes:
-```
-Server Started @ IP: 192.168.0.167
-[ 16620][E][ssl_client.cpp:37] _handle_error(): [start_ssl_client():273]: (-29312) SSL - The connection indicated an EOF
-[ 16620][E][WiFiClientSecure.cpp:144] connect(): start_ssl_client: -29312
-HTTP request failed with error code -1
-Public IP Address: Error
-```
+Github Reference https://github.com/topics/sensors-data-collection
