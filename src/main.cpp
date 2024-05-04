@@ -28,26 +28,24 @@ void setup() {
   /* Essentials for Remote Access */
   Serial.begin(115200);
   Serial.println("-------------------------------------\nBooting...");
+
   setupSPIFFS();// Setup SPIFFS -- Flash File System
   SD_initialize();//SD card file system initialization
-
   connectToWiFi();// Set up WiFi connection
   WiFi.onEvent(WiFiEvent);// Register the WiFi event handler
   startServer();// start Async server with api-interfaces
 
   /* Logging Capabilities */
-  logMutex = xSemaphoreCreateMutex();  // Mutex for current logging file
+  // logMutex = xSemaphoreCreateMutex();  // Mutex for current logging file
   // void initVM501();
-  initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
+  // initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   // initializeOLED();
 
   loadConfiguration();
 
   // xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
-  // xTaskCreatePinnedToCore(logDataTask, "ParsingTask", 4096, NULL, 1, NULL, 1);
-  // xTaskCreatePinnedToCore(logDataTask, "logDataTask", 4096, NULL, 1, &parsingTask, 0);
-  xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
-  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
+  // xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
+  // xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("-------------------------------------");
   Serial.println("Data Acquisition Started...");
 

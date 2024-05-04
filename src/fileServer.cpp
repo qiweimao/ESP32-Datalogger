@@ -494,6 +494,7 @@ void Display_System_Info() {
   webpage += "<table class='center'>";
   webpage += "<tr><th>Total Space</th><th>Used Space</th><th>Free Space</th><th>Number of Files</th></tr>";
   webpage += "<tr><td>" + ConvBinUnits(SD.totalBytes(), 1) + "</td>";
+  Serial1.println(SD.totalBytes());
   webpage += "<td>" + ConvBinUnits(SD.usedBytes(), 1) + "</td>";
   webpage += "<td>" + ConvBinUnits(SD.totalBytes() - SD.usedBytes(), 1) + "</td>";
   webpage += "<td>" + (numfiles == 0 ? "Pending Dir or Empty" : String(numfiles)) + "</td></tr>";
@@ -529,6 +530,9 @@ String ConvBinUnits(int bytes, int resolution) {
   }
   else if (bytes < (1024 * 1024 * 1024)) {
     return String((bytes / 1024.0 / 1024.0), resolution) + " MB";
+  }
+  else if (bytes > (1024 * 1024 * 1024 * 1024)) {
+    return String((bytes / 1024.0 / 1024.0 / 1024.0), resolution) + " GB";
   }
   else return "";
 }
