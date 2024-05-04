@@ -3,6 +3,10 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
 
 - [Introduction](#introduction)
 - [Architecture](#architecture)
+  - [Power Supply](#power-supply)
+  - [Power Supply](#power-supply-1)
+    - [Power Consumption](#power-consumption)
+    - [Solar Panel Configuration](#solar-panel-configuration)
   - [Time](#time)
     - [NTP Server](#ntp-server)
     - [External RTC Setup](#external-rtc-setup)
@@ -19,9 +23,7 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
       - [VM501](#vm501)
   - [OTA](#ota)
   - [Troubleshooting](#troubleshooting)
-    - [Telnet](#telnet)
-- [```DANGEROUS```](#dangerous)
-    - [Telnet Remove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For Production](#telnet-remove-for-productionremove-for-productionremove-for-productionremove-for-productionremove-for-productionremove-for-productionremove-for-productionremove-for-production)
+    - [Telnet DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS](#telnet-dangerous-dangerous-dangerous-dangerous-dangerous-dangerous-dangerous)
     - [ESP-Prog](#esp-prog)
 - [API](#api)
   - [Logger System Control](#logger-system-control)
@@ -34,6 +36,34 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
 - [Issue Tracking](#issue-tracking)
 
 # Architecture
+## Power Supply
+## Power Supply
+
+For powering the ESP32 development kit via USB, an 18650 battery is utilized. However, for production purposes, a custom PCB will be designed, and the module should be powered via the 3V3 or VIN pin to minimize power loss.
+
+To harness solar power, the 18650 Shield is employed, facilitating power supply to the ESP32. [This AliExpress link](https://www.aliexpress.us/item/3256805800017684.html?spm=a2g0o.order_list.order_list_main.53.14a11802o1NdIO&gatewayAdapt=glo2usa) provides details on the shield. The input voltage range is specified as 5V to 8V, although preliminary tests suggest that a 5V solar panel is functional. Further validation will be conducted.
+
+SD only seems to work with power from VIN pin with a buck converter in between.
+- 2.6 is the minimum power
+
+### Power Consumption
+
+The following table outlines the current consumption of the ESP32 under various operating modes:
+
+| Mode                                        | Current Consumption |
+|---------------------------------------------|---------------------|
+| WiFi TX, DSSS 1 Mbps, POUT = +19.5 dBm     | 240 mA              |
+| WiFi TX, OFDM 54 Mbps, POUT = +16 dBm      | 190 mA              |
+| WiFi TX, OFDM MCS7, POUT = +14 dBm         | 180 mA              |
+| WiFi RX (listening)                         | (95~100) mA         |
+| BT/BLE TX, POUT = 0 dBm                     | 130 mA              |
+| BT/BLE RX (listening)                       | (95~100) mA         |
+
+### Solar Panel Configuration
+
+Currently, the setup includes two 0.3W 5V solar panels, capable of supplying a maximum of 120mA to the shield.
+
+
 ## Time
 ### NTP Server
 The logger should sync with the NTP server upon power-up using `configTime ` from the `time.h` library. Use `getLocalTime(&timeinfo)` to get the current time. This function should be called within the logging function to get the exact time. However, time would not be kept if power is lost. A RTC module is needed to provide time without WiFi after powerloss.
@@ -81,15 +111,8 @@ Currently ElegantOTA free version is used without licensing for commercial appli
 For commercial applications, a simple Arduino OTA wrapper library can be developed to avoid ElegantOTA.
 TODO develope own version of OTA to avoid restrictions.
 ## Troubleshooting
-<<<<<<< HEAD
-### Telnet
+### Telnet DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS
 ```DANGEROUS```
-```DANGEROUS```
-```DANGEROUS```
-```DANGEROUS```
-=======
-### Telnet Remove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For ProductionRemove For Production
->>>>>>> 7f7ee71249b424377215e09e8a3d5eb0a33565f5
 A port for telnet is opened.
 TODO security check
 ### ESP-Prog
