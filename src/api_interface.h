@@ -14,6 +14,7 @@ void serveIndexPage(AsyncWebServerRequest *request);
 void serveJS(AsyncWebServerRequest *request);
 void serveCSS(AsyncWebServerRequest *request);
 void servefavicon(AsyncWebServerRequest *request);
+void servemanifest(AsyncWebServerRequest *request);
 
 // Logger Control Handler
 void serveRebootLogger(AsyncWebServerRequest *request);
