@@ -9,7 +9,6 @@
 #include <SPIFFS.h>
 #include <Arduino.h>
 #include <SD.h>
-#include <TelnetStream.h>
 #include <AsyncTCP.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>

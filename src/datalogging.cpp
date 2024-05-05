@@ -27,8 +27,6 @@ LogErrorCode logData() {
   String row = String(now.year()) + "-" + String(now.month()) + "-" + String(now.day()) + " " +
                String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second()) + ", " +
                data + "\n";
-
-  TelnetStream.println(row);
   Serial.println(row);
   appendFile(SD, filename, row.c_str());
 

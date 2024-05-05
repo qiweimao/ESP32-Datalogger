@@ -8,8 +8,6 @@ AsyncWebServer server(80);
 
 void startServer(){
 
-  TelnetStream.begin(); /* DANGEROUS */
-
   ElegantOTA.begin(&server);
 
   server.on("/", HTTP_GET, serveIndexPage);// Serve the index.html file
@@ -59,38 +57,9 @@ void serveIndexPage(AsyncWebServerRequest *request) {
   file.close();
 }
 
-// void serveJS(AsyncWebServerRequest *request) {
-
-//   // Open the file in read mode
-//   File file = SPIFFS.open("/build/main.8d1336c3.js", "r");
-
-//   if (!file) {
-//     // If the file doesn't exist, send a 404 Not Found response
-//     request->send(404, "text/plain", "File not found");
-//   } else {
-//     // If the file exists, read its contents and send as the response
-//     size_t fileSize = file.size();
-//     String fileContent;
-
-//     // Reserve enough space in the string for the file content
-//     fileContent.reserve(fileSize);
-
-//     // Read the file content into the string
-//     while (file.available()) {
-//       fileContent += char(file.read());
-//     }
-
-//     // Send the file content as the response with the appropriate content type
-//     request->send(200, "application/javascript", fileContent);
-//   }
-
-//   // Close the file
-//   file.close();
-// }
-
 void serveJS(AsyncWebServerRequest *request) {
   // Open the file in read mode
-  File file = SPIFFS.open("/build/main.8d1336c3.js", "r");
+  File file = SPIFFS.open("/build/main.8d1336c3.js.haha", "r");
 
   if (!file) {
     // If the file doesn't exist, send a 404 Not Found response
@@ -98,10 +67,13 @@ void serveJS(AsyncWebServerRequest *request) {
     return;
   }
 
-  AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/build/main.8d1336c3.js", "application/javascript", 200);
+  AsyncWebServerResponse *response = request->beginResponse(SPIFFS, "/build/main.8d1336c3.js.haha", "application/javascript", 200);
+  response->addHeader("Content-Encoding", "gzip"); // Add Content-Encoding header
   request->send(response);
 
   // Close the file (it will be automatically closed after the response is sent)
+    // Close the file
+  file.close();
 }
 
 
