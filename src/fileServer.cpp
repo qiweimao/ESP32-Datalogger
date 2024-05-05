@@ -531,7 +531,7 @@ String ConvBinUnits(int bytes, int resolution) {
   else if (bytes < (1024 * 1024 * 1024)) {
     return String((bytes / 1024.0 / 1024.0), resolution) + " MB";
   }
-  else if (bytes > (1024 * 1024 * 1024 * 1024)) {
+  else if (bytes > (1024 * 1024 * 1024)) {
     return String((bytes / 1024.0 / 1024.0 / 1024.0), resolution) + " GB";
   }
   else return "";
