@@ -1,11 +1,9 @@
 # Introduction
 The ESP32 Data Logger is a cost efficient data acquisition system that supports vibrating wire sensors and other sensors with RS-485, TTL protocol. To set up the data logger as an end user, you can plug it into your computer, and configure the logger in a website using the browser. For advanced configurations, you can program your own code and flash the logger on PC, using PlatformIO or Arduino IDE.
-
 - [Introduction](#introduction)
 - [Architecture](#architecture)
   - [Power Supply](#power-supply)
-  - [Power Supply](#power-supply-1)
-    - [Power Consumption](#power-consumption)
+    - [Power Consumption per Mode](#power-consumption-per-mode)
     - [Solar Panel Configuration](#solar-panel-configuration)
   - [Time](#time)
     - [NTP Server](#ntp-server)
@@ -18,58 +16,44 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
     - [WiFi Reconnect Capability](#wifi-reconnect-capability)
     - [WiFi Manager](#wifi-manager)
     - [Dynamic IP Address](#dynamic-ip-address)
+  - [LoRaWAN or ESPNOW?](#lorawan-or-espnow)
   - [Data Logging Functions](#data-logging-functions)
+    - [GPIO Pin Monitor](#gpio-pin-monitor)
     - [Sensor Type Supported](#sensor-type-supported)
       - [VM501](#vm501)
   - [OTA](#ota)
   - [Troubleshooting](#troubleshooting)
-    - [Telnet DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS](#telnet-dangerous-dangerous-dangerous-dangerous-dangerous-dangerous-dangerous)
     - [ESP-Prog](#esp-prog)
 - [API](#api)
   - [Logger System Control](#logger-system-control)
     - [System Info TODO](#system-info-todo)
     - [Datalogging Configuration](#datalogging-configuration)
     - [File system TODO](#file-system-todo)
-  - [Data Requests TODO](#data-requests-todo)
+  - [Data Retrieval TODO](#data-retrieval-todo)
     - [Timeseries request](#timeseries-request)
 - [Useful References](#useful-references)
-- [Issue Tracking](#issue-tracking)
-
 # Architecture
 ## Power Supply
-## Power Supply
-
 For powering the ESP32 development kit via USB, an 18650 battery is utilized. However, for production purposes, a custom PCB will be designed, and the module should be powered via the 3V3 or VIN pin to minimize power loss.
-
 To harness solar power, the 18650 Shield is employed, facilitating power supply to the ESP32. [This AliExpress link](https://www.aliexpress.us/item/3256805800017684.html?spm=a2g0o.order_list.order_list_main.53.14a11802o1NdIO&gatewayAdapt=glo2usa) provides details on the shield. The input voltage range is specified as 5V to 8V, although preliminary tests suggest that a 5V solar panel is functional. Further validation will be conducted.
-
 SD only seems to work with power from VIN pin with a buck converter in between.
 - 2.6 is the minimum power
-
-### Power Consumption
-
+### Power Consumption per Mode
 The following table outlines the current consumption of the ESP32 under various operating modes:
-
 | Mode                                        | Current Consumption |
 |---------------------------------------------|---------------------|
-| WiFi TX, DSSS 1 Mbps, POUT = +19.5 dBm     | 240 mA              |
-| WiFi TX, OFDM 54 Mbps, POUT = +16 dBm      | 190 mA              |
-| WiFi TX, OFDM MCS7, POUT = +14 dBm         | 180 mA              |
+| WiFi TX, DSSS 1 Mbps, POUT = +19.5 dBm      | 240 mA              |
+| WiFi TX, OFDM 54 Mbps, POUT = +16 dBm       | 190 mA              |
+| WiFi TX, OFDM MCS7, POUT = +14 dBm          | 180 mA              |
 | WiFi RX (listening)                         | (95~100) mA         |
 | BT/BLE TX, POUT = 0 dBm                     | 130 mA              |
 | BT/BLE RX (listening)                       | (95~100) mA         |
-
 ### Solar Panel Configuration
-
 Currently, the setup includes two 0.3W 5V solar panels, capable of supplying a maximum of 120mA to the shield.
-
-
 ## Time
 ### NTP Server
 The logger should sync with the NTP server upon power-up using `configTime ` from the `time.h` library. Use `getLocalTime(&timeinfo)` to get the current time. This function should be called within the logging function to get the exact time. However, time would not be kept if power is lost. A RTC module is needed to provide time without WiFi after powerloss.
-
 Note: not sure if the current implementation (RTClib) will poll the ntp server periodically. However, offical implementations by Espressif does poll periodically. https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/system_time.html
-
 ### External RTC Setup
 Note that both the DS1307 and the OLED screen are connected to the I2C bus, same bus but different address. The libraries are designed such that they can scan the I2C bus for common addresses.
 Use this guide: https://esp32io.com/tutorials/esp32-ds1307-rtc-module
@@ -93,14 +77,17 @@ https://dronebotworkshop.com/wifimanager/
 ESP32 should request static IP from the access point (e.g. WiFi router, LTE router); Another approach is to set static IP in router admin page for the ESP32.
 The router might have dynamic IP address which might expire every few days, unless a static IP is purchased from the ISP.
 TODO: esp32 API to update IP to management server.
+## LoRaWAN or ESPNOW?
+Considering most projects can tolerate occasional delays, and 
 ## Data Logging Functions
 The data logging function should support different logging modes
+### GPIO Pin Monitor
+When interfacing with new peripherals, this [GPIO Pin Monitor](https://www.youtube.com/watch?v=UxkOosaNohU) can provide remote monitoring userinterface for prototyping.
 ### Sensor Type Supported
 TODO not tested yet vibrating wire sensors, analog sensors, SAAs.
 I want to have the same capabilities: https://www.geo-instruments.com/technology/wireless-logger-networks/
 #### VM501
 Use ESP32 VIN out for power supply, multimeter shows a voltage of approximately 4.5V. Connect ESP32 VIN to V33 on VM501, GND to GND. Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX. Run `HardwareSerial VM(1);` to configure the UART port on ESP32. Run `VM.begin(9600, SERIAL_8N1, 16, 17);` to initialize UART port 1 with GPIO16 as RX and GPIO17 as TX.
-
 VM.Serial UART Protocol functions implemented in this project are based on the MODBUS protocol:
 - Read registers from VM501
 - Write registers to VM501
@@ -111,10 +98,6 @@ Currently ElegantOTA free version is used without licensing for commercial appli
 For commercial applications, a simple Arduino OTA wrapper library can be developed to avoid ElegantOTA.
 TODO develope own version of OTA to avoid restrictions.
 ## Troubleshooting
-### Telnet DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS DANGEROUS
-```DANGEROUS```
-A port for telnet is opened.
-TODO security check
 ### ESP-Prog
 MAC OS driver issue:
 https://arduino.stackexchange.com/questions/91111/how-to-install-ftdi-serial-drivers-on-mac
@@ -127,7 +110,7 @@ TODO UI Update
 Use  `saveConfiguration` and `loadConfiguration` to manipulate the `config.csv` file stored in non-volatile flash via SPIFFS. Wear-leveling is implemented in `saveConfiguration` by creating and removing configuration files.
 ### File system TODO
 TODO UI Update
-## Data Requests TODO
+## Data Retrieval TODO
 ### Timeseries request
 The logger should liten on route `/api/readings` for timeseries requests. The client can specify the `sensorId`, `start` and `end`, and `readingsOptions`. A sample request should look like the following:
 ```
