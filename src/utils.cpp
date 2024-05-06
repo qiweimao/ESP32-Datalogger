@@ -197,13 +197,10 @@ String getCurrentTime() {
 }
 
 void connectToWiFi() {
-  // Serial.println("Connecting to WiFi");
-  // WiFi.config(staticIP, gateway, subnet);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
-    // Serial.println("Connecting to WiFi...");
   }
 }
 
