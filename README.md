@@ -16,7 +16,7 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
     - [WiFi Reconnect Capability](#wifi-reconnect-capability)
     - [WiFi Manager](#wifi-manager)
     - [Dynamic IP Address](#dynamic-ip-address)
-  - [LoRaWAN or ESPNOW?](#lorawan-or-espnow)
+  - [ESPNOW](#espnow)
   - [Data Logging Functions](#data-logging-functions)
     - [GPIO Pin Monitor](#gpio-pin-monitor)
     - [Sensor Type Supported](#sensor-type-supported)
@@ -77,8 +77,24 @@ https://dronebotworkshop.com/wifimanager/
 ESP32 should request static IP from the access point (e.g. WiFi router, LTE router); Another approach is to set static IP in router admin page for the ESP32.
 The router might have dynamic IP address which might expire every few days, unless a static IP is purchased from the ISP.
 TODO: esp32 API to update IP to management server.
-## LoRaWAN or ESPNOW?
-Considering most projects can tolerate occasional delays, and 
+## ESPNOW
+For most civil infrastructure applications where low-latency monitoring isn't critical and data rates aren't excessively high, LoRaWAN emerges as the industry standard. However, in scenarios demanding higher data rates, ESP NOW can be leveraged for shorter distance projects. For longer distance projects, an alternative approach could involve integrating additional cell modems into each station and relinquishing interconnection between the stations.
+
+Reference: [Intro to LoRaWAN](https://www.youtube.com/watch?v=hMOwbNUpDQA) by Andreas Spiess.
+| Aspect              | ESP-NOW                            | LoRaWAN                               |
+|---------------------|------------------------------------|---------------------------------------|
+| Range               | Short range, local area            | Long range, wide area                 |
+| Power Consumption   | Low power    | Ultra-low power|
+| Data Rate           | High data rates, real-time         | Low data rates, optimized for range   |
+| Topology            | Peer-to-peer (P2P)                 | Star-of-stars                         |
+| Scalability         | Small to medium networks           | Large-scale networks                  |
+| Regulatory          | 2.4 GHz ISM band                   | Sub-gigahertz ISM bands               |
+| Infrastructure      | Included in bare ESP32 module      | Gateway devices required              |
+
+After conducting research, it appears that implementing LoRaWAN requires Gateway devices. However, opting for ESP-NOW provides an alternative solution and allows for exploration of range extension possibilities. LoRaWAN can be added when budget is available.
+
+If a LoRa gateway is unnecessary, the firmware for all ESP32 devices can remain similar. Only the "gateway device" or main station needs adjustments to handle data communication and data table combination for HTTP requests from remote clients. Substations should still support local WiFi communication and serve webpages for users in areas without cell service.
+
 ## Data Logging Functions
 The data logging function should support different logging modes
 ### GPIO Pin Monitor
