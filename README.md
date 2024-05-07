@@ -17,6 +17,7 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
     - [WiFi Manager](#wifi-manager)
     - [Dynamic IP Address](#dynamic-ip-address)
   - [ESPNOW](#espnow)
+    - [Hardware](#hardware)
   - [Data Logging Functions](#data-logging-functions)
     - [GPIO Pin Monitor](#gpio-pin-monitor)
     - [Sensor Type Supported](#sensor-type-supported)
@@ -94,6 +95,8 @@ Reference: [Intro to LoRaWAN](https://www.youtube.com/watch?v=hMOwbNUpDQA) by An
 After conducting research, it appears that implementing LoRaWAN requires Gateway devices. However, opting for ESP-NOW provides an alternative solution and allows for exploration of range extension possibilities. LoRaWAN can be added when budget is available.
 
 If a LoRa gateway is unnecessary, the firmware for all ESP32 devices can remain similar. Only the "gateway device" or main station needs adjustments to handle data communication and data table combination for HTTP requests from remote clients. Substations should still support local WiFi communication and serve webpages for users in areas without cell service.
+### Hardware
+ESP-32 dev boards with external antenna connections available is recommended: ESP32-WROOM-U. ESP-NOW long-range mode should be investigated in both urban and rural areas.
 
 ## Data Logging Functions
 The data logging function should support different logging modes
