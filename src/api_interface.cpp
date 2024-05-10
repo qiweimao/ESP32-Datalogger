@@ -12,17 +12,19 @@ void serveCSS(AsyncWebServerRequest *request);
 void serveFavicon(AsyncWebServerRequest *request);
 void serveManifest(AsyncWebServerRequest *request);
 void serveGateWayMetaData(AsyncWebServerRequest *request);
+void serveVoltageHistory(AsyncWebServerRequest *request);
 
 void startServer(){
 
   ElegantOTA.begin(&server);
 
   server.on("/", HTTP_GET, serveIndexPage);// Serve the index.html file
-  server.on("/main.8d1336c3.js", HTTP_GET, serveJS);// Serve the index.html file
+  server.on("/main.d3e2b80d.js", HTTP_GET, serveJS);// Serve the index.html file
   server.on("/main.6a3097a0.css", HTTP_GET, serveCSS);// Serve the index.html file
   server.on("/favicon.ico", HTTP_GET, serveFavicon);// Serve the index.html file
   server.on("/manifest.json", HTTP_GET, serveManifest);// Serve the index.html file
   server.on("/api/gateway-metadata", HTTP_GET, serveGateWayMetaData);// Serve the index.html file
+  server.on("/api/voltage-history", HTTP_GET, serveVoltageHistory);// Serve the index.html file
 
   server.on("/reboot", HTTP_GET, serveRebootLogger);// Serve the text file
   server.on("/pauseLogging", HTTP_GET, pauseLoggingHandler);
@@ -37,29 +39,26 @@ void startServer(){
 }
 
 void serveFile(AsyncWebServerRequest *request, const char* filePath, const char* contentType, int responseCode, bool isGzip) {
-  // Open the file in read mode
   File file = SPIFFS.open(filePath, "r");
-
   if (!file) {
-    // If the file doesn't exist, send a 404 Not Found response
     request->send(404, "text/plain", "File not found");
     return;
   }
-
   AsyncWebServerResponse *response = request->beginResponse(SPIFFS, filePath, contentType, responseCode);
-  
-  // Add Content-Encoding header if compression is required
   if (isGzip) {
     response->addHeader("Content-Encoding", "gzip");
   }
-
-  // Send the response
   request->send(response);
-
-  // Close the file (it will be automatically closed after the response is sent)
   file.close();
 }
 
+void serveJson(AsyncWebServerRequest *request, JsonDocument doc, int responseCode, bool isGzip) {
+  String jsonString;
+  serializeJson(doc, jsonString);
+  Serial.println(jsonString);
+  AsyncWebServerResponse *response = request->beginResponse(responseCode, "application/json", jsonString);
+  request->send(response);
+}
 
 void serveIndexPage(AsyncWebServerRequest *request) {
 
@@ -80,7 +79,7 @@ void serveIndexPage(AsyncWebServerRequest *request) {
 }
 
 void serveJS(AsyncWebServerRequest *request) {
-  serveFile(request, "/build/main.8d1336c3.js.haha", "application/javascript", 200, true);
+  serveFile(request, "/build/main.d3e2b80d.js.haha", "application/javascript", 200, true);
 }
 
 void serveCSS(AsyncWebServerRequest *request) {
@@ -96,38 +95,44 @@ void serveManifest(AsyncWebServerRequest *request) {
 }
 
 void serveGateWayMetaData(AsyncWebServerRequest *request){
-  request->send(200, "text/plain", WiFi.macAddress().c_str());
+  JsonDocument doc;
+  JsonObject obj1 = doc.add<JsonObject>();
+  obj1["ip"] = WiFi.localIP().toString();
+  obj1["macAddress"] = WiFi.macAddress();
+  obj1["batteryVoltage"] = "3.7V";
+  serveJson(request, doc, 200, false);
 }
+
+void serveVoltageHistory(AsyncWebServerRequest *request){
+  JsonDocument doc;
+  JsonObject obj1 = doc.add<JsonObject>();
+  obj1["time"] = "2024/05/07 00:00";
+  obj1["voltage"] = "3.3V";
+  JsonObject obj2 = doc.add<JsonObject>();
+  obj2["time"] = "2024/05/08 00:00";
+  obj2["voltage"] = "3.6V";
+  JsonObject obj3 = doc.add<JsonObject>();
+  obj3["time"] = "2024/05/09 00:00";
+  obj3["voltage"] = "3.7V";
+  serveJson(request, doc, 200, false);
+}
+
 
 void serveRebootLogger(AsyncWebServerRequest *request) {
   Serial.println("Client requested ESP32 reboot.");
-
-  // Send a response to the client
   request->send(200, "text/plain", "Rebooting ESP32...");
-
-  // Delay for a short time to allow the response to be sent
   delay(100);
-
-  // Reboot the ESP32
   ESP.restart();
 }
 
 void pauseLoggingHandler(AsyncWebServerRequest *request) {
   Serial.println("Client requested to pause logging.");
-  
-  // Set the flag to pause logging
   loggingPaused = true;
-
-  // Send a response to the client
   request->send(200, "text/plain", "Logging paused");
 }
 
 void resumeLoggingHandler(AsyncWebServerRequest *request) {
   Serial.println("Client requested to resume logging.");
-  
-  // Set the flag to resume logging
   loggingPaused = false;
-
-  // Send a response to the client
   request->send(200, "text/plain", "Logging resumed");
 }
