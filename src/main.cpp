@@ -38,7 +38,7 @@ void setup() {
   /* Logging Capabilities */
   // logMutex = xSemaphoreCreateMutex();  // Mutex for current logging file
   // void initVM501();
-  // initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
+  initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   // initializeOLED();
 
   loadConfiguration();
