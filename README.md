@@ -27,8 +27,10 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
     - [ESP-Prog](#esp-prog)
 - [API](#api)
   - [Logger System Control](#logger-system-control)
-    - [System Info TODO](#system-info-todo)
-    - [Datalogging Configuration](#datalogging-configuration)
+    - [System Info](#system-info)
+    - [Logger Configuration](#logger-configuration)
+      - [what needs to be stored on the gateway](#what-needs-to-be-stored-on-the-gateway)
+      - [what needs to be passed via ESP-NOW](#what-needs-to-be-passed-via-esp-now)
     - [File system TODO](#file-system-todo)
   - [Data Retrieval TODO](#data-retrieval-todo)
     - [Timeseries request](#timeseries-request)
@@ -80,6 +82,7 @@ The router might have dynamic IP address which might expire every few days, unle
 TODO: esp32 API to update IP to management server.
 ## ESPNOW
 For most civil infrastructure applications where low-latency monitoring isn't critical and data rates aren't excessively high, LoRaWAN emerges as the industry standard. However, in scenarios demanding higher data rates, ESP NOW can be leveraged for shorter distance projects. For longer distance projects, an alternative approach could involve integrating additional cell modems into each station and relinquishing interconnection between the stations.
+[ESP NOW – Peer to Peer ESP32 Communications](https://dronebotworkshop.com/esp-now/)
 
 Reference: [Intro to LoRaWAN](https://www.youtube.com/watch?v=hMOwbNUpDQA) by Andreas Spiess.
 | Aspect              | ESP-NOW                            | LoRaWAN                               |
@@ -97,7 +100,6 @@ After conducting research, it appears that implementing LoRaWAN requires Gateway
 If a LoRa gateway is unnecessary, the firmware for all ESP32 devices can remain similar. Only the "gateway device" or main station needs adjustments to handle data communication and data table combination for HTTP requests from remote clients. Substations should still support local WiFi communication and serve webpages for users in areas without cell service.
 ### Hardware
 ESP-32 dev boards with external antenna connections available is recommended: ESP32-WROOM-U. ESP-NOW long-range mode should be investigated in both urban and rural areas.
-
 ## Data Logging Functions
 The data logging function should support different logging modes
 ### GPIO Pin Monitor
@@ -123,10 +125,21 @@ https://arduino.stackexchange.com/questions/91111/how-to-install-ftdi-serial-dri
 # API
 An instance of AsyncWebServer is created on port 80. A Callback function is set up to handle incoming HTTP GET requests at the root ("/") by responding with the content of a file stored in the SPIFFS file system. Adjust the filename variable to match the desired file. After configuring the server, it is started with `server.begin()`.
 ## Logger System Control
-### System Info TODO
-TODO UI Update
-### Datalogging Configuration
-Use  `saveConfiguration` and `loadConfiguration` to manipulate the `config.csv` file stored in non-volatile flash via SPIFFS. Wear-leveling is implemented in `saveConfiguration` by creating and removing configuration files.
+### System Info
+System information is served using a JSON list, add more fields if necessary. The master logger should have a master list of all substation system information.
+```
+[
+    {
+        "ip": "192.168.0.167",
+        "macAddress": "30:83:98:00:52:8C",
+        "batteryVoltage": "3.7V"
+    }
+]
+```
+### Logger Configuration
+Use  `saveConfiguration` and `loadConfiguration` to manipulate the `config.csv` file stored in non-volatile flash via SPIFFS. Wear-leveling is implemented in `saveConfiguration` by creating and removing configuration files. Need to test ESP-NOW first and determine:
+#### what needs to be stored on the gateway
+#### what needs to be passed via ESP-NOW
 ### File system TODO
 TODO UI Update
 ## Data Retrieval TODO
