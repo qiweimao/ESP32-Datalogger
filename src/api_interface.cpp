@@ -44,7 +44,8 @@ void serveFile(AsyncWebServerRequest *request, const char* filePath, const char*
     request->send(404, "text/plain", "File not found");
     return;
   }
-  AsyncWebServerResponse *response = request->beginResponse(SPIFFS, filePath, contentType, responseCode);
+  AsyncWebServerResponse *response = request->beginResponse(SPIFFS, filePath, "", responseCode);
+  response->addHeader("Content-Type", contentType); // Set the content type
   if (isGzip) {
     response->addHeader("Content-Encoding", "gzip");
   }
@@ -116,7 +117,6 @@ void serveVoltageHistory(AsyncWebServerRequest *request){
   obj3["voltage"] = "3.7V";
   serveJson(request, doc, 200, false);
 }
-
 
 void serveRebootLogger(AsyncWebServerRequest *request) {
   Serial.println("Client requested ESP32 reboot.");
