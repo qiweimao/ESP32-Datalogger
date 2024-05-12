@@ -118,6 +118,7 @@ VM.Serial UART Protocol functions implemented in this project are based on the M
 Currently ElegantOTA free version is used without licensing for commercial applications. Documentaion: https://docs.elegantota.pro/
 For commercial applications, a simple Arduino OTA wrapper library can be developed to avoid ElegantOTA.
 TODO develope own version of OTA to avoid restrictions.
+Importantly, remember to enable async webserver opetion in `ElegantOTA.h` in `./pio/libdeps/esp32dev/ElegantOTA`.
 ## Troubleshooting
 ### ESP-Prog
 MAC OS driver issue:
