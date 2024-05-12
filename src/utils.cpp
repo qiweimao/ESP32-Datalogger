@@ -34,6 +34,7 @@ char daysOfWeek[7][12] = {
 };
 
 void loadConfiguration() {
+  Serial.println("Loading configuration");
   // Open the CSV file in read mode
   File file = SPIFFS.open(configFile, "r");
   if (!file) {
@@ -57,12 +58,37 @@ void loadConfiguration() {
   }
 
   // Extract values from the CSV line
-  int parsedValues = sscanf(line.c_str(), "%d,%d,%ld,%d", &loggingPaused, &LOG_INTERVAL, &gmtOffset_sec, &daylightOffset_sec);
-  if (parsedValues != 4) {
-    Serial.println("Failed to parse config values");
+
+  Serial.println("Config line: " + line);
+
+  // Parse the line
+  int comma1 = line.indexOf(',');
+  int comma2 = line.indexOf(',', comma1 + 1);
+  int comma3 = line.indexOf(',', comma2 + 1);
+
+  Serial.println("Comma positions: " + String(comma1) + ", " + String(comma2) + ", " + String(comma3));
+
+  // Extract values from the CSV line
+  if (comma1 == -1 || comma2 == -1 || comma3 == -1) {
+    Serial.println("Invalid format in config file");
     file.close();
     return;
   }
+
+  String pausedStr = line.substring(0, comma1);
+  String intervalStr = line.substring(comma1 + 1, comma2);
+  String offsetSecStr = line.substring(comma2 + 1, comma3);
+  String daylightOffsetSecStr = line.substring(comma3 + 1);
+
+  loggingPaused = pausedStr.toInt();
+  LOG_INTERVAL = intervalStr.toInt();
+  gmtOffset_sec = offsetSecStr.toInt();
+  daylightOffset_sec = daylightOffsetSecStr.toInt();
+
+  Serial.println("Configuration loaded");
+
+  // Close the file
+  file.close();
 
   // Validate loaded values
   if (LOG_INTERVAL <= 0) {
@@ -71,14 +97,11 @@ void loadConfiguration() {
     file.close();
     return;
   }
-  // Add more validation if necessary...
 
   // Print loaded values
   Serial.printf("Logging Paused: %d, Logging Interval: %d, GMT Offset: %ld, Daylight Offset: %d\n",
                 loggingPaused, LOG_INTERVAL, gmtOffset_sec, daylightOffset_sec);
 
-  // Close the file
-  file.close();
 }
 
 
