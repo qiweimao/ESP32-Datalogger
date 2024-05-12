@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "api_interface.h"
 #include "VM_501.h"
+#include "espInit.h"
 
 /* Do not modify below */
 SemaphoreHandle_t logMutex;
@@ -23,6 +24,12 @@ void logDataTask(void *parameter) {
   }
 }
 
+#define ESP_NOW_SENDER 0
+#define ESP_NOW_RESPONDER 1
+#define ESP_NOW_DUAL 2
+// int ESP_NOW_MODE = ESP_NOW_SENDER;
+int ESP_NOW_MODE = ESP_NOW_RESPONDER;
+
 void setup() {
 
   /* Essentials for Remote Access */
@@ -31,17 +38,27 @@ void setup() {
 
   setupSPIFFS();// Setup SPIFFS -- Flash File System
   SD_initialize();//SD card file system initialization
-  connectToWiFi();// Set up WiFi connection
-  WiFi.onEvent(WiFiEvent);// Register the WiFi event handler
-  startServer();// start Async server with api-interfaces
+  // connectToWiFi();// Set up WiFi connection
+  // WiFi.onEvent(WiFiEvent);// Register the WiFi event handler
 
   /* Logging Capabilities */
   // logMutex = xSemaphoreCreateMutex();  // Mutex for current logging file
   // void initVM501();
-  initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
+  // initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   // initializeOLED();
 
   loadConfiguration();
+
+  if (ESP_NOW_MODE == ESP_NOW_SENDER){
+    Serial.println("Initialized as Sender");
+    espSenderInit();
+  }
+  if (ESP_NOW_MODE == ESP_NOW_RESPONDER){
+    Serial.println("Initialized as Responder");
+    espResponderInit();
+    startServer();// start Async server with api-interfaces
+  }
+
 
   // xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
   // xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
@@ -52,7 +69,11 @@ void setup() {
 }
 
 void loop() {
+  
+  if (ESP_NOW_MODE == ESP_NOW_SENDER){
+    espSendData();
+  }
 
-  ElegantOTA.loop();
+  // ElegantOTA.loop();
 
 }
