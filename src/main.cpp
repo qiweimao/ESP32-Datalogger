@@ -8,6 +8,13 @@
 #include "VM_501.h"
 #include "espInit.h"
 
+#define ESP_NOW_SENDER 0
+#define ESP_NOW_RESPONDER 1
+#define ESP_NOW_DUAL 2
+// int ESP_NOW_MODE = ESP_NOW_SENDER;
+int ESP_NOW_MODE = ESP_NOW_RESPONDER;
+
+#define TRIGGER_PIN 4
 /* Do not modify below */
 SemaphoreHandle_t logMutex;
 TaskHandle_t parsingTask; // Task handle for the parsing task
@@ -24,14 +31,18 @@ void logDataTask(void *parameter) {
   }
 }
 
-#define ESP_NOW_SENDER 0
-#define ESP_NOW_RESPONDER 1
-#define ESP_NOW_DUAL 2
-// int ESP_NOW_MODE = ESP_NOW_SENDER;
-int ESP_NOW_MODE = ESP_NOW_RESPONDER;
+void wifimanagerTask(void *parameter) {
+  if ( digitalRead(TRIGGER_PIN) == LOW) {
+    Serial.println("Low");
+    // Implement stop wifi, start wifi and serve webpage here
+  }
+  else {
+    Serial.println("High");
+  }
+}
 
 void setup() {
-
+  pinMode(TRIGGER_PIN, INPUT_PULLUP);
   /* Essentials for Remote Access */
   Serial.begin(115200);
   Serial.println("-------------------------------------\nBooting...");
@@ -62,6 +73,7 @@ void setup() {
 
   // xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
   // xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
+  xTaskCreate(wifimanagerTask, "wifimanagerTask", 4096, NULL, 1, NULL);
   // xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("-------------------------------------");
   Serial.println("Data Acquisition Started...");
@@ -74,6 +86,6 @@ void loop() {
     espSendData();
   }
 
-  // ElegantOTA.loop();
+  ElegantOTA.loop();
 
 }
