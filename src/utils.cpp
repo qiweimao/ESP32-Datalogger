@@ -59,14 +59,14 @@ void loadConfiguration() {
 
   // Extract values from the CSV line
 
-  Serial.println("Config line: " + line);
+  // Serial.println("Config line: " + line);
 
   // Parse the line
   int comma1 = line.indexOf(',');
   int comma2 = line.indexOf(',', comma1 + 1);
   int comma3 = line.indexOf(',', comma2 + 1);
 
-  Serial.println("Comma positions: " + String(comma1) + ", " + String(comma2) + ", " + String(comma3));
+  // Serial.println("Comma positions: " + String(comma1) + ", " + String(comma2) + ", " + String(comma3));
 
   // Extract values from the CSV line
   if (comma1 == -1 || comma2 == -1 || comma3 == -1) {
