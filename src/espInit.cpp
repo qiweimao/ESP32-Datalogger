@@ -198,7 +198,7 @@ esp_err_t espSendData() {
   else {
     Serial.println("Sending error");
   }
-  // delay(2000);
+  delay(2000);
 
   return result;
 }
