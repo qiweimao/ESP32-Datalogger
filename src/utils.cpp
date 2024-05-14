@@ -3,6 +3,8 @@
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
+Preferences preferences;
+
 /* Time */
 const char *ntpServers[] = {
   "pool.ntp.org",
@@ -23,6 +25,9 @@ const int MAX_COMMANDSIZE = 6;
 HardwareSerial VM(1); // UART port 1 on ESP32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
+String wifi_ssid;
+String wifi_password;
+
 char daysOfWeek[7][12] = {
   "Sunday",
   "Monday",
@@ -33,100 +38,42 @@ char daysOfWeek[7][12] = {
   "Saturday"
 };
 
-void loadConfiguration() {
-  Serial.println("Loading configuration");
-  // Open the CSV file in read mode
-  File file = SPIFFS.open(configFile, "r");
-  if (!file) {
-    Serial.println("Failed to open config file");
-    return;
-  }
-
-  // Read and discard the header row
-  if (!file.readStringUntil('\n')) {
-    Serial.println("Failed to read header row");
-    file.close();
-    return;
-  }
-
-  // Read second line from the file
-  String line = file.readStringUntil('\n');
-  if (line.length() == 0) {
-    Serial.println("Empty second line in config file");
-    file.close();
-    return;
-  }
-
-  // Extract values from the CSV line
-
-  // Serial.println("Config line: " + line);
-
-  // Parse the line
-  int comma1 = line.indexOf(',');
-  int comma2 = line.indexOf(',', comma1 + 1);
-  int comma3 = line.indexOf(',', comma2 + 1);
-
-  // Serial.println("Comma positions: " + String(comma1) + ", " + String(comma2) + ", " + String(comma3));
-
-  // Extract values from the CSV line
-  if (comma1 == -1 || comma2 == -1 || comma3 == -1) {
-    Serial.println("Invalid format in config file");
-    file.close();
-    return;
-  }
-
-  String pausedStr = line.substring(0, comma1);
-  String intervalStr = line.substring(comma1 + 1, comma2);
-  String offsetSecStr = line.substring(comma2 + 1, comma3);
-  String daylightOffsetSecStr = line.substring(comma3 + 1);
-
-  loggingPaused = pausedStr.toInt();
-  LOG_INTERVAL = intervalStr.toInt();
-  gmtOffset_sec = offsetSecStr.toInt();
-  daylightOffset_sec = daylightOffsetSecStr.toInt();
-
-  Serial.println("Configuration loaded");
-
-  // Close the file
-  file.close();
-
-  // Validate loaded values
-  if (LOG_INTERVAL <= 0) {
-    Serial.println("Invalid logging interval");
-    LOG_INTERVAL = 3000;
-    file.close();
-    return;
-  }
-
-  // Print loaded values
-  Serial.printf("Logging Paused: %d, Logging Interval: %d, GMT Offset: %ld, Daylight Offset: %d\n",
-                loggingPaused, LOG_INTERVAL, gmtOffset_sec, daylightOffset_sec);
-
-}
-
-
-void saveConfiguration(int loggingPaused, int loggingInterval, long gmtOffset_sec, int daylightOffset_sec) {
-  // Open the backup file in write mode
-  File file = SPIFFS.open(backupFile, "w");
-  if (!file) {
-    Serial.println("Failed to open backup config file for writing");
-    return;
-  }
-
-  // Write the updated configuration to the backup file
-  file.printf("loggingPaused,loggingInterval,gmtOffset_sec,daylightOffset_sec\n");
-  file.printf("%d,%d,%ld,%d\n", loggingPaused, loggingInterval, gmtOffset_sec, daylightOffset_sec);
+void loadConfig(){
+  Serial.println("Loading configuration...");
   
-  // Close the backup file
-  file.close();
+  preferences.begin("credentials", false);
+  
+  if (preferences.isKey("WIFI_SSID")) {
+    wifi_ssid = preferences.getString("WIFI_SSID", "Verizon_F4ZD39");
+    Serial.print("WiFi SSID: ");
+    Serial.println(wifi_ssid);
+  } else {
+    Serial.println("WiFi SSID not found. Using default value.");
+    wifi_ssid = "Verizon_F4ZD39";
+    preferences.putString("WIFI_SSID", wifi_ssid);
+  }
 
-  // Remove the original config file
-  SPIFFS.remove(configFile);
+  if (preferences.isKey("WIFI_PASSWORD")) {
+    wifi_password = preferences.getString("WIFI_PASSWORD", "aft9-grid-knot");
+    Serial.print("WiFi Password: ");
+    Serial.println(wifi_password);
+  } else {
+    Serial.println("WiFi Password not found. Using default value.");
+    wifi_password = "aft9-grid-knot";
+    preferences.putString("WIFI_PASSWORD", wifi_password);
+  }
 
-  // Rename the backup file to the original filename
-  SPIFFS.rename(backupFile, configFile);
+  if (preferences.isKey("gmtOffset_sec")) {
+    gmtOffset_sec = preferences.getLong("gmtOffset_sec", gmtOffset_sec);
+    Serial.print("GMT Offset (seconds): ");
+    Serial.println(gmtOffset_sec);
+  } else {
+    Serial.println("GMT Offset not found. Using default value.");
+    gmtOffset_sec = gmtOffset_sec; // No need to assign default value since it's already initialized.
+    preferences.putLong("gmtOffset_sec", gmtOffset_sec);
+  }
 
-  Serial.println("Configuration saved successfully");
+  preferences.end();
 }
 
 

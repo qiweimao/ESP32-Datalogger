@@ -15,6 +15,7 @@
 #include <Adafruit_SSD1306.h>
 #include <SimpleFTPServer.h>
 #include <ArduinoJson.h>
+#include <Preferences.h>
 
 #include "Secrets.h"
 #include "datalogging.h"
@@ -22,7 +23,7 @@
 extern RTC_DS1307 rtc;
 extern char daysOfWeek[7][12];
 
-void loadConfiguration();
+void loadConfig();
 String getCurrentTime();
 void initDS1307();
 void printDateTime(DateTime dt);

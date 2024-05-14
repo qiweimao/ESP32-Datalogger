@@ -88,10 +88,10 @@ void setup() {
   /* Logging Capabilities */
   // logMutex = xSemaphoreCreateMutex();  // Mutex for current logging file
   // void initVM501();
-  initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
+  // initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   // initializeOLED();
 
-  loadConfiguration();
+  loadConfig();
 
   if (ESP_NOW_MODE == ESP_NOW_SENDER){
     Serial.println("Initialized as Sender");
@@ -106,7 +106,7 @@ void setup() {
   xTaskCreatePinnedToCore(wifimanagerTask, "wifimanagerTask", 4096, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(blinkTask, "blinkTask", 4096, NULL, 1, &blinkTaskHandle, 1);
   // xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
-  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
+  // xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("-------------------------------------");
   Serial.println("Data Acquisition Started...");
 
