@@ -1,6 +1,8 @@
 #include "api_interface.h"
 #include "utils.h"
 #include "fileServer.h"
+#include "AsyncJson.h"
+
 
 extern SemaphoreHandle_t logMutex;
 extern bool loggingPaused;
@@ -29,6 +31,18 @@ void startServer(){
   server.on("/reboot", HTTP_GET, serveRebootLogger);// Serve the text file
   server.on("/pauseLogging", HTTP_GET, pauseLoggingHandler);
   server.on("/resumeLogging", HTTP_GET, resumeLoggingHandler);
+
+  AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler("/post", [](AsyncWebServerRequest *request, JsonVariant &json) {
+      Serial.println("Received JSON data:");
+      if (json.is<JsonArray>()) {
+          serializeJsonPretty(json.as<JsonArray>(), Serial);
+      } else if (json.is<JsonObject>()) {
+          serializeJsonPretty(json.as<JsonObject>(), Serial);
+      }
+      request->send(200); // Send an empty response with HTTP status code 200
+  });
+  server.addHandler(handler);
+
   
   startFileServer();
 
