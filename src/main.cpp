@@ -11,23 +11,22 @@
 #define ESP_NOW_SENDER 0
 #define ESP_NOW_RESPONDER 1
 #define ESP_NOW_DUAL 2
+#define TRIGGER_PIN 4
+#define LED 2
 // int ESP_NOW_MODE = ESP_NOW_SENDER;
 int ESP_NOW_MODE = ESP_NOW_RESPONDER;
 
-#define TRIGGER_PIN 4
-#define LED 2
-
 bool wifimanagerrunning = false; // Flag to indicate if WiFi configuration is done
 
-/* Do not modify below */
+/* Tasks */
 SemaphoreHandle_t logMutex;
 TaskHandle_t parsingTask; // Task handle for the parsing task
 TaskHandle_t wifimanagerTaskHandle; // Task handle for the parsing task
 TaskHandle_t blinkTaskHandle; // Task handle for the parsing task
 
-/* Tasks */
 void taskInitiNTP(void *parameter) {
   initNTP();  // Call the initNTP function
+  Serial.println("Deleted NTP task");
   vTaskDelete(NULL);  // Delete the task once initialization is complete
 }
 
@@ -39,7 +38,7 @@ void logDataTask(void *parameter) {
 
 void blinkTask(void *parameter) {
   while (true){
-    delay(1000);
+    delay(100);
     if(wifimanagerrunning){
       delay(500);
       digitalWrite(LED,HIGH);
@@ -48,7 +47,6 @@ void blinkTask(void *parameter) {
     }
   }
 }
-
 
 void wifimanagerTask(void *parameter) {
   while(true){
@@ -66,12 +64,13 @@ void wifimanagerTask(void *parameter) {
       wifimanagerrunning = true;
     }
     else if (wifimanagerrunning && digitalRead(TRIGGER_PIN) == LOW){
+        wifimanagerrunning = false;
+        delay(4000);
         Serial.println("Reboot...");
         ESP.restart(); // Reboot the ESP32
     }
   }
 }
-
 
 void setup() {
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
@@ -89,7 +88,7 @@ void setup() {
   /* Logging Capabilities */
   // logMutex = xSemaphoreCreateMutex();  // Mutex for current logging file
   // void initVM501();
-  // initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
+  initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   // initializeOLED();
 
   loadConfiguration();
@@ -104,13 +103,10 @@ void setup() {
     startServer();// start Async server with api-interfaces
   }
 
-
-  xTaskCreatePinnedToCore(wifimanagerTask, "wifimanagerTask", 4096, NULL, 1, &wifimanagerTaskHandle, 1);
+  xTaskCreatePinnedToCore(wifimanagerTask, "wifimanagerTask", 4096, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(blinkTask, "blinkTask", 4096, NULL, 1, &blinkTaskHandle, 1);
-  // xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
   // xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
-  // xTaskCreate(wifimanagerTask, "wifimanagerTask", 4096, NULL, 1, NULL);
-  // xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
+  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("-------------------------------------");
   Serial.println("Data Acquisition Started...");
 
