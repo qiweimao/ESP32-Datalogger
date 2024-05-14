@@ -23,7 +23,12 @@
 #define ESP_NOW_RESPONDER 1
 #define ESP_NOW_DUAL 2
 
+#define TRIGGER_PIN 4
+#define LED 2
+
 extern int ESP_NOW_MODE;
+extern bool wifimanagerrunning; // Flag to indicate if WiFi configuration is done
+
 
 extern RTC_DS1307 rtc;
 extern char daysOfWeek[7][12];

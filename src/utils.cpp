@@ -30,6 +30,9 @@ String WIFI_PASSWORD;
 bool isGateway;
 int ESP_NOW_MODE = ESP_NOW_RESPONDER;
 
+bool wifimanagerrunning = false; // Flag to indicate if WiFi configuration is done
+
+
 char daysOfWeek[7][12] = {
   "Sunday",
   "Monday",
@@ -84,10 +87,30 @@ void loadSysConfig(){
     preferences.putLong("ESP_NOW_MODE", ESP_NOW_MODE);
   }
 
+  ESP_NOW_MODE = ESP_NOW_RESPONDER;
+
   preferences.end();
 }
 void updateSysConfig(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newESP_NOW_MODE) {
-  
+
+  // Check if newSSID and newWiFiPassword are not empty
+  if (newSSID.length() == 0 || newWiFiPassword.length() == 0) {
+    Serial.println("Error: WiFi SSID or password cannot be empty.");
+    return;
+  }
+
+  // Check if newESP_NOW_MODE is within valid range
+  if (newESP_NOW_MODE < 0 || newESP_NOW_MODE > 3) {
+    Serial.println("Error: ESP-NOW mode must be an integer between 0 and 3.");
+    return;
+  }
+
+  // Check if newgmtOffset_sec is within valid range
+  if (newgmtOffset_sec < -43200 || newgmtOffset_sec > 43200) {
+    Serial.println("Error: GMT offset must be between -43200 and 43200.");
+    return;
+  }
+
   Serial.println("Updating configuration...");
   
   preferences.begin("credentials", false);

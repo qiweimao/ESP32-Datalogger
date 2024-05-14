@@ -8,12 +8,6 @@
 #include "VM_501.h"
 #include "espInit.h"
 
-#define TRIGGER_PIN 4
-#define LED 2
-// int ESP_NOW_MODE = ESP_NOW_SENDER;
-
-bool wifimanagerrunning = false; // Flag to indicate if WiFi configuration is done
-
 /* Tasks */
 SemaphoreHandle_t logMutex;
 TaskHandle_t parsingTask; // Task handle for the parsing task
@@ -52,6 +46,10 @@ void wifimanagerTask(void *parameter) {
       const char* apSSID = "ESP32-AP";
       const char* apPassword = "12345678";
       WiFi.softAP(apSSID, apPassword);
+
+      if(ESP_NOW_MODE == ESP_NOW_SENDER){
+        startServer();// start Async server with api-interfaces
+      }
 
       // Get the IP address of the access point
       IPAddress apIP = WiFi.softAPIP();
@@ -110,9 +108,9 @@ void setup() {
 
 void loop() {
   
-  if (ESP_NOW_MODE == ESP_NOW_SENDER){
-    espSendData();
-  }
+  // if (ESP_NOW_MODE == ESP_NOW_SENDER){
+  //   espSendData();
+  // }
 
   ElegantOTA.loop();
 
