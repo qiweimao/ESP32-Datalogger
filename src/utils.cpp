@@ -25,8 +25,10 @@ const int MAX_COMMANDSIZE = 6;
 HardwareSerial VM(1); // UART port 1 on ESP32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-String wifi_ssid;
-String wifi_password;
+String WIFI_SSID;
+String WIFI_PASSWORD;
+bool isGateway;
+int ESP_NOW_MODE = ESP_NOW_RESPONDER;
 
 char daysOfWeek[7][12] = {
   "Sunday",
@@ -38,44 +40,76 @@ char daysOfWeek[7][12] = {
   "Saturday"
 };
 
-void loadConfig(){
+void loadSysConfig(){
   Serial.println("Loading configuration...");
   
   preferences.begin("credentials", false);
   
   if (preferences.isKey("WIFI_SSID")) {
-    wifi_ssid = preferences.getString("WIFI_SSID", "Verizon_F4ZD39");
-    Serial.print("WiFi SSID: ");
-    Serial.println(wifi_ssid);
+    WIFI_SSID = preferences.getString("WIFI_SSID", "Verizon_F4ZD39");
+    // Serial.print("WiFi SSID: ");
+    // Serial.println(WIFI_SSID);
   } else {
     Serial.println("WiFi SSID not found. Using default value.");
-    wifi_ssid = "Verizon_F4ZD39";
-    preferences.putString("WIFI_SSID", wifi_ssid);
+    WIFI_SSID = "Verizon_F4ZD39";
+    preferences.putString("WIFI_SSID", WIFI_SSID);
   }
 
   if (preferences.isKey("WIFI_PASSWORD")) {
-    wifi_password = preferences.getString("WIFI_PASSWORD", "aft9-grid-knot");
-    Serial.print("WiFi Password: ");
-    Serial.println(wifi_password);
+    WIFI_PASSWORD = preferences.getString("WIFI_PASSWORD", "aft9-grid-knot");
+    // Serial.print("WiFi Password: ");
+    // Serial.println(WIFI_PASSWORD);
   } else {
     Serial.println("WiFi Password not found. Using default value.");
-    wifi_password = "aft9-grid-knot";
-    preferences.putString("WIFI_PASSWORD", wifi_password);
+    WIFI_PASSWORD = "aft9-grid-knot";
+    preferences.putString("WIFI_PASSWORD", WIFI_PASSWORD);
   }
 
   if (preferences.isKey("gmtOffset_sec")) {
     gmtOffset_sec = preferences.getLong("gmtOffset_sec", gmtOffset_sec);
-    Serial.print("GMT Offset (seconds): ");
-    Serial.println(gmtOffset_sec);
+    // Serial.print("GMT Offset (seconds): ");
+    // Serial.println(gmtOffset_sec);
   } else {
     Serial.println("GMT Offset not found. Using default value.");
-    gmtOffset_sec = gmtOffset_sec; // No need to assign default value since it's already initialized.
+    gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
     preferences.putLong("gmtOffset_sec", gmtOffset_sec);
+  }
+
+  if (preferences.isKey("ESP_NOW_MODE")) {
+    ESP_NOW_MODE = preferences.getLong("ESP_NOW_MODE", ESP_NOW_MODE);
+    Serial.print("Boot as gateway:");
+    Serial.println(ESP_NOW_MODE);
+  } else {
+    Serial.println("ESP_NOW_MODE not found. Set as Responder.");
+    preferences.putLong("ESP_NOW_MODE", ESP_NOW_MODE);
   }
 
   preferences.end();
 }
+void updateSysConfig(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newESP_NOW_MODE) {
+  
+  Serial.println("Updating configuration...");
+  
+  preferences.begin("credentials", false);
+  
+  if (preferences.isKey("WIFI_SSID")) {
+    preferences.putString("WIFI_SSID", newSSID);
+  }
 
+  if (preferences.isKey("WIFI_PASSWORD")) {
+    preferences.putString("WIFI_PASSWORD", newWiFiPassword);
+  }
+
+  if (preferences.isKey("gmtOffset_sec")) {
+    preferences.putLong("gmtOffset_sec", newgmtOffset_sec);
+  }
+
+  if (preferences.isKey("ESP_NOW_MODE")) {
+    preferences.putLong("ESP_NOW_MODE", newESP_NOW_MODE);
+  }
+
+  preferences.end();
+}
 
 void initVM501() {
   VM.begin(9600, SERIAL_8N1, 16, 17); // Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX

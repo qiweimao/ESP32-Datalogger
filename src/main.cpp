@@ -8,13 +8,9 @@
 #include "VM_501.h"
 #include "espInit.h"
 
-#define ESP_NOW_SENDER 0
-#define ESP_NOW_RESPONDER 1
-#define ESP_NOW_DUAL 2
 #define TRIGGER_PIN 4
 #define LED 2
 // int ESP_NOW_MODE = ESP_NOW_SENDER;
-int ESP_NOW_MODE = ESP_NOW_RESPONDER;
 
 bool wifimanagerrunning = false; // Flag to indicate if WiFi configuration is done
 
@@ -91,7 +87,7 @@ void setup() {
   // initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   // initializeOLED();
 
-  loadConfig();
+  loadSysConfig();
 
   if (ESP_NOW_MODE == ESP_NOW_SENDER){
     Serial.println("Initialized as Sender");

@@ -19,11 +19,21 @@
 
 #include "Secrets.h"
 #include "datalogging.h"
+#define ESP_NOW_SENDER 0
+#define ESP_NOW_RESPONDER 1
+#define ESP_NOW_DUAL 2
+
+extern int ESP_NOW_MODE;
 
 extern RTC_DS1307 rtc;
 extern char daysOfWeek[7][12];
 
-void loadConfig();
+extern String WIFI_SSID;
+extern String WIFI_PASSWORD;
+
+void loadSysConfig();
+void updateSysConfig(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newESP_NOW_MODE);
+
 String getCurrentTime();
 void initDS1307();
 void printDateTime(DateTime dt);
