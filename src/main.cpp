@@ -15,9 +15,15 @@
 int ESP_NOW_MODE = ESP_NOW_RESPONDER;
 
 #define TRIGGER_PIN 4
+#define LED 2
+
+bool wifimanagerrunning = false; // Flag to indicate if WiFi configuration is done
+
 /* Do not modify below */
 SemaphoreHandle_t logMutex;
 TaskHandle_t parsingTask; // Task handle for the parsing task
+TaskHandle_t wifimanagerTaskHandle; // Task handle for the parsing task
+TaskHandle_t blinkTaskHandle; // Task handle for the parsing task
 
 /* Tasks */
 void taskInitiNTP(void *parameter) {
@@ -31,18 +37,46 @@ void logDataTask(void *parameter) {
   }
 }
 
-void wifimanagerTask(void *parameter) {
-  if ( digitalRead(TRIGGER_PIN) == LOW) {
-    Serial.println("Low");
-    // Implement stop wifi, start wifi and serve webpage here
-  }
-  else {
-    Serial.println("High");
+void blinkTask(void *parameter) {
+  while (true){
+    delay(1000);
+    if(wifimanagerrunning){
+      delay(500);
+      digitalWrite(LED,HIGH);
+      delay(500);
+      digitalWrite(LED,LOW);
+    }
   }
 }
 
+
+void wifimanagerTask(void *parameter) {
+  while(true){
+    delay(3000);
+    if ( !wifimanagerrunning && digitalRead(TRIGGER_PIN) == LOW) {
+      WiFi.mode(WIFI_AP);
+      const char* apSSID = "ESP32-AP";
+      const char* apPassword = "12345678";
+      WiFi.softAP(apSSID, apPassword);
+
+      // Get the IP address of the access point
+      IPAddress apIP = WiFi.softAPIP();
+      Serial.print("Access Point IP address: ");
+      Serial.println(apIP);
+      wifimanagerrunning = true;
+    }
+    else if (wifimanagerrunning && digitalRead(TRIGGER_PIN) == LOW){
+        Serial.println("Reboot...");
+        ESP.restart(); // Reboot the ESP32
+    }
+  }
+}
+
+
 void setup() {
   pinMode(TRIGGER_PIN, INPUT_PULLUP);
+  pinMode(LED,OUTPUT);
+
   /* Essentials for Remote Access */
   Serial.begin(115200);
   Serial.println("-------------------------------------\nBooting...");
@@ -71,9 +105,11 @@ void setup() {
   }
 
 
+  xTaskCreatePinnedToCore(wifimanagerTask, "wifimanagerTask", 4096, NULL, 1, &wifimanagerTaskHandle, 1);
+  xTaskCreatePinnedToCore(blinkTask, "blinkTask", 4096, NULL, 1, &blinkTaskHandle, 1);
   // xTaskCreatePinnedToCore(sendCommandVM501, "ParsingTask", 4096, NULL, 1, &parsingTask, 1);
   // xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
-  xTaskCreate(wifimanagerTask, "wifimanagerTask", 4096, NULL, 1, NULL);
+  // xTaskCreate(wifimanagerTask, "wifimanagerTask", 4096, NULL, 1, NULL);
   // xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("-------------------------------------");
   Serial.println("Data Acquisition Started...");
