@@ -8,6 +8,7 @@ extern SemaphoreHandle_t logMutex;
 extern bool loggingPaused;
 AsyncWebServer server(80);
 
+AsyncCallbackJsonWebHandler *sysConfig();
 void serveIndexPage(AsyncWebServerRequest *request);
 void serveJS(AsyncWebServerRequest *request);
 void serveCSS(AsyncWebServerRequest *request);
@@ -32,24 +33,36 @@ void startServer(){
   server.on("/pauseLogging", HTTP_GET, pauseLoggingHandler);
   server.on("/resumeLogging", HTTP_GET, resumeLoggingHandler);
 
-  AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler("/post", [](AsyncWebServerRequest *request, JsonVariant &json) {
-      Serial.println("Received JSON data:");
-      if (json.is<JsonArray>()) {
-          serializeJsonPretty(json.as<JsonArray>(), Serial);
-      } else if (json.is<JsonObject>()) {
-          serializeJsonPretty(json.as<JsonObject>(), Serial);
-      }
-      request->send(200); // Send an empty response with HTTP status code 200
-  });
-  server.addHandler(handler);
+  server.addHandler(sysConfig());
 
-  
   startFileServer();
 
   server.begin();  // Start server
   Serial.printf("Server Started @ IP: %s\n", WiFi.localIP().toString().c_str());
   Serial.printf("Public IP Address: %s\n", getPublicIP().c_str());
   Serial.printf("ESP Board MAC Address: %s\n", WiFi.macAddress().c_str());
+}
+
+AsyncCallbackJsonWebHandler *sysConfig (){
+  return new AsyncCallbackJsonWebHandler("/api/configurations", [](AsyncWebServerRequest *request, JsonVariant &json) {
+
+      String newSSID = json["WIFI_SSID"].as<String>();
+      Serial.printf("WiFi SSID: %s\n", newSSID);
+
+      String newWiFiPassword = json["WIFI_PASSWORD"].as<String>();
+      Serial.printf("WIFI_PASSWORD: %s\n", newWiFiPassword);
+
+      long newgmtOffset_sec = json["gmtOffset_sec"].as<signed long>();
+      Serial.printf("gmtOffset_sec: %ld\n", newgmtOffset_sec);
+
+      int newESP_NOW_MODE = json["ESP_NOW_MODE"].as<signed int>();
+      Serial.printf("ESP_NOW_MODE: %d\n", newESP_NOW_MODE);
+      
+      // Error checking inside the function below
+      updateSysConfig(newSSID, newWiFiPassword, newgmtOffset_sec, newESP_NOW_MODE);
+
+      request->send(200); // Send an empty response with HTTP status code 200
+    });
 }
 
 void serveFile(AsyncWebServerRequest *request, const char* filePath, const char* contentType, int responseCode, bool isGzip) {
