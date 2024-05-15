@@ -16,6 +16,8 @@
 #include <SimpleFTPServer.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
+#include "esp_wifi.h"
+
 
 #include "Secrets.h"
 #include "datalogging.h"
@@ -35,6 +37,9 @@ extern char daysOfWeek[7][12];
 
 extern String WIFI_SSID;
 extern String WIFI_PASSWORD;
+
+
+void clearWiFiConfiguration();
 
 void loadSysConfig();
 void updateSysConfig(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newESP_NOW_MODE);
