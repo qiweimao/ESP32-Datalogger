@@ -28,10 +28,8 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
     - [ESP-Prog](#esp-prog)
 - [API](#api)
   - [Logger System Control](#logger-system-control)
-    - [System Info](#system-info)
     - [Logger Configuration](#logger-configuration)
-      - [what needs to be stored on the gateway](#what-needs-to-be-stored-on-the-gateway)
-      - [what needs to be passed via ESP-NOW](#what-needs-to-be-passed-via-esp-now)
+    - [ESP-NOW Routing Map](#esp-now-routing-map)
     - [File system TODO](#file-system-todo)
   - [Data Retrieval TODO](#data-retrieval-todo)
     - [Timeseries request](#timeseries-request)
@@ -77,6 +75,7 @@ The `WiFi.onEvent()` function is used to register a callback function, `WiFiEven
 ### WiFi Manager
 TODO. This function is triggered when the physical push button switch is clicked, the ESP32 will start as a WiFi access point to allow the user to connect to it via WiFi. A device configuration website will be served over WiFi.
 https://dronebotworkshop.com/wifimanager/
+Read this issue to learn how to erase wifi settings from ESP32, [link](https://github.com/espressif/arduino-esp32/issues/400). Otherwise the ESP32 will boot up and use the previous settings automatically, can really mess up.
 ### Dynamic IP Address
 ESP32 should request static IP from the access point (e.g. WiFi router, LTE router); Another approach is to set static IP in router admin page for the ESP32.
 The router might have dynamic IP address which might expire every few days, unless a static IP is purchased from the ISP.
@@ -107,7 +106,7 @@ The device will be configured via the WiFi manager interface, which is essential
 ### Hardware
 ESP-32 dev boards with external antenna connections available is recommended: ESP32-WROOM-U. ESP-NOW long-range mode should be investigated in both urban and rural areas.
 ## Data Logging Functions
-The data logging function should support different logging modes
+The data logging function should support different logging modes. Could be generalized based on protocol used: I2C, SPI, RS485, etc. Readings should be first saved on the device, before sending over ESP-NOW. Confirmation is needed before deleting file.
 ### GPIO Pin Monitor
 When interfacing with new peripherals, this [GPIO Pin Monitor](https://www.youtube.com/watch?v=UxkOosaNohU) can provide remote monitoring userinterface for prototyping.
 ### Sensor Type Supported
@@ -132,23 +131,32 @@ https://arduino.stackexchange.com/questions/91111/how-to-install-ftdi-serial-dri
 # API
 An instance of AsyncWebServer is created on port 80. A Callback function is set up to handle incoming HTTP GET requests at the root ("/") by responding with the content of a file stored in the SPIFFS file system. Adjust the filename variable to match the desired file. After configuring the server, it is started with `server.begin()`.
 ## Logger System Control
-### System Info
-System information is served using a JSON list, add more fields if necessary. The master logger should have a master list of all substation system information.
+### Logger Configuration
+Impletemented using the Preference.h library.
+```
+credentials
+{
+    "WIFI_SSID": "*********",
+    "WIFI_PASSWORD": "**********",
+    "gmtOffset_sec": "************"
+}
+```
+### ESP-NOW Routing Map
+The master logger should have a master list of all substation system information.
 ```
 [
     {
-        "ip": "192.168.0.167",
         "macAddress": "30:83:98:00:52:8C",
         "batteryVoltage": "3.7V"
-    }
+    },
+    {
+        "macAddress": "30:83:98:00:52:8C",
+        "batteryVoltage": "3.7V"
+    },
 ]
 ```
-### Logger Configuration
-Use  `saveConfiguration` and `loadConfiguration` to manipulate the `config.csv` file stored in non-volatile flash via SPIFFS. Wear-leveling is implemented in `saveConfiguration` by creating and removing configuration files. Need to test ESP-NOW first and determine:
-#### what needs to be stored on the gateway
-#### what needs to be passed via ESP-NOW
+
 ### File system TODO
-TODO UI Update
 ## Data Retrieval TODO
 ### Timeseries request
 The logger should liten on route `/api/readings` for timeseries requests. The client can specify the `sensorId`, `start` and `end`, and `readingsOptions`. A sample request should look like the following:
