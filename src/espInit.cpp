@@ -15,6 +15,7 @@
 
 #include "Secrets.h"
 #include "utils.h"
+#include "api_interface.h"
 
 // Variables for test data
 int int_value;
@@ -38,12 +39,20 @@ struct_message myData;
 // Peer info
 esp_now_peer_info_t peerInfo;
 
-unsigned int readingId = 0;
-
 int32_t channel = 1;
 
-// Insert your SSID
-// constexpr char WIFI_SSID[] = "REPLACE_WITH_YOUR_SSID";
+void initESP_NOW(){
+  Serial.println("\n*** Starting ESP-NOW ***");
+  if (ESP_NOW_MODE == ESP_NOW_SENDER){
+    Serial.println("Initialized as Sender");
+    espSenderInit();
+  }
+  if (ESP_NOW_MODE == ESP_NOW_RESPONDER){
+    Serial.println("Initialized as Responder");
+    espResponderInit();
+  }
+}
+
 
 int32_t getWiFiChannel(const char *ssid) {
   if (int32_t n = WiFi.scanNetworks()) {
@@ -56,24 +65,12 @@ int32_t getWiFiChannel(const char *ssid) {
   return 0;
 }
 
-// Callback function called when data is sent
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  Serial.print("\r\nLast Packet Send Status:\t");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-  if (status != ESP_NOW_SEND_SUCCESS){
-    if (channel <= 5){
-      channel += 1;
-    }
-    else{
-      channel = 1;
-    }
-    testChannel(channel);
-  }
-}
 
 // Callback function executed when data is received
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&myData, incomingData, sizeof(myData));
+  Serial.print("Mac Address: ");
+  printf("%02X:%02X:%02X:%02X:%02X:%02X\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   Serial.print("Data received: ");
   Serial.println(len);
   Serial.print("Character Value: ");
@@ -87,19 +84,43 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   Serial.println();
 }
 
+// Callback function called when data is sent
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("\r\nLast Packet Send Status:\t");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  if (status != ESP_NOW_SEND_SUCCESS){
+    if (channel < 11){
+      channel += 1;
+    }
+    else{
+      channel = 1;
+    }
+    testChannel(channel);
+    esp_err_t result = espSendData();
+  }
+}
+
 void testChannel(int32_t channel){
 
   // Set device as a Wi-Fi Station and set channel
-  WiFi.mode(WIFI_STA);
-  esp_wifi_set_protocol( WIFI_IF_STA , WIFI_PROTOCOL_LR);
-
-  // int32_t channel = getWiFiChannel(WIFI_SSID);
+  WiFi.mode(WIFI_AP_STA);
+  // esp_wifi_set_protocol( WIFI_IF_STA , WIFI_PROTOCOL_LR);
 
   WiFi.printDiag(Serial); // Uncomment to verify channel number before
   esp_wifi_set_promiscuous(true);
   esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
   esp_wifi_set_promiscuous(false);
   WiFi.printDiag(Serial); // Uncomment to verify channel change after
+
+  const char* apSSID = "ESP32-AP-Node";
+  const char* apPassword = "12345678";
+  bool result = WiFi.softAP(apSSID, apPassword);
+
+  if (!result) {
+    Serial.println("Failed to start access point");
+  } else {
+    Serial.println("Access point started successfully");
+  }
 
   // Initilize ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -123,18 +144,13 @@ void testChannel(int32_t channel){
 }
 
 void espSenderInit() {
-
-  for (size_t i = 0; i < 11; i++)
-  {
-    testChannel(i+1);
-    esp_err_t result = espSendData();
-    if (result == ESP_OK) {
-      Serial.println("Sending confirmed");
-      break;
-    }
-    else {
-      Serial.println("Sending error, try next channel");
-    }
+  testChannel(1);
+  esp_err_t result = espSendData();
+  if (result == ESP_OK) {
+    Serial.println("Sending confirmed");
+  }
+  else {
+    Serial.println("Sending error, try next channel");
   }
 }
 
@@ -146,14 +162,30 @@ void espResponderInit() {
 
   // Set device as a Wi-Fi Station
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
+
+  int i = 0;
+  while (WiFi.status() != WL_CONNECTED && i < 5) {
+    i++;
     delay(1000);
     Serial.println("Setting as a Wi-Fi Station..");
   }
-  Serial.print("Station IP Address: ");
-  Serial.println(WiFi.localIP());
-  Serial.print("Wi-Fi Channel: ");
-  Serial.println(WiFi.channel());
+
+  const char* apSSID = "ESP32-AP-Gateway";
+  const char* apPassword = "12345678";
+  bool result = WiFi.softAP(apSSID, apPassword);
+
+  if (!result) {
+    Serial.println("Failed to start access point");
+  } else {
+    Serial.println("Access point started successfully");
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("Station IP Address: ");
+    Serial.println(WiFi.localIP());
+    Serial.print("Wi-Fi Channel: ");
+    Serial.println(WiFi.channel());
+  }
  
   // Initilize ESP-NOW
   if (esp_now_init() != ESP_OK) {
