@@ -7,6 +7,7 @@
 #include "api_interface.h"
 #include "VM_501.h"
 #include "espInit.h"
+#include "esp_wifi.h"
 
 /* Tasks */
 SemaphoreHandle_t logMutex;
@@ -73,6 +74,16 @@ void setup() {
   /* Essentials for Remote Access */
   Serial.begin(115200);
   Serial.println("-------------------------------------\nBooting...");
+
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); //load the flash-saved configs
+  esp_wifi_init(&cfg); //initiate and allocate wifi resources (does not matter if connection fails)
+  delay(2000); //wait a bit
+  if(esp_wifi_restore()!=ESP_OK)
+  {
+      Serial.println("WiFi is not initialized by esp_wifi_init ");
+    }else{
+        Serial.println("WiFi Configurations Cleared!");
+    }
 
   setupSPIFFS();// Setup SPIFFS -- Flash File System
   SD_initialize();//SD card file system initialization
