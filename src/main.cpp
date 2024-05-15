@@ -7,7 +7,6 @@
 #include "api_interface.h"
 #include "VM_501.h"
 #include "espInit.h"
-#include "esp_wifi.h"
 
 /* Tasks */
 SemaphoreHandle_t logMutex;
@@ -39,89 +38,41 @@ void blinkTask(void *parameter) {
   }
 }
 
-void wifimanagerTask(void *parameter) {
-  while(true){
-    delay(3000);
-    if ( !wifimanagerrunning && digitalRead(TRIGGER_PIN) == LOW) {
-      WiFi.mode(WIFI_AP);
-      const char* apSSID = "ESP32-AP";
-      const char* apPassword = "12345678";
-      WiFi.softAP(apSSID, apPassword);
-
-      if(ESP_NOW_MODE == ESP_NOW_SENDER){
-        startServer();// start Async server with api-interfaces
-      }
-
-      // Get the IP address of the access point
-      IPAddress apIP = WiFi.softAPIP();
-      Serial.print("Access Point IP address: ");
-      Serial.println(apIP);
-      wifimanagerrunning = true;
-    }
-    else if (wifimanagerrunning && digitalRead(TRIGGER_PIN) == LOW){
-        wifimanagerrunning = false;
-        delay(4000);
-        Serial.println("Reboot...");
-        ESP.restart(); // Reboot the ESP32
-    }
-  }
-}
-
 void setup() {
-  pinMode(TRIGGER_PIN, INPUT_PULLUP);
-  pinMode(LED,OUTPUT);
 
-  /* Essentials for Remote Access */
   Serial.begin(115200);
-  Serial.println("-------------------------------------\nBooting...");
+  Serial.println("\n------------------Booting-------------------\n");
 
-  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); //load the flash-saved configs
-  esp_wifi_init(&cfg); //initiate and allocate wifi resources (does not matter if connection fails)
-  delay(2000); //wait a bit
-  if(esp_wifi_restore()!=ESP_OK)
-  {
-      Serial.println("WiFi is not initialized by esp_wifi_init ");
-    }else{
-        Serial.println("WiFi Configurations Cleared!");
-    }
-
+  /* Essential System */
+  Serial.println("*** Core System ***");
+  clearWiFiConfiguration();
+  pinMode(TRIGGER_PIN, INPUT_PULLUP);// Pin setting for wifi manager push button
+  pinMode(LED,OUTPUT);// onboard blue LED inidcator
   setupSPIFFS();// Setup SPIFFS -- Flash File System
   SD_initialize();//SD card file system initialization
-  // connectToWiFi();// Set up WiFi connection
-  // WiFi.onEvent(WiFiEvent);// Register the WiFi event handler
+  loadSysConfig();
+  xTaskCreatePinnedToCore(blinkTask, "blinkTask", 4096, NULL, 1, &blinkTaskHandle, 1);
+
+  initESP_NOW();
+  startServer();// start Async server with api-interfaces
 
   /* Logging Capabilities */
   // logMutex = xSemaphoreCreateMutex();  // Mutex for current logging file
   // void initVM501();
   // initDS1307();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   // initializeOLED();
-
-  loadSysConfig();
-
-  if (ESP_NOW_MODE == ESP_NOW_SENDER){
-    Serial.println("Initialized as Sender");
-    espSenderInit();
-  }
-  if (ESP_NOW_MODE == ESP_NOW_RESPONDER){
-    Serial.println("Initialized as Responder");
-    espResponderInit();
-    startServer();// start Async server with api-interfaces
-  }
-
-  xTaskCreatePinnedToCore(wifimanagerTask, "wifimanagerTask", 4096, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(blinkTask, "blinkTask", 4096, NULL, 1, &blinkTaskHandle, 1);
   // xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
   // xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
-  Serial.println("-------------------------------------");
-  Serial.println("Data Acquisition Started...");
 
+  Serial.println("\n------------------Boot Completed----------------\n");
+  Serial.println("Entering Loop");
 }
 
 void loop() {
   
-  // if (ESP_NOW_MODE == ESP_NOW_SENDER){
-  //   espSendData();
-  // }
+  if (ESP_NOW_MODE == ESP_NOW_SENDER){
+    espSendData();
+  }
 
   ElegantOTA.loop();
 
