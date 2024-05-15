@@ -18,7 +18,7 @@ void serveGateWayMetaData(AsyncWebServerRequest *request);
 void serveVoltageHistory(AsyncWebServerRequest *request);
 
 void startServer(){
-
+  Serial.println("\n*** Starting Server ***");
   ElegantOTA.begin(&server);
 
   server.on("/", HTTP_GET, serveIndexPage);// Serve the index.html file
@@ -47,10 +47,10 @@ AsyncCallbackJsonWebHandler *sysConfig (){
   return new AsyncCallbackJsonWebHandler("/api/configurations", [](AsyncWebServerRequest *request, JsonVariant &json) {
 
       String newSSID = json["WIFI_SSID"].as<String>();
-      Serial.printf("WiFi SSID: %s\n", newSSID);
+      Serial.printf("WiFi SSID: %s\n", newSSID.c_str());
 
       String newWiFiPassword = json["WIFI_PASSWORD"].as<String>();
-      Serial.printf("WIFI_PASSWORD: %s\n", newWiFiPassword);
+      Serial.printf("WIFI_PASSWORD: %s\n", newWiFiPassword.c_str());
 
       long newgmtOffset_sec = json["gmtOffset_sec"].as<signed long>();
       Serial.printf("gmtOffset_sec: %ld\n", newgmtOffset_sec);

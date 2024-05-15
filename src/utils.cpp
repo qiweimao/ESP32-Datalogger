@@ -43,6 +43,18 @@ char daysOfWeek[7][12] = {
   "Saturday"
 };
 
+void clearWiFiConfiguration(){
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); //load the flash-saved configs
+  esp_wifi_init(&cfg); //initiate and allocate wifi resources (does not matter if connection fails)
+  delay(2000); //wait a bit
+  if(esp_wifi_restore()!=ESP_OK){
+    Serial.println("WiFi is not initialized by esp_wifi_init ");
+  }
+  else{
+    Serial.println("Clear WiFi Configurations - OK");
+  }
+}
+
 void loadSysConfig(){
   Serial.println("Loading configuration...");
   
@@ -79,15 +91,13 @@ void loadSysConfig(){
   }
 
   if (preferences.isKey("ESP_NOW_MODE")) {
-    ESP_NOW_MODE = preferences.getLong("ESP_NOW_MODE", ESP_NOW_MODE);
-    Serial.print("Boot as gateway:");
+    ESP_NOW_MODE = preferences.getLong("ESP_NOW_MODE", ESP_NOW_RESPONDER);
+    Serial.print("Boot as gateway: ");
     Serial.println(ESP_NOW_MODE);
   } else {
     Serial.println("ESP_NOW_MODE not found. Set as Responder.");
-    preferences.putLong("ESP_NOW_MODE", ESP_NOW_MODE);
+    preferences.putLong("ESP_NOW_MODE", ESP_NOW_RESPONDER);
   }
-
-  ESP_NOW_MODE = ESP_NOW_RESPONDER;
 
   preferences.end();
 }
@@ -264,12 +274,12 @@ String getPublicIP() {
 
 void setupSPIFFS(){
   // Mount SPIFFS filesystem
-  Serial.printf("Mounting SPIFFS filesystem......");
+  Serial.printf("Mounting SPIFFS filesystem - ");
   if (!SPIFFS.begin(true)) {
     Serial.println("SPIFFS allocation failed");
     return;
   }
-  Serial.printf("Successfull.\n");
+  Serial.println("OK");
 }
 
 // ==============================================================
@@ -277,13 +287,13 @@ void setupSPIFFS(){
 // ==============================================================
 
 void SD_initialize(){
-  Serial.printf("Initializing SD card...");
+  Serial.printf("Initializing SD card - ");
   SPI.begin(18, 19, 23, 5); //SCK, MISO, MOSI,SS
   if (!SD.begin(CS, SPI)) {
     Serial.println("initialization failed!");
     return;
   }
-  Serial.println("initialization done.");
+  Serial.println("OK");
 }
 
 void createDir(fs::FS &fs, const char * path){
