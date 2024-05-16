@@ -85,7 +85,7 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   }
 }
 
-void espNodeChannelScan(){
+void espNodeChannelScan(int32_t channel){
 
   // Set device as a Wi-Fi Station and set channel
   WiFi.mode(WIFI_AP_STA);
@@ -128,7 +128,7 @@ void espNodeChannelScan(){
 }
 
 void espNodeInit() {
-  espNodeChannelScan();
+  espNodeChannelScan(channel);
   esp_err_t result = espSendData();
   if (result == ESP_OK) {
     Serial.println("Sending confirmed");
