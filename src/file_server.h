@@ -1,6 +1,6 @@
 #include "utils.h"
 #include "api_interface.h"
-#include "Secrets.h"
+#include "secrets.h"
 
 void startFileServer();
 void Dir(AsyncWebServerRequest * request);

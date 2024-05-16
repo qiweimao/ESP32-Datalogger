@@ -1,7 +1,7 @@
 #include "utils.h"
 #include "api_interface.h"
-#include "fileServer.h"
-#include "Secrets.h"
+#include "file_server.h"
+#include "secrets.h"
 
 
 // Comment out for NO access controls

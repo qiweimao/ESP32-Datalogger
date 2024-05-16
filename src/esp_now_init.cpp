@@ -10,10 +10,10 @@
 // Include Libraries
 #include <esp_now.h>
 #include <WiFi.h>
-#include <espInit.h>
+#include <esp_now_init.h>
 #include <esp_wifi.h>
 
-#include "Secrets.h"
+#include "secrets.h"
 #include "utils.h"
 #include "api_interface.h"
 
@@ -33,11 +33,9 @@ typedef struct struct_message {
   bool d;
 } struct_message;
 
-// Create a structured object
-struct_message myData;
+struct_message myData;// Create a structured object
 
-// Peer info
-esp_now_peer_info_t peerInfo;
+esp_now_peer_info_t peerInfo;// Peer info
 
 int32_t channel = 1;
 
@@ -45,14 +43,13 @@ void initESP_NOW(){
   Serial.println("\n*** Starting ESP-NOW ***");
   if (ESP_NOW_MODE == ESP_NOW_SENDER){
     Serial.println("Initialized as Sender");
-    espSenderInit();
+    espNodeInit();
   }
   if (ESP_NOW_MODE == ESP_NOW_RESPONDER){
     Serial.println("Initialized as Responder");
-    espResponderInit();
+    espGatewayInit();
   }
 }
-
 
 // Callback function executed when data is received
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
@@ -83,16 +80,15 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
     else{
       channel = 1;
     }
-    testChannel(channel);
+    espNodeChannelScan(channel);
     esp_err_t result = espSendData();
   }
 }
 
-void testChannel(int32_t channel){
+void espNodeChannelScan(){
 
   // Set device as a Wi-Fi Station and set channel
   WiFi.mode(WIFI_AP_STA);
-  // esp_wifi_set_protocol( WIFI_IF_STA , WIFI_PROTOCOL_LR);
 
   WiFi.printDiag(Serial); // Uncomment to verify channel number before
   esp_wifi_set_promiscuous(true);
@@ -131,8 +127,8 @@ void testChannel(int32_t channel){
   }
 }
 
-void espSenderInit() {
-  testChannel(1);
+void espNodeInit() {
+  espNodeChannelScan();
   esp_err_t result = espSendData();
   if (result == ESP_OK) {
     Serial.println("Sending confirmed");
@@ -142,11 +138,10 @@ void espSenderInit() {
   }
 }
 
-void espResponderInit() {
+void espGatewayInit() {
 
   // Set ESP32 as a Wi-Fi Station
   WiFi.mode(WIFI_AP_STA);
-  // esp_wifi_set_protocol( WIFI_IF_STA , WIFI_PROTOCOL_LR);
 
   // Set device as a Wi-Fi Station
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -187,20 +182,10 @@ void espResponderInit() {
 
 esp_err_t espSendData() {
 
-  // Create test data
-
-  // Generate a random integer
-  int_value = random(1,20);
-
-  // Use integer to make a new float
-  float_value = 1.3 * int_value;
-
-  // Invert the boolean value
-  bool_value = !bool_value;
-  
-  // Format structured data
-  strcpy(myData.a, "Welcome to the Workshop!");
-
+  int_value = random(1,20);  // Generate a random integer
+  float_value = 1.3 * int_value;  // Use integer to make a new float
+  bool_value = !bool_value;  // Invert the boolean value
+  strcpy(myData.a, "Welcome to the Workshop!");  // Format structured data
   myData.b = int_value;
   myData.c = float_value;
   myData.d = bool_value;
@@ -210,8 +195,7 @@ esp_err_t espSendData() {
   Serial.printf("%f\n", myData.c);
   Serial.printf("%d\n", myData.d);
   
-  // Send message via ESP-NOW
-  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));  // Send message via ESP-NOW
    
   if (result == ESP_OK) {
     Serial.println("Sending confirmed");

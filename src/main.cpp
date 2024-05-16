@@ -1,12 +1,13 @@
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include <HardwareSerial.h>
-#include "Secrets.h"
-#include "datalogging.h"
+
+#include "secrets.h"
+#include "data_logging.h"
 #include "utils.h"
 #include "api_interface.h"
-#include "VM_501.h"
-#include "espInit.h"
+#include "vm_501.h"
+#include "esp_now_init.h"
 
 /* Tasks */
 SemaphoreHandle_t logMutex;

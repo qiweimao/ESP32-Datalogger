@@ -19,8 +19,8 @@
 #include "esp_wifi.h"
 
 
-#include "Secrets.h"
-#include "datalogging.h"
+#include "secrets.h"
+#include "data_logging.h"
 #define ESP_NOW_SENDER 0
 #define ESP_NOW_RESPONDER 1
 #define ESP_NOW_DUAL 2

@@ -1,8 +1,8 @@
 #include <FS.h>
 #include <SPIFFS.h>
 #include "utils.h"
-#include "VM_501.h"
-#include "datalogging.h"
+#include "vm_501.h"
+#include "data_logging.h"
 
 bool loggingPaused = true;
 int LOG_INTERVAL = 3000;

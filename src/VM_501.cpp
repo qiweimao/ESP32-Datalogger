@@ -1,5 +1,5 @@
 #include "utils.h"
-#include "VM_501.h"
+#include "vm_501.h"
 extern HardwareSerial VM; // UART port 1 on ESP32
 
 String readVM(){
