@@ -70,10 +70,6 @@ void setup() {
 }
 
 void loop() {
-  
-  if (ESP_NOW_MODE == ESP_NOW_SENDER){
-    espSendData();
-  }
 
   ElegantOTA.loop();
 
