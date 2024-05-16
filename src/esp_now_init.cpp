@@ -6,6 +6,8 @@
 #include "esp_now_init.h"
 #include "utils.h"
 
+int node_send_fail_count = 0;
+
 void initESP_NOW(){
   Serial.println("\n*** Starting ESP-NOW ***");
   if (ESP_NOW_MODE == ESP_NOW_SENDER){
@@ -28,6 +30,17 @@ void printMAC(const uint8_t * mac_addr){
 
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+
+  if (ESP_NOW_MODE == ESP_NOW_SENDER){
+    if(status != ESP_NOW_SEND_SUCCESS){
+      node_send_fail_count++;
+    }
+    else{
+      node_send_fail_count = 0;
+    }
+  }
+
+
   Serial.print("Last Packet Send Status: ");
   Serial.print(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success to " : "Delivery Fail to ");
   printMAC(mac_addr);

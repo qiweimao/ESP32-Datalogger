@@ -12,7 +12,6 @@
 
 PairingStatus pairingStatus = NOT_PAIRED;
 
-
 uint8_t serverAddress[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
 //Create 2 struct_message 
@@ -31,7 +30,7 @@ float h = 0;
 
 unsigned long currentMillis = millis();
 unsigned long previousMillis = 0;   // Stores last time temperature was published
-const long interval = 10000;        // Interval at which to publish sensor readings
+const long interval = 5000;        // Interval at which to publish sensor readings
 unsigned long NodeStart;                // used to measure Pairing time
 unsigned int readingId = 0;   
 
@@ -159,31 +158,22 @@ PairingStatus autoPairing(){
 void pairingTask(void *pvParameters) {
   while(true){
     if (autoPairing() == PAIR_PAIRED) {
-      Serial.println("1");
-      delay(2000);
-      unsigned long currentMillis = millis();
-      Serial.println(currentMillis);
-      Serial.println(previousMillis);
-      if (currentMillis - previousMillis >= interval) {
-        // Save the last time a new reading was published
-        previousMillis = currentMillis;
-        //Set values to send
-        myData.msgType = DATA;
-        myData.id = BOARD_ID;
-        myData.temp = readDHTTemperature();
-        myData.hum = readDHTHumidity();
-        myData.readingId = readingId++;
-        Serial.println("2");
-        esp_err_t result = esp_now_send(serverAddress, (uint8_t *) &myData, sizeof(myData));
-        Serial.println("3");
+      delay(100);
+      //Set values to send
+      myData.msgType = DATA;
+      myData.id = BOARD_ID;
+      myData.temp = readDHTTemperature();
+      myData.hum = readDHTHumidity();
+      myData.readingId = readingId++;
+      esp_err_t result = esp_now_send(serverAddress, (uint8_t *) &myData, sizeof(myData));
+      if (node_send_fail_count > 10){
+          pairingStatus = PAIR_REQUEST;// try pairing again with gateway
       }
     }
   }
 }
 
 void NodeInit() {
-  Serial.begin(115200);
-  Serial.println();
   Serial.print("Client Board MAC Address:  ");
   Serial.println(WiFi.macAddress());
   WiFi.mode(WIFI_AP_STA);
