@@ -7,7 +7,7 @@
 extern SemaphoreHandle_t logMutex;
 extern AsyncWebServer server;
 
-void startServer();
+void start_http_server();
 
 // Frontend Handler
 void serveFile(AsyncWebServerRequest *request, const char* filePath, const char* contentType, int responseCode, bool isGzip);

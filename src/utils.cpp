@@ -1,9 +1,25 @@
 #include "utils.h"
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-
 Preferences preferences;
+
+/*OLED*/
+
+// Define the screen dimensions
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define CHAR_HEIGHT 8  // Each character row is 8 pixels high
+
+// Define the I2C address (0x3C for most Adafruit OLEDs)
+#define OLED_ADDR 0x3C
+
+// Number of rows that fit on the screen
+#define NUM_ROWS (SCREEN_HEIGHT / CHAR_HEIGHT)
+
+// Create the display object
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+// Buffer to store the data currently on the screen
+char screenBuffer[NUM_ROWS][21];  // 20 characters + null terminator
 
 /* Time */
 const char *ntpServers[] = {
@@ -17,21 +33,13 @@ long gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
 int daylightOffset_sec = 3600;
 RTC_DS1307 rtc;
 
-const char *filename = "/log.txt";
-const char *configFile = "/system/config.csv";
-const char *backupFile = "/system/config_backup.csv";
 const int CS = 5; // SD Card chip select
 const int MAX_COMMANDSIZE = 6;
 HardwareSerial VM(1); // UART port 1 on ESP32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 String WIFI_SSID;
 String WIFI_PASSWORD;
-bool isGateway;
-int ESP_NOW_MODE = ESP_NOW_RESPONDER;
-
-bool wifimanagerrunning = false; // Flag to indicate if WiFi configuration is done
-
+int ESP_NOW_MODE = ESP_NOW_RESPONDER; // default set up upon flashing
 
 char daysOfWeek[7][12] = {
   "Sunday",
@@ -43,7 +51,7 @@ char daysOfWeek[7][12] = {
   "Saturday"
 };
 
-void clearWiFiConfiguration(){
+void wifi_setting_reset(){
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); //load the flash-saved configs
   esp_wifi_init(&cfg); //initiate and allocate wifi resources (does not matter if connection fails)
   delay(2000); //wait a bit
@@ -55,7 +63,7 @@ void clearWiFiConfiguration(){
   }
 }
 
-void loadSysConfig(){
+void load_system_configuration(){
   Serial.println("Loading configuration...");
   
   preferences.begin("credentials", false);
@@ -80,6 +88,16 @@ void loadSysConfig(){
     preferences.putString("WIFI_PASSWORD", WIFI_PASSWORD);
   }
 
+  if (preferences.isKey("PROJECT_NAME")) {
+    String projectName = preferences.getString("PROJECT_NAME", "new-project");
+    Serial.print("PROJECT_NAME: ");
+    Serial.println(projectName);
+  } else {
+    Serial.println("PROJECT_NAME not found. Using default value.");
+    String projectName = "new-project";
+    preferences.putString("PROJECT_NAME", projectName);
+  }
+
   if (preferences.isKey("gmtOffset_sec")) {
     gmtOffset_sec = preferences.getLong("gmtOffset_sec", gmtOffset_sec);
     // Serial.print("GMT Offset (seconds): ");
@@ -101,7 +119,7 @@ void loadSysConfig(){
 
   preferences.end();
 }
-void updateSysConfig(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newESP_NOW_MODE) {
+void update_system_configuration(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newESP_NOW_MODE, String newProjectName) {
 
   // Check if newSSID and newWiFiPassword are not empty
   if (newSSID.length() == 0 || newWiFiPassword.length() == 0) {
@@ -129,6 +147,10 @@ void updateSysConfig(String newSSID, String newWiFiPassword, long newgmtOffset_s
     preferences.putString("WIFI_SSID", newSSID);
   }
 
+  if (preferences.isKey("PROJECT_NAME")) {
+    preferences.putString("PROJECT_NAME", newProjectName);
+  }
+
   if (preferences.isKey("WIFI_PASSWORD")) {
     preferences.putString("WIFI_PASSWORD", newWiFiPassword);
   }
@@ -144,7 +166,7 @@ void updateSysConfig(String newSSID, String newWiFiPassword, long newgmtOffset_s
   preferences.end();
 }
 
-void initVM501() {
+void vm501_init() {
   VM.begin(9600, SERIAL_8N1, 16, 17); // Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX
 }
 
@@ -153,7 +175,7 @@ DateTime tmToDateTime(struct tm timeinfo) {
                   timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 }
 
-void initDS1307(){
+void external_rtc_init(){
 
   if (! rtc.begin()) {
     Serial.println("RTC module is NOT found");
@@ -163,10 +185,10 @@ void initDS1307(){
 
   DateTime now = rtc.now();
   Serial.print("RTC time: ");
-  printDateTime(now);
+  print_datetime(now);
 }
 
-void syncDS1307WithNTP(){
+void external_rtc_sync_ntp(){
   // Synchronize DS1307 RTC with NTP time
   struct tm timeinfo;
   if (getLocalTime(&timeinfo)) {
@@ -175,7 +197,7 @@ void syncDS1307WithNTP(){
     Serial.println("DS1307 RTC synchronized with NTP time.");
     DateTime now = rtc.now();
     Serial.print("RTC time: ");
-    printDateTime(now);
+    print_datetime(now);
     return; // Exit the function if synchronization is successful
   } else {
     Serial.printf("Failed to get NTP Time for DS1307\n");
@@ -183,7 +205,7 @@ void syncDS1307WithNTP(){
   }
 }
 
-void printDateTime(DateTime dt) {
+void print_datetime(DateTime dt) {
   // Print date and time components
   Serial.print(dt.year(), DEC);
   Serial.print('/');
@@ -199,7 +221,7 @@ void printDateTime(DateTime dt) {
   Serial.println();
 }
 
-void initNTP() {
+void ntp_sync() {
 
   // Attempt synchronization with each NTP server in the list
   for (int i = 0; i < numNtpServers; i++) {
@@ -208,8 +230,8 @@ void initNTP() {
     Serial.printf("Syncing with NTP server %s...\n", ntpServers[i]);
     if (getLocalTime(&timeinfo)) {
       Serial.printf("Time synchronized successfully with NTP server %s\n", ntpServers[i]);
-      Serial.printf("NTP Time: %s\n", getCurrentTime().c_str());
-      syncDS1307WithNTP();
+      Serial.printf("NTP Time: %s\n", get_current_time().c_str());
+      external_rtc_sync_ntp();
       return; // Exit the function if synchronization is successful
     } else {
       Serial.printf("Failed to synchronize with NTP server %s\n", ntpServers[i]);
@@ -219,7 +241,7 @@ void initNTP() {
   Serial.println("Failed to synchronize with any NTP server.");
 }
 
-String getCurrentTime() {
+String get_current_time() {
   struct tm timeinfo;
   
   if (getLocalTime(&timeinfo)) {
@@ -233,29 +255,7 @@ String getCurrentTime() {
   return ""; // Return an empty string in case of failure
 }
 
-void connectToWiFi() {
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-  }
-}
-
-void WiFiEvent(WiFiEvent_t event) {
-  switch (event) {
-    case SYSTEM_EVENT_STA_CONNECTED:
-      Serial.println("WiFi connected");
-      break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-      Serial.println("WiFi disconnected");
-      connectToWiFi();
-      break;
-    default:
-      break;
-  }
-}
-
-String getPublicIP() {
+String get_public_ip() {
 
   HTTPClient http;
   http.begin("https://api.ipify.org");  // Make a GET request to api.ipify.org to get the public IP
@@ -272,7 +272,7 @@ String getPublicIP() {
   http.end();  // End the request
 }
 
-void setupSPIFFS(){
+void spiffs_init(){
   // Mount SPIFFS filesystem
   Serial.printf("Mounting SPIFFS filesystem - ");
   if (!SPIFFS.begin(true)) {
@@ -286,7 +286,7 @@ void setupSPIFFS(){
 // File IO Functions
 // ==============================================================
 
-void SD_initialize(){
+void sd_init(){
   Serial.printf("Initializing SD card - ");
   SPI.begin(18, 19, 23, 5); //SCK, MISO, MOSI,SS
   if (!SD.begin(CS, SPI)) {
@@ -528,21 +528,58 @@ unsigned int crc16(unsigned char *dat, unsigned int len)
     return crc;
 }
 
-void initializeOLED() {
+void oled_init() {
 
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
-      Serial.println(F("SSD1306 allocation failed"));
-      return;
+  // Initialize the display
+  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;); // Don't proceed, loop forever
+  }
+  display.clearDisplay();
+  display.display();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+  // Initialize the screen buffer with empty strings
+  for (int i = 0; i < NUM_ROWS; i++) {
+    screenBuffer[i][0] = '\0';
   }
 
-  delay(2000);
+}
+
+void oled_print(const char* text) {
+  static int readingIndex = 0; // Keep track of the current reading index
+
+  // Scroll up if the screen is full
+  if (readingIndex >= NUM_ROWS) {
+    // Shift all rows up by copying the content from the next row
+    for (int i = 0; i < NUM_ROWS - 1; i++) {
+      strcpy(screenBuffer[i], screenBuffer[i + 1]);
+    }
+    readingIndex = NUM_ROWS - 1;
+  }
+
+  // Add the new reading to the buffer
+  strncpy(screenBuffer[readingIndex], text, sizeof(screenBuffer[readingIndex]));
+  screenBuffer[readingIndex][sizeof(screenBuffer[readingIndex]) - 1] = '\0';  // Ensure null termination
+
+  // Clear the display
   display.clearDisplay();
 
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 10);
-  // Display static text
-  display.println("Booting...");
-  display.display(); 
+  // Redraw all the buffer content
+  for (int i = 0; i <= readingIndex; i++) {
+    display.setCursor(0, i * CHAR_HEIGHT);
+    display.print(screenBuffer[i]);
+  }
+  display.display();
 
+  // Update the reading index
+  readingIndex++;
+}
+
+// Overloaded function for uint8_t data type
+void oled_print(uint8_t value) {
+  char buffer[8];
+  snprintf(buffer, 8, "%u", value);
+  oled_print(buffer);
 }

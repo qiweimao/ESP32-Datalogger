@@ -8,7 +8,7 @@
 
 int node_send_fail_count = 0;
 
-void initESP_NOW(){
+void esp_now_setup(){
   Serial.println("\n*** Starting ESP-NOW ***");
   if (ESP_NOW_MODE == ESP_NOW_SENDER){
     Serial.println("Initialized as Sender");
@@ -26,6 +26,7 @@ void printMAC(const uint8_t * mac_addr){
   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
            mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
   Serial.print(macStr);
+  oled_print(macStr);
 }
 
 // callback when data is sent

@@ -17,10 +17,11 @@ void serveManifest(AsyncWebServerRequest *request);
 void serveGateWayMetaData(AsyncWebServerRequest *request);
 void serveVoltageHistory(AsyncWebServerRequest *request);
 
-void startServer(){
+void start_http_server(){
   Serial.println("\n*** Starting Server ***");
   ElegantOTA.begin(&server);
 
+  // GET
   server.on("/", HTTP_GET, serveIndexPage);// Serve the index.html file
   server.on("/main.d3e2b80d.js", HTTP_GET, serveJS);// Serve the index.html file
   server.on("/main.6a3097a0.css", HTTP_GET, serveCSS);// Serve the index.html file
@@ -33,13 +34,14 @@ void startServer(){
   server.on("/pauseLogging", HTTP_GET, pauseLoggingHandler);
   server.on("/resumeLogging", HTTP_GET, resumeLoggingHandler);
 
+  // POST
   server.addHandler(sysConfig());
 
   startFileServer();
 
   server.begin();  // Start server
   Serial.printf("Server Started @ IP: %s\n", WiFi.localIP().toString().c_str());
-  Serial.printf("Public IP Address: %s\n", getPublicIP().c_str());
+  Serial.printf("Public IP Address: %s\n", get_public_ip().c_str());
   Serial.printf("ESP Board MAC Address: %s\n", WiFi.macAddress().c_str());
 }
 
@@ -57,9 +59,12 @@ AsyncCallbackJsonWebHandler *sysConfig (){
 
       int newESP_NOW_MODE = json["ESP_NOW_MODE"].as<signed int>();
       Serial.printf("ESP_NOW_MODE: %d\n", newESP_NOW_MODE);
+
+      String newProjectName = json["project_name"].as<String>();
+      Serial.printf("ESP_NOW_MODE: %d\n", newProjectName);
       
       // Error checking inside the function below
-      updateSysConfig(newSSID, newWiFiPassword, newgmtOffset_sec, newESP_NOW_MODE);
+      update_system_configuration(newSSID, newWiFiPassword, newgmtOffset_sec, newESP_NOW_MODE, newProjectName);
 
       request->send(200); // Send an empty response with HTTP status code 200
     });

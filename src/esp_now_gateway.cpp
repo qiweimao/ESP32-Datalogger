@@ -65,10 +65,13 @@ void OnDataRecvGateway(const uint8_t * mac_addr, const uint8_t *incomingData, in
   switch (type) {
     case DATA :                           // the message is data type
       Serial.println("Data type: DATA");
+      oled_print("Data type: DATA");
+
       memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
       // create a JSON document with received data and send it by event to the web page
       root["id"] = incomingReadings.id;
       root["temperature"] = incomingReadings.temp;
+
       root["humidity"] = incomingReadings.hum;
       root["readingId"] = String(incomingReadings.readingId);
       serializeJson(root, payload);
@@ -79,10 +82,19 @@ void OnDataRecvGateway(const uint8_t * mac_addr, const uint8_t *incomingData, in
     
     case PAIRING:                            // the message is a pairing request 
       Serial.println("Data type: PAIRING");
+      oled_print("Data type: PAIRING");
+
       memcpy(&pairingDataGateway, incomingData, sizeof(pairingDataGateway));
+
       Serial.println(pairingDataGateway.msgType);
       Serial.println(pairingDataGateway.id);
       Serial.print("Pairing request from: ");
+
+      /* OLED for Dev */
+      oled_print(pairingDataGateway.msgType);
+      oled_print(pairingDataGateway.id);
+      oled_print("Pairing request from: ");
+
       printMAC(mac_addr);
       Serial.println();
       Serial.println(pairingDataGateway.channel);
@@ -93,6 +105,7 @@ void OnDataRecvGateway(const uint8_t * mac_addr, const uint8_t *incomingData, in
           WiFi.softAPmacAddress(pairingDataGateway.macAddr);   
           pairingDataGateway.channel = gateway_channel;
           Serial.println("send response");
+          oled_print("send response");
           esp_err_t result = esp_now_send(mac_addr, (uint8_t *) &pairingDataGateway, sizeof(pairingDataGateway));
           addPeerGateway(mac_addr);
         }  
@@ -111,12 +124,17 @@ void GatewayInit() {
   WiFi.mode(WIFI_AP_STA);
   // Set device as a Wi-Fi Station
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.println(WIFI_SSID);
+  Serial.println(WIFI_PASSWORD);
   int i = 0;
   while (WiFi.status() != WL_CONNECTED && i < 5) {
     i++;
     delay(1000);
     Serial.println("Setting as a Wi-Fi Station..");
   }
+  String ssid = "Gateway";
+  String password = "helloworld";
+  WiFi.softAP(ssid, password);
 
   Serial.print("Server SOFT AP MAC Address:  ");
   Serial.println(WiFi.softAPmacAddress());
