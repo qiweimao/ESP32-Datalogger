@@ -124,7 +124,8 @@ void startFileServer(){
     Serial.println("System started successfully...");
   else
     Serial.println("There were problems starting all services...");
-  Directory();   
+  // Directory();   
+    Serial.println("2System started successfully...");
 
 }
 
