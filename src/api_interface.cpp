@@ -88,7 +88,7 @@ void serveFile(AsyncWebServerRequest *request, const char* filePath, const char*
 void serveJson(AsyncWebServerRequest *request, JsonDocument doc, int responseCode, bool isGzip) {
   String jsonString;
   serializeJson(doc, jsonString);
-  Serial.println(jsonString);
+  // Serial.println(jsonString);
   AsyncWebServerResponse *response = request->beginResponse(responseCode, "application/json", jsonString);
   request->send(response);
 }
