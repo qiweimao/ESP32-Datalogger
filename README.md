@@ -80,7 +80,7 @@ Read this issue to learn how to erase wifi settings from ESP32, [link](https://g
 ESP32 should request static IP from the access point (e.g. WiFi router, LTE router); Another approach is to set static IP in router admin page for the ESP32.
 The router might have dynamic IP address which might expire every few days, unless a static IP is purchased from the ISP.
 TODO: esp32 API to update IP to management server.
-## ESPNOW
+## Radio Network
 For most civil infrastructure applications where low-latency monitoring isn't critical and data rates aren't excessively high, LoRaWAN emerges as the industry standard. However, in scenarios demanding higher data rates, ESP NOW can be leveraged for shorter distance projects. For longer distance projects, an alternative approach could involve integrating additional cell modems into each station and relinquishing interconnection between the stations.
 [ESP NOW – Peer to Peer ESP32 Communications](https://dronebotworkshop.com/esp-now/)
 
