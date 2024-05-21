@@ -65,6 +65,7 @@ void setup() {
   external_rtc_init();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   oled_init();
   xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
+  xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
 
   ftp.addUser(FTP_USER, FTP_PASSWORD);
   #if defined(ESP32)

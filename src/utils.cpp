@@ -241,17 +241,22 @@ void ntp_sync() {
   Serial.println("Failed to synchronize with any NTP server.");
 }
 
-String get_current_time() {
+String get_current_time(bool getFilename) {
   struct tm timeinfo;
+  DateTime now = rtc.now();
   
-  if (getLocalTime(&timeinfo)) {
     char buffer[20]; // Adjust the buffer size based on your format
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    if(!getFilename){
+      snprintf(buffer, sizeof(buffer), "%04d/%02d/%02d %02d:%02d:%02d", 
+              now.year(), now.month(), now.day(), now.hour(), now.minute(),now.second());
+    }
+    else{
+      // Round minutes to the nearest 15-minute interval
+      int roundedMinutes = (now.minute() / 15) * 15;
+      snprintf(buffer, sizeof(buffer), "%04d_%02d_%02d_%02d_%02d", 
+              now.year(), now.month(), now.day(), now.hour(), roundedMinutes);
+    }
     return buffer;
-  } else {
-    Serial.println("Failed to get current time");
-    return ""; // Return an empty string in case of failure
-  }
   return ""; // Return an empty string in case of failure
 }
 
