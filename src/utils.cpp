@@ -21,6 +21,35 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 // Buffer to store the data currently on the screen
 char screenBuffer[NUM_ROWS][21];  // 20 characters + null terminator
 
+/* LoRa */
+//define the pins used by the transceiver module
+#define ss 15
+#define rst 27
+#define dio0 2
+// // Define the pins used by the HSPI interface
+#define LORA_SCK 14
+#define LORA_MISO 12
+#define LORA_MOSI 13
+#define LORA_SS 15
+
+SPIClass loraSpi(HSPI);  // loraSpi = new SPIClass(HSPI);
+void lora_init(void){
+  loraSpi.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_SS);
+  LoRa.setSPI(loraSpi);
+  // SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_SS); // Initialize HSPI manually
+  LoRa.setPins(LORA_SS, rst, dio0);
+  //replace the LoRa.begin(---E-) argument with your location's frequency 
+  //433E6 for Asia
+  //866E6 for Europe
+  //915E6 for North America
+  while (!LoRa.begin(915E6)) {
+    Serial.println(".");
+    delay(500);
+  }
+  LoRa.setSyncWord(0xF3);
+  Serial.println("LoRa Initializing OK!");
+}
+
 /* Time */
 const char *ntpServers[] = {
   "pool.ntp.org",
@@ -290,11 +319,18 @@ void spiffs_init(){
 // ==============================================================
 // File IO Functions
 // ==============================================================
+SPIClass *sdSpi = NULL; // SPI object for SD card
 
 void sd_init(){
   Serial.printf("Initializing SD card - ");
-  SPI.begin(18, 19, 23, 5); //SCK, MISO, MOSI,SS
-  if (!SD.begin(CS, SPI)) {
+
+  // Initialize SD card SPI bus
+  sdSpi = new SPIClass(VSPI);
+  sdSpi->begin(18, 19, 23, 5); // VSPI pins for SD card: miso, mosi, sck, ss
+
+  // SPI.begin(18, 19, 23, 5); //SCK, MISO, MOSI,SS
+  // if (!SD.begin(CS, SPI)) {
+  if (!SD.begin(CS, *sdSpi)) {
     Serial.println("initialization failed!");
     return;
   }

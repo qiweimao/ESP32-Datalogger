@@ -16,6 +16,8 @@
 #include <SimpleFTPServer.h>
 #include <ArduinoJson.h>
 #include <Preferences.h>
+#include <LoRa.h>
+
 #include "esp_wifi.h"
 #include "secrets.h"
 #include "data_logging.h"
@@ -46,6 +48,8 @@ void spiffs_init();
 void oled_init();
 void oled_print(const char* text);
 void oled_print(uint8_t value);
+
+void lora_init(void);
 
 /* SD Card */
 void sd_init();

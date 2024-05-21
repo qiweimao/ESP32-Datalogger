@@ -64,6 +64,9 @@ void setup() {
   start_http_server();// start Async server with api-interfaces
   external_rtc_init();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   oled_init();
+
+  lora_init();
+
   xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
 
@@ -79,7 +82,38 @@ void setup() {
   Serial.println("Entering Loop");
 }
 
+int lora_counter = 0;
+
 void loop() {
   ftp.handle();
   ElegantOTA.loop();
+
+  if (ESP_NOW_MODE) {
+    Serial.println("Lora Send");
+    //Send LoRa packet to receiver
+    LoRa.beginPacket();
+    LoRa.print("hello ");
+    LoRa.print(lora_counter);
+    LoRa.endPacket();
+
+    lora_counter++;
+  }
+  else{
+    // try to parse packet
+    int packetSize = LoRa.parsePacket();
+    if (packetSize) {
+      // received a packet
+      Serial.print("Received packet '");
+
+      // read packet
+      while (LoRa.available()) {
+        String LoRaData = LoRa.readString();
+        Serial.print(LoRaData); 
+      }
+
+      // print RSSI of packet
+      Serial.print("' with RSSI ");
+      Serial.println(LoRa.packetRssi());
+    }
+  }
 }
