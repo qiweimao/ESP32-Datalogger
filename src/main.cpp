@@ -7,7 +7,6 @@
 #include "utils.h"
 #include "api_interface.h"
 #include "vm_501.h"
-#include "esp_now_init.h"
 
 #if defined(ESP32)
 #include <SD.h>
@@ -58,17 +57,18 @@ void setup() {
   pinMode(TRIGGER_PIN, INPUT_PULLUP);// Pin setting for wifi manager push button
   pinMode(LED,OUTPUT);// onboard blue LED inidcator
   spiffs_init();// Setup SPIFFS -- Flash File System
+
   sd_init();//SD card file system initialization
   load_system_configuration();
-  esp_now_setup();
-  start_http_server();// start Async server with api-interfaces
+  
   external_rtc_init();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   oled_init();
-
   lora_init();
 
-  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
-  xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
+  wifi_init();
+  start_http_server();// start Async server with api-interfaces
+
+  // xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
 
   ftp.addUser(FTP_USER, FTP_PASSWORD);
   #if defined(ESP32)
@@ -77,6 +77,7 @@ void setup() {
   ftp.addFilesystem("SPIFFS", &SPIFFS);
   ftp.begin();
 
+  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   /* Logging Capabilities */
   Serial.println("\n------------------Boot Completed----------------\n");
   Serial.println("Entering Loop");
@@ -88,32 +89,4 @@ void loop() {
   ftp.handle();
   ElegantOTA.loop();
 
-  if (ESP_NOW_MODE) {
-    Serial.println("Lora Send");
-    //Send LoRa packet to receiver
-    LoRa.beginPacket();
-    LoRa.print("hello ");
-    LoRa.print(lora_counter);
-    LoRa.endPacket();
-
-    lora_counter++;
-  }
-  else{
-    // try to parse packet
-    int packetSize = LoRa.parsePacket();
-    if (packetSize) {
-      // received a packet
-      Serial.print("Received packet '");
-
-      // read packet
-      while (LoRa.available()) {
-        String LoRaData = LoRa.readString();
-        Serial.print(LoRaData); 
-      }
-
-      // print RSSI of packet
-      Serial.print("' with RSSI ");
-      Serial.println(LoRa.packetRssi());
-    }
-  }
 }

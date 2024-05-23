@@ -37,6 +37,7 @@ extern String WIFI_SSID;
 extern String WIFI_PASSWORD;
 
 void wifi_setting_reset();
+void wifi_init();
 void load_system_configuration();
 void update_system_configuration(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newESP_NOW_MODE, String newProjectName);
 String get_current_time(bool getFilename = false);
