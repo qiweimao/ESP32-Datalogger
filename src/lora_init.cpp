@@ -5,21 +5,18 @@
 //Define the pins used by the transceiver module
 #define LORA_RST 27
 #define DIO0 4
-
-//Define the pins used by the HSPI interface
 #define LORA_SCK 14
 #define LORA_MISO 12
 #define LORA_MOSI 13
 #define LORA_SS 15
-
 SPIClass loraSpi(HSPI);// Separate SPI bus for LoRa to avoid conflict with the SD Card
+
 volatile bool dataReceived = false;// Flag to indicate data received
 const int maxPacketSize = 256; // Define a maximum packet size
+String message = "";
 
 void lora_gateway_init();
 void lora_slave_init();
-
-String message = "";
 
 void lora_init(void){
 
@@ -34,7 +31,6 @@ void lora_init(void){
   LoRa.setSyncWord(0xF3);
   Serial.println("LoRa Initializing OK!");
   
-
   if (ESP_NOW_MODE == ESP_NOW_SENDER){
     Serial.println("Initialized as Sender");
     lora_slave_init();
