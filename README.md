@@ -163,6 +163,9 @@ The logger should liten on route `/api/readings` for timeseries requests. The cl
 ```
 /api/readings?sensorId=238&start=2024-02-06T13:40:00&end=2024-02-13T13:40:00&readingsOptions=0
 ```
+
+# License
+Created by Qiwei Mao
 # Useful References
 Random Nerd Tutorials: https://randomnerdtutorials.com/projects-esp32/
 Dashboard: https://github.com/ayushsharma82/ESP-DASH
