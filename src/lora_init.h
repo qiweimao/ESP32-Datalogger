@@ -14,6 +14,7 @@ typedef struct struct_message {
 typedef struct struct_pairing {       // new structure for pairing
     uint8_t msgType;
     uint8_t id;
+    uint32_t pairingKey;
 } struct_pairing;
 
 // Structure to hold task parameters
@@ -24,11 +25,6 @@ struct TaskParams {
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
 
 enum MessageType {PAIRING, DATA,};
-
-extern volatile bool dataReceived;
-
-extern const int maxPacketSize; // Define a maximum packet size
-
 
 void LoRa_rxMode();
 void LoRa_txMode();

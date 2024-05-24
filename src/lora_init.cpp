@@ -11,12 +11,15 @@
 #define LORA_SS 15
 SPIClass loraSpi(HSPI);// Separate SPI bus for LoRa to avoid conflict with the SD Card
 
-volatile bool dataReceived = false;// Flag to indicate data received
+volatile int dataReceived = 0;// Flag to indicate data received
 const int maxPacketSize = 256; // Define a maximum packet size
 String message = "";
 
 void lora_gateway_init();
 void lora_slave_init();
+
+// Define the type for the callback function
+typedef void (*DataRecvCallback)(const uint8_t *incomingData, int len);
 
 void lora_init(void){
 
@@ -58,14 +61,38 @@ void LoRa_sendMessage(String message) {
 }
 
 void onReceive(int packetSize) {
-  while (LoRa.available()) {
-    message += (char)LoRa.read();
-  }
-  dataReceived = true;
+  dataReceived++;
 }
 
 void onTxDone() {
   LoRa_rxMode();
+}
+
+void taskReceive(void *parameter) {
+
+  DataRecvCallback callback = (DataRecvCallback)parameter;
+
+  uint8_t buffer[250]; // Define a buffer to store incoming data
+  int bufferIndex = 0; // Index to keep track of the buffer position
+  
+  while (true) {
+    if (dataReceived) {
+      dataReceived--; // Reset the flag for the next packet
+      bufferIndex = 0; // Reset the buffer index
+
+      while (LoRa.available() && bufferIndex < 250) {
+        buffer[bufferIndex++] = LoRa.read();
+      }
+
+      // Call the callback function with the example data
+      if (callback) {
+          callback(buffer, bufferIndex);
+      }
+
+      Serial.println("End: packet received.");
+    }
+    vTaskDelay(10 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
+  }
 }
 
 /******************************************************************
@@ -128,8 +155,8 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       memcpy(&pairingDataGateway, incomingData, sizeof(pairingDataGateway));
 
       Serial.println(pairingDataGateway.msgType);
-      Serial.println(pairingDataGateway.id);
       Serial.print("Pairing request from: ");
+      Serial.println(pairingDataGateway.id);
 
       /* OLED for Dev */
       oled_print(pairingDataGateway.msgType);
@@ -146,24 +173,14 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
             LoRa.write((uint8_t *) &pairingDataGateway, sizeof(pairingDataGateway));
             LoRa.endPacket();
             addPeerGateway(pairingDataGateway.id);
+            LoRa.receive();
         }  
       }  
       break; 
   }
 }
 
-void taskReceive(void *parameter){
-  while(true){
-    if (dataReceived) {
-      Serial.print("Gateway Receive: ");
-      Serial.println(message);
 
-      dataReceived = false;      // Reset the flag and message for the next packet
-      message = "";
-    }
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
-  }
-}
 
 void lora_gateway_init() {
 
@@ -171,7 +188,7 @@ void lora_gateway_init() {
   LoRa.onTxDone(onTxDone);
   LoRa_rxMode();
 
-  xTaskCreate(taskReceive, "Data Handler", 10000, NULL, 1, NULL);
+  xTaskCreate(taskReceive, "Data Handler", 10000, (void*)OnDataRecvGateway, 1, NULL);
 
 }
 
@@ -183,7 +200,7 @@ void lora_gateway_init() {
 
 
 // Set your Board and Server ID 
-#define BOARD_ID 1
+#define BOARD_ID 0x3F
 
 PairingStatus pairingStatus = NOT_PAIRED;
 
@@ -265,6 +282,7 @@ PairingStatus autoPairing(){
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &pairingDataNode, sizeof(pairingDataNode));
     LoRa.endPacket();
+    LoRa.receive();
     previousMillis = millis();
     pairingStatus = PAIR_REQUESTED;
     Serial.println("Pairing request sent");
@@ -302,25 +320,10 @@ void pairingTask(void *pvParameters) {
         LoRa.beginPacket();
         LoRa.write((uint8_t *) &myData, sizeof(myData));
         LoRa.endPacket();
-        Serial.printf("Sent packet...");
+        LoRa.receive();
+        Serial.printf("Sent sensor data packet...");
     }
-  }
-}
-
-// Task to handle received data
-void handleReceivedData_slave(void *parameter) {
-  for (;;) {
-    if (dataReceived) {
-      dataReceived = false;
-      uint8_t receivedData[maxPacketSize];
-      int packetSize = LoRa.parsePacket ();
-      if (packetSize) // Only read if there is some data to read..
-      {
-        LoRa.readBytes((uint8_t *)&receivedData, packetSize);
-      }
-      OnDataRecvNode(receivedData, packetSize);
-    }
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Yield to other tasks, delay for 10ms
+    vTaskDelay(10 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
   }
 }
 
@@ -333,7 +336,7 @@ void lora_slave_init() {
   LoRa.onTxDone(onTxDone);
   LoRa_rxMode();
 
-  xTaskCreate(handleReceivedData_slave, "Data Handler", 10000, NULL, 1, NULL);
+  xTaskCreate(taskReceive, "Data Handler", 10000, (void *)OnDataRecvNode, 1, NULL);
   xTaskCreate(pairingTask, "Pairing Task", 10000, NULL, 1, NULL);
 
 }

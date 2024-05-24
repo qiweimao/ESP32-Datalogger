@@ -582,6 +582,11 @@ void oled_init() {
     screenBuffer[i][0] = '\0';
   }
 
+  // Print "booted" to the screen
+  display.setCursor(0, 0);  // Set cursor to top-left corner
+  display.println(F("booted"));
+  display.display();
+
 }
 
 void oled_print(const char* text) {
