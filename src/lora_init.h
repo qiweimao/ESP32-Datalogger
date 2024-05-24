@@ -16,10 +16,27 @@ typedef struct struct_pairing {       // new structure for pairing
     uint8_t id;
 } struct_pairing;
 
+// Structure to hold task parameters
+struct TaskParams {
+  unsigned long interval;
+};
+
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
 
 enum MessageType {PAIRING, DATA,};
 
-void printMAC(const uint8_t mac_addr);
+extern volatile bool dataReceived;
+
+extern const int maxPacketSize; // Define a maximum packet size
+
+
+void LoRa_rxMode();
+void LoRa_txMode();
+void LoRa_sendMessage(String message);
+void onReceive(int packetSize);
+void onTxDone();
+boolean runEvery(unsigned long interval);
+void loopFunction(void *parameter);
+void handleReceivedData(void *parameter);
 
 #endif

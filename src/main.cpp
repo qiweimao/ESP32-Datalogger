@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "api_interface.h"
 #include "vm_501.h"
+#include "lora_init.h"
 
 #if defined(ESP32)
 #include <SD.h>
@@ -85,8 +86,52 @@ void setup() {
 
 int lora_counter = 0;
 
+float getRamUsagePercentage() {
+  // Get total heap size
+  size_t totalHeap = ESP.getHeapSize();
+  
+  // Get free heap size
+  size_t freeHeap = ESP.getFreeHeap();
+  
+  // Calculate used heap size
+  size_t usedHeap = totalHeap - freeHeap;
+  
+  // Calculate percentage of used heap
+  float usedHeapPercentage = (float(usedHeap) / totalHeap) * 100;
+  
+  Serial.printf("RAM Usage: %f\n", usedHeapPercentage);
+
+  return usedHeapPercentage;
+}
+
+// boolean runEvery(unsigned long interval)
+// {
+//   static unsigned long previousMillis = 0;
+//   unsigned long currentMillis = millis();
+//   if (currentMillis - previousMillis >= interval)
+//   {
+//     previousMillis = currentMillis;
+//     return true;
+//   }
+//   return false;
+// }
+
 void loop() {
   ftp.handle();
   ElegantOTA.loop();
+
+  // int packetSize = LoRa.parsePacket();
+  // if (packetSize) {
+  //   Serial.print("Received packet '");
+
+  //   while (LoRa.available()) {
+  //     char c = (char)LoRa.read();
+  //     Serial.print(c);
+  //   }
+
+  //   Serial.print("' with RSSI ");
+  //   Serial.println(LoRa.packetRssi());
+  // }
+    // LoRa_rxMode();
 
 }

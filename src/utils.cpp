@@ -67,10 +67,13 @@ void wifi_setting_reset(){
 void wifi_init(){
     Serial.print("Connecting to WiFi...");
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.println(WIFI_SSID);
+    Serial.println(WIFI_PASSWORD);
 
     // Wait for connection
     int i = 0;
     while (WiFi.status() != WL_CONNECTED) {
+      i++;
         delay(1000);
         Serial.print(".");
         if(i > 5){
