@@ -22,15 +22,15 @@
 #include "secrets.h"
 #include "data_logging.h"
 
-#define ESP_NOW_SENDER 0
-#define ESP_NOW_RESPONDER 1
-#define ESP_NOW_DUAL 2
+#define LORA_SLAVE 0
+#define LORA_GATEWAY 1
+
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define TRIGGER_PIN 4
 #define LED 2
 
-extern int ESP_NOW_MODE;
+extern int LORA_MODE;
 extern RTC_DS1307 rtc;
 extern char daysOfWeek[7][12];
 extern String WIFI_SSID;

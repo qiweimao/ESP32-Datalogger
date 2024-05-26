@@ -39,7 +39,7 @@ HardwareSerial VM(1); // UART port 1 on ESP32
 
 String WIFI_SSID;
 String WIFI_PASSWORD;
-int ESP_NOW_MODE = ESP_NOW_RESPONDER; // default set up upon flashing
+int LORA_MODE = LORA_GATEWAY; // default set up upon flashing
 
 char daysOfWeek[7][12] = {
   "Sunday",
@@ -132,19 +132,19 @@ void load_system_configuration(){
     preferences.putLong("gmtOffset_sec", gmtOffset_sec);
   }
 
-  if (preferences.isKey("ESP_NOW_MODE")) {
-    ESP_NOW_MODE = preferences.getLong("ESP_NOW_MODE", ESP_NOW_RESPONDER);
+  if (preferences.isKey("LORA_MODE")) {
+    LORA_MODE = preferences.getLong("LORA_MODE", LORA_GATEWAY);
     Serial.print("Boot as gateway: ");
-    Serial.println(ESP_NOW_MODE);
+    Serial.println(LORA_MODE);
   } else {
-    Serial.println("ESP_NOW_MODE not found. Set as Responder.");
-    preferences.putLong("ESP_NOW_MODE", ESP_NOW_RESPONDER);
+    Serial.println("LORA_MODE not found. Set as Responder.");
+    preferences.putLong("LORA_MODE", LORA_GATEWAY);
   }
 
   preferences.end();
 }
 
-void update_system_configuration(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newESP_NOW_MODE, String newProjectName) {
+void update_system_configuration(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newLORA_MODE, String newProjectName) {
 
   // Check if newSSID and newWiFiPassword are not empty
   if (newSSID.length() == 0 || newWiFiPassword.length() == 0) {
@@ -152,8 +152,8 @@ void update_system_configuration(String newSSID, String newWiFiPassword, long ne
     return;
   }
 
-  // Check if newESP_NOW_MODE is within valid range
-  if (newESP_NOW_MODE < 0 || newESP_NOW_MODE > 3) {
+  // Check if newLORA_MODE is within valid range
+  if (newLORA_MODE < 0 || newLORA_MODE > 3) {
     Serial.println("Error: ESP-NOW mode must be an integer between 0 and 3.");
     return;
   }
@@ -184,8 +184,8 @@ void update_system_configuration(String newSSID, String newWiFiPassword, long ne
     preferences.putLong("gmtOffset_sec", newgmtOffset_sec);
   }
 
-  if (preferences.isKey("ESP_NOW_MODE")) {
-    preferences.putLong("ESP_NOW_MODE", newESP_NOW_MODE);
+  if (preferences.isKey("LORA_MODE")) {
+    preferences.putLong("LORA_MODE", newLORA_MODE);
   }
 
   preferences.end();

@@ -8,12 +8,15 @@ extern SemaphoreHandle_t logMutex;
 extern bool loggingPaused;
 AsyncWebServer server(80);
 
-AsyncCallbackJsonWebHandler *sysConfig();
+// React Package
 void serveIndexPage(AsyncWebServerRequest *request);
 void serveJS(AsyncWebServerRequest *request);
 void serveCSS(AsyncWebServerRequest *request);
 void serveFavicon(AsyncWebServerRequest *request);
 void serveManifest(AsyncWebServerRequest *request);
+
+// API
+AsyncCallbackJsonWebHandler *sysConfig();
 void serveGateWayMetaData(AsyncWebServerRequest *request);
 void serveVoltageHistory(AsyncWebServerRequest *request);
 
@@ -57,14 +60,14 @@ AsyncCallbackJsonWebHandler *sysConfig (){
       long newgmtOffset_sec = json["gmtOffset_sec"].as<signed long>();
       Serial.printf("gmtOffset_sec: %ld\n", newgmtOffset_sec);
 
-      int newESP_NOW_MODE = json["ESP_NOW_MODE"].as<signed int>();
-      Serial.printf("ESP_NOW_MODE: %d\n", newESP_NOW_MODE);
+      int newLORA_MODE = json["LORA_MODE"].as<signed int>();
+      Serial.printf("LORA_MODE: %d\n", newLORA_MODE);
 
       String newProjectName = json["project_name"].as<String>();
-      Serial.printf("ESP_NOW_MODE: %d\n", newProjectName);
+      Serial.printf("LORA_MODE: %d\n", newProjectName);
       
       // Error checking inside the function below
-      update_system_configuration(newSSID, newWiFiPassword, newgmtOffset_sec, newESP_NOW_MODE, newProjectName);
+      update_system_configuration(newSSID, newWiFiPassword, newgmtOffset_sec, newLORA_MODE, newProjectName);
 
       request->send(200); // Send an empty response with HTTP status code 200
     });

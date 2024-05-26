@@ -34,11 +34,11 @@ void lora_init(void){
   LoRa.setSyncWord(0xF3);
   Serial.println("LoRa Initializing OK!");
   
-  if (ESP_NOW_MODE == ESP_NOW_SENDER){
+  if (LORA_MODE == LORA_SLAVE){
     Serial.println("Initialized as Sender");
     lora_slave_init();
   }
-  if (ESP_NOW_MODE == ESP_NOW_RESPONDER){
+  if (LORA_MODE == LORA_GATEWAY){
     Serial.println("Initialized as Gateway");
     lora_gateway_init();
   }
@@ -89,7 +89,6 @@ void taskReceive(void *parameter) {
           callback(buffer, bufferIndex);
       }
 
-      Serial.println("End: packet received.");
     }
     vTaskDelay(10 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
   }
@@ -123,35 +122,23 @@ bool addPeerGateway(const uint8_t peer_addr) {
 }
 
 void OnDataRecvGateway(const uint8_t *incomingData, int len) { 
-  Serial.print(len);
-  Serial.println();
   StaticJsonDocument<1000> root;
   String payload;
   uint8_t type = incomingData[0];       // first message byte is the type of message 
-  Serial.printf("Incoming data type: unit8_t = ");
-  Serial.println(type);
   switch (type) {
     case DATA :                           // the message is data type
-      Serial.println("Data type: DATA");
-      oled_print("Data type: DATA");
-
       memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
-      // create a JSON document with received data and send it by event to the web page
-      root["id"] = incomingReadings.id;
+      root["id"] = incomingReadings.id;      // create a JSON document with received data and send it by event to the web page
       root["temperature"] = incomingReadings.temp;
-
       root["humidity"] = incomingReadings.hum;
       root["readingId"] = String(incomingReadings.readingId);
       serializeJson(root, payload);
-      Serial.print("event send :");
+      oled_print(payload.c_str());
       serializeJson(root, Serial);
       Serial.println();
       break;
     
     case PAIRING:                            // the message is a pairing request 
-      Serial.println("Data type: PAIRING");
-      oled_print("Data type: PAIRING");
-
       memcpy(&pairingDataGateway, incomingData, sizeof(pairingDataGateway));
 
       Serial.println(pairingDataGateway.msgType);
@@ -179,8 +166,6 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       break; 
   }
 }
-
-
 
 void lora_gateway_init() {
 
@@ -310,7 +295,7 @@ PairingStatus autoPairing(){
 void pairingTask(void *pvParameters) {
   while(true){
     if (autoPairing() == PAIR_PAIRED) {
-        delay(5000);
+        delay(500);
         //Set values to send
         myData.msgType = DATA;
         myData.id = BOARD_ID;
