@@ -34,7 +34,7 @@ extern RTC_DS1307 rtc;
 extern char daysOfWeek[7][12];
 extern String WIFI_SSID;
 extern String WIFI_PASSWORD;
-extern long gmtOffset_sec;
+extern int utcOffset;  // UTC offset in hours (Eastern Time Zone is -5 hours)
 
 void wifi_setting_reset();
 void wifi_init();

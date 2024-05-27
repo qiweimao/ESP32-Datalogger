@@ -87,6 +87,7 @@ const char *ntpServers[] = {
   "time.windows.com",
   "time.nist.gov",  // Add more NTP servers as needed
 };
+
 const int numNtpServers = sizeof(ntpServers) / sizeof(ntpServers[0]);
 int daylightOffset_sec = 3600;
 RTC_DS1307 rtc;
@@ -126,6 +127,8 @@ void external_rtc_sync_ntp(){
 }
 
 void ntp_sync() {
+
+  long gmtOffset_sec = utcOffset * 60 * 60;
 
   // Attempt synchronization with each NTP server in the list
   for (int i = 0; i < numNtpServers; i++) {
