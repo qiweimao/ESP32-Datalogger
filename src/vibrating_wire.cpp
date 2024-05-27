@@ -1,5 +1,5 @@
 #include "utils.h"
-#include "vm_501.h"
+#include "vibrating_wire.h"
 extern HardwareSerial VM; // UART port 1 on ESP32
 
 const int MAX_COMMANDSIZE = 6;
