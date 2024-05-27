@@ -1,6 +1,7 @@
 #include "api_interface.h"
 #include "utils.h"
 #include "AsyncJson.h"
+#include "configuration.h"
 
 extern SemaphoreHandle_t logMutex;
 extern bool loggingPaused;
@@ -14,9 +15,10 @@ void serveFavicon(AsyncWebServerRequest *request);
 void serveManifest(AsyncWebServerRequest *request);
 
 // API
-AsyncCallbackJsonWebHandler *sysConfig();
+AsyncCallbackJsonWebHandler *updateSysConfig();
 void serveGateWayMetaData(AsyncWebServerRequest *request);
 void serveVoltageHistory(AsyncWebServerRequest *request);
+void getSysConfig(AsyncWebServerRequest *request);
 
 void start_http_server(){
   Serial.println("\n*** Starting Server ***");
@@ -30,13 +32,14 @@ void start_http_server(){
   server.on("/manifest.json", HTTP_GET, serveManifest);// Serve the index.html file
   server.on("/api/gateway-metadata", HTTP_GET, serveGateWayMetaData);// Serve the index.html file
   server.on("/api/voltage-history", HTTP_GET, serveVoltageHistory);// Serve the index.html file
+  server.on("/api/system-configuration", HTTP_GET, getSysConfig);// Serve the index.html file
 
   server.on("/reboot", HTTP_GET, serveRebootLogger);// Serve the text file
   server.on("/pauseLogging", HTTP_GET, pauseLoggingHandler);
   server.on("/resumeLogging", HTTP_GET, resumeLoggingHandler);
 
   // POST
-  server.addHandler(sysConfig());
+  server.addHandler(updateSysConfig());
 
   server.begin();  // Start server
   Serial.printf("Server Started @ IP: %s\n", WiFi.localIP().toString().c_str());
@@ -44,7 +47,7 @@ void start_http_server(){
   Serial.printf("ESP Board MAC Address: %s\n", WiFi.macAddress().c_str());
 }
 
-AsyncCallbackJsonWebHandler *sysConfig (){
+AsyncCallbackJsonWebHandler *updateSysConfig (){
   return new AsyncCallbackJsonWebHandler("/api/configurations", [](AsyncWebServerRequest *request, JsonVariant &json) {
 
       String newSSID = json["WIFI_SSID"].as<String>();
@@ -53,14 +56,14 @@ AsyncCallbackJsonWebHandler *sysConfig (){
       String newWiFiPassword = json["WIFI_PASSWORD"].as<String>();
       Serial.printf("WIFI_PASSWORD: %s\n", newWiFiPassword.c_str());
 
-      long newgmtOffset_sec = json["gmtOffset_sec"].as<signed long>();
-      Serial.printf("gmtOffset_sec: %ld\n", newgmtOffset_sec);
+      int newgmtOffset_sec = json["gmtOffset_sec"].as<int>();
+      Serial.printf("gmtOffset_sec: %d\n", newgmtOffset_sec);
 
-      int newLORA_MODE = json["LORA_MODE"].as<signed int>();
+      int newLORA_MODE = json["LORA_MODE"].as<int>();
       Serial.printf("LORA_MODE: %d\n", newLORA_MODE);
 
       String newProjectName = json["project_name"].as<String>();
-      Serial.printf("LORA_MODE: %d\n", newProjectName);
+      Serial.printf("LORA_MODE: %s\n", newProjectName);
       
       // Error checking inside the function below
       update_system_configuration(newSSID, newWiFiPassword, newgmtOffset_sec, newLORA_MODE, newProjectName);
@@ -146,6 +149,17 @@ void serveVoltageHistory(AsyncWebServerRequest *request){
   JsonObject obj3 = doc.add<JsonObject>();
   obj3["time"] = "2024/05/09 00:00";
   obj3["voltage"] = "3.7V";
+  serveJson(request, doc, 200, false);
+}
+
+void getSysConfig(AsyncWebServerRequest *request){
+  JsonDocument doc;
+  JsonObject obj1 = doc.add<JsonObject>();
+  obj1["WIFI_SSID"] = WIFI_SSID;
+  obj1["WIFI_PASSWORD"] = WIFI_PASSWORD;
+  obj1["DEVICE_NAME"] = DEVICE_NAME;
+  obj1["LORA_MODE"] = LORA_MODE;
+  obj1["utcOffset"] = utcOffset;
   serveJson(request, doc, 200, false);
 }
 
