@@ -1,55 +1,23 @@
 #include "utils.h"
 
-Preferences preferences;
-
-/*OLED*/
-
-// Define the screen dimensions
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define CHAR_HEIGHT 8  // Each character row is 8 pixels high
-
-// Define the I2C address (0x3C for most Adafruit OLEDs)
-#define OLED_ADDR 0x3C
-
-// Number of rows that fit on the screen
-#define NUM_ROWS (SCREEN_HEIGHT / CHAR_HEIGHT)
-
-// Create the display object
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
-
-// Buffer to store the data currently on the screen
-char screenBuffer[NUM_ROWS][21];  // 20 characters + null terminator
-
-/* Time */
-const char *ntpServers[] = {
-  "pool.ntp.org",
-  "time.google.com",
-  "time.windows.com",
-  "time.nist.gov",  // Add more NTP servers as needed
-};
-const int numNtpServers = sizeof(ntpServers) / sizeof(ntpServers[0]);
-long gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
-int daylightOffset_sec = 3600;
-RTC_DS1307 rtc;
-
 const int CS = 5; // SD Card chip select
-const int MAX_COMMANDSIZE = 6;
 HardwareSerial VM(1); // UART port 1 on ESP32
 
-String WIFI_SSID;
-String WIFI_PASSWORD;
-int LORA_MODE = LORA_GATEWAY; // default set up upon flashing
+void spiffs_init(){
+  // Mount SPIFFS filesystem
+  Serial.printf("Mounting SPIFFS filesystem - ");
+  if (!SPIFFS.begin(true)) {
+    Serial.println("SPIFFS allocation failed");
+    return;
+  }
+  Serial.println("OK");
+}
 
-char daysOfWeek[7][12] = {
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday"
-};
+/******************************************************************
+ *                                                                *
+ *                             WiFi                               *
+ *                                                                *
+ ******************************************************************/
 
 void wifi_setting_reset(){
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); //load the flash-saved configs
@@ -87,113 +55,41 @@ void wifi_init(){
     Serial.println(WiFi.localIP());
 }
 
-void load_system_configuration(){
-  Serial.println("Loading configuration...");
-  
-  preferences.begin("credentials", false);
-  
-  if (preferences.isKey("WIFI_SSID")) {
-    WIFI_SSID = preferences.getString("WIFI_SSID", "Verizon_F4ZD39");
-    // Serial.print("WiFi SSID: ");
-    // Serial.println(WIFI_SSID);
+String get_public_ip() {
+
+  HTTPClient http;
+  http.begin("https://api.ipify.org");  // Make a GET request to api.ipify.org to get the public IP
+  int httpCode = http.GET();  // Send the request
+
+  if (httpCode == HTTP_CODE_OK) {  // Check for a successful response
+    String publicIP = http.getString();
+    return publicIP;
   } else {
-    Serial.println("WiFi SSID not found. Using default value.");
-    WIFI_SSID = "Verizon_F4ZD39";
-    preferences.putString("WIFI_SSID", WIFI_SSID);
+    Serial.printf("HTTP request failed with error code %d\n", httpCode);
+    return "Error";
   }
 
-  if (preferences.isKey("WIFI_PASSWORD")) {
-    WIFI_PASSWORD = preferences.getString("WIFI_PASSWORD", "aft9-grid-knot");
-    // Serial.print("WiFi Password: ");
-    // Serial.println(WIFI_PASSWORD);
-  } else {
-    Serial.println("WiFi Password not found. Using default value.");
-    WIFI_PASSWORD = "aft9-grid-knot";
-    preferences.putString("WIFI_PASSWORD", WIFI_PASSWORD);
-  }
-
-  if (preferences.isKey("PROJECT_NAME")) {
-    String projectName = preferences.getString("PROJECT_NAME", "new-project");
-    Serial.print("PROJECT_NAME: ");
-    Serial.println(projectName);
-  } else {
-    Serial.println("PROJECT_NAME not found. Using default value.");
-    String projectName = "new-project";
-    preferences.putString("PROJECT_NAME", projectName);
-  }
-
-  if (preferences.isKey("gmtOffset_sec")) {
-    gmtOffset_sec = preferences.getLong("gmtOffset_sec", gmtOffset_sec);
-    // Serial.print("GMT Offset (seconds): ");
-    // Serial.println(gmtOffset_sec);
-  } else {
-    Serial.println("GMT Offset not found. Using default value.");
-    gmtOffset_sec = -5 * 60 * 60;  // GMT offset in seconds (Eastern Time Zone)
-    preferences.putLong("gmtOffset_sec", gmtOffset_sec);
-  }
-
-  if (preferences.isKey("LORA_MODE")) {
-    LORA_MODE = preferences.getLong("LORA_MODE", LORA_GATEWAY);
-    Serial.print("Boot as gateway: ");
-    Serial.println(LORA_MODE);
-  } else {
-    Serial.println("LORA_MODE not found. Set as Responder.");
-    preferences.putLong("LORA_MODE", LORA_GATEWAY);
-  }
-
-  preferences.end();
+  http.end();  // End the request
 }
 
-void update_system_configuration(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newLORA_MODE, String newProjectName) {
 
-  // Check if newSSID and newWiFiPassword are not empty
-  if (newSSID.length() == 0 || newWiFiPassword.length() == 0) {
-    Serial.println("Error: WiFi SSID or password cannot be empty.");
-    return;
-  }
 
-  // Check if newLORA_MODE is within valid range
-  if (newLORA_MODE < 0 || newLORA_MODE > 3) {
-    Serial.println("Error: ESP-NOW mode must be an integer between 0 and 3.");
-    return;
-  }
+/******************************************************************
+ *                                                                *
+ *                             Time                               *
+ *                                                                *
+ ******************************************************************/
 
-  // Check if newgmtOffset_sec is within valid range
-  if (newgmtOffset_sec < -43200 || newgmtOffset_sec > 43200) {
-    Serial.println("Error: GMT offset must be between -43200 and 43200.");
-    return;
-  }
-
-  Serial.println("Updating configuration...");
-  
-  preferences.begin("credentials", false);
-  
-  if (preferences.isKey("WIFI_SSID")) {
-    preferences.putString("WIFI_SSID", newSSID);
-  }
-
-  if (preferences.isKey("PROJECT_NAME")) {
-    preferences.putString("PROJECT_NAME", newProjectName);
-  }
-
-  if (preferences.isKey("WIFI_PASSWORD")) {
-    preferences.putString("WIFI_PASSWORD", newWiFiPassword);
-  }
-
-  if (preferences.isKey("gmtOffset_sec")) {
-    preferences.putLong("gmtOffset_sec", newgmtOffset_sec);
-  }
-
-  if (preferences.isKey("LORA_MODE")) {
-    preferences.putLong("LORA_MODE", newLORA_MODE);
-  }
-
-  preferences.end();
-}
-
-void vm501_init() {
-  VM.begin(9600, SERIAL_8N1, 16, 17); // Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX
-}
+/* Time */
+const char *ntpServers[] = {
+  "pool.ntp.org",
+  "time.google.com",
+  "time.windows.com",
+  "time.nist.gov",  // Add more NTP servers as needed
+};
+const int numNtpServers = sizeof(ntpServers) / sizeof(ntpServers[0]);
+int daylightOffset_sec = 3600;
+RTC_DS1307 rtc;
 
 DateTime tmToDateTime(struct tm timeinfo) {
   return DateTime(timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
@@ -210,7 +106,7 @@ void external_rtc_init(){
 
   DateTime now = rtc.now();
   Serial.print("RTC time: ");
-  print_datetime(now);
+  Serial.println(get_current_time());
 }
 
 void external_rtc_sync_ntp(){
@@ -222,28 +118,11 @@ void external_rtc_sync_ntp(){
     Serial.println("DS1307 RTC synchronized with NTP time.");
     DateTime now = rtc.now();
     Serial.print("RTC time: ");
-    print_datetime(now);
-    return; // Exit the function if synchronization is successful
+    Serial.println(get_current_time());    return; // Exit the function if synchronization is successful
   } else {
     Serial.printf("Failed to get NTP Time for DS1307\n");
     return;
   }
-}
-
-void print_datetime(DateTime dt) {
-  // Print date and time components
-  Serial.print(dt.year(), DEC);
-  Serial.print('/');
-  Serial.print(dt.month(), DEC);
-  Serial.print('/');
-  Serial.print(dt.day(), DEC);
-  Serial.print(" ");
-  Serial.print(dt.hour(), DEC);
-  Serial.print(':');
-  Serial.print(dt.minute(), DEC);
-  Serial.print(':');
-  Serial.print(dt.second(), DEC);
-  Serial.println();
 }
 
 void ntp_sync() {
@@ -285,36 +164,11 @@ String get_current_time(bool getFilename) {
   return ""; // Return an empty string in case of failure
 }
 
-String get_public_ip() {
-
-  HTTPClient http;
-  http.begin("https://api.ipify.org");  // Make a GET request to api.ipify.org to get the public IP
-  int httpCode = http.GET();  // Send the request
-
-  if (httpCode == HTTP_CODE_OK) {  // Check for a successful response
-    String publicIP = http.getString();
-    return publicIP;
-  } else {
-    Serial.printf("HTTP request failed with error code %d\n", httpCode);
-    return "Error";
-  }
-
-  http.end();  // End the request
-}
-
-void spiffs_init(){
-  // Mount SPIFFS filesystem
-  Serial.printf("Mounting SPIFFS filesystem - ");
-  if (!SPIFFS.begin(true)) {
-    Serial.println("SPIFFS allocation failed");
-    return;
-  }
-  Serial.println("OK");
-}
-
-// ==============================================================
-// File IO Functions
-// ==============================================================
+/******************************************************************
+ *                                                                *
+ *                            SD Card                             *
+ *                                                                *
+ ******************************************************************/
 SPIClass *sdSpi = NULL; // SPI object for SD card
 
 void sd_init(){
@@ -459,115 +313,22 @@ void testFileIO(fs::FS &fs, const char * path){
   file.close();
 }
 
-void sendCommandVM501(void *parameter) {
-    while (true) {
-        // Check if data is available on the serial port
-        if (Serial.available() > 0) {
-            // Read the input command from the serial port
-            String input = Serial.readStringUntil('\n');
-            // Convert String to C-string
-            char command[input.length() + 1];
-            input.toCharArray(command, sizeof(command));
+/******************************************************************
+ *                                                                *
+ *                            OLED                                *
+ *                                                                *
+ ******************************************************************/
 
-            // Parse the command
-            parseCommand(command);
-        }
-        // Delay for a short period to avoid busy-waiting
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
-}
-
-void parseCommand(const char* command) {
-    // Variables to store parsed values
-    char commandName[6];
-    uint8_t address;
-    uint8_t functionCode;
-    uint8_t startAddressHigh;
-    uint8_t startAddressLow;
-    uint8_t numRegistersHigh;
-    uint8_t numRegistersLow;
-    uint8_t crcHigh;
-    uint8_t crcLow;
-
-    uint8_t hexArray[MAX_COMMANDSIZE] = {};
-
-// MODBUS 0x01 0x03 0x00 0x00 0x00 0x0A
-// MODBUS 0x01 0x03 0x00 0x27 0x00 0x01 GET Sensor Resistance 
-  if (strncmp(command, "MODBUS", 6) == 0) {
-    // Use sscanf to parse the command string
-    int result = sscanf(command, "%s 0x%2hhx 0x%2hhx 0x%2hhx 0x%2hhx 0x%2hhx 0x%2hhx",
-                        &commandName, 
-                        &hexArray[0], &hexArray[1], &hexArray[2], &hexArray[3], 
-                        &hexArray[4], &hexArray[5]);
-
-    // Check if all values were successfully parsed
-    if (result - 1 == MAX_COMMANDSIZE) {
-      unsigned int crc = crc16(hexArray, sizeof(hexArray));
-      uint8_t crcHighByte = (uint8_t)(crc >> 8);
-      uint8_t crcLowByte = (uint8_t)(crc & 0xFF);
-
-      VM.write(hexArray, sizeof(hexArray));
-      VM.write(crcLowByte);
-      VM.write(crcHighByte);
-
-      delay(1000);
-      Serial.printf("VM501:");
-      while (VM.available() > 0) {
-        uint8_t incomingByte = VM.read();
-        Serial.printf("0x%02x ", incomingByte);
-      }
-      Serial.printf("\n");
-    }
-    else {
-        Serial.println("Invalid MODBUS command");
-    }
-  }
-  else if (strncmp(command, "$", 1) == 0){
-
-    VM.write(command);
-    VM.write("\n");
-
-    delay(3000);
-
-    if (VM.available() > 0) {
-      String receivedChar = VM.readString();
-      Serial.println(receivedChar);
-    }
-    else{
-      Serial.println("No reponse from VM501.");
-    }
-  }
-  else{
-    Serial.println("Invalid command");
-  }
-}
-
-unsigned int crc16(unsigned char *dat, unsigned int len)
-{
-    unsigned int crc = 0xffff;
-    unsigned char i;
-    while (len != 0)
-    {
-        crc ^= *dat;
-        for (i = 0; i < 8; i++)
-        {
-            if ((crc & 0x0001) == 0)
-                crc = crc >> 1;
-            else
-            {
-                crc = crc >> 1;
-                crc ^= 0xa001;
-            }
-        }
-        len -= 1;
-        dat++;
-    }
-    return crc;
-}
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define CHAR_HEIGHT 8  // Each character row is 8 pixels high
+#define OLED_ADDR 0x3C // Define the I2C address (0x3C for most Adafruit OLEDs)
+#define NUM_ROWS (SCREEN_HEIGHT / CHAR_HEIGHT) // Number of rows that fit on the screen
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);// Create the display object
+char screenBuffer[NUM_ROWS][21];  // 20 characters + null terminator
 
 void oled_init() {
 
-  // Initialize the display
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;); // Don't proceed, loop forever
@@ -582,7 +343,6 @@ void oled_init() {
     screenBuffer[i][0] = '\0';
   }
 
-  // Print "booted" to the screen
   display.setCursor(0, 0);  // Set cursor to top-left corner
   display.println(F("booted"));
   display.display();

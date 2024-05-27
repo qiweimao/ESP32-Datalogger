@@ -1,33 +1,16 @@
-#include <WiFiClientSecure.h>
-#include <PubSubClient.h>
-#include <HardwareSerial.h>
-
 #include "secrets.h"
 #include "data_logging.h"
 #include "utils.h"
 #include "api_interface.h"
 #include "vm_501.h"
 #include "lora_init.h"
-
-#if defined(ESP32)
-#include <SD.h>
-#include <SPIFFS.h>
-#include <WiFi.h>
-#elif defined(ESP8266)
-#include <ESP8266WiFi.h>
-#include <FS.h>
-#endif
-
 #include "ESP-FTP-Server-Lib.h"
 #include "FTPFilesystem.h"
 
 #define FTP_USER     "esp32"
 #define FTP_PASSWORD "esp32"
 
-// #ifndef UNIT_TEST
-
 FTPServer ftp;
-
 
 /* Tasks */
 SemaphoreHandle_t logMutex;
@@ -72,9 +55,7 @@ void setup() {
   // xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
 
   ftp.addUser(FTP_USER, FTP_PASSWORD);
-  #if defined(ESP32)
-    ftp.addFilesystem("SD", &SD);
-  #endif
+  ftp.addFilesystem("SD", &SD);
   ftp.addFilesystem("SPIFFS", &SPIFFS);
   ftp.begin();
 

@@ -1,8 +1,6 @@
 #include "api_interface.h"
 #include "utils.h"
-#include "file_server.h"
 #include "AsyncJson.h"
-
 
 extern SemaphoreHandle_t logMutex;
 extern bool loggingPaused;
@@ -39,8 +37,6 @@ void start_http_server(){
 
   // POST
   server.addHandler(sysConfig());
-
-  startFileServer();
 
   server.begin();  // Start server
   Serial.printf("Server Started @ IP: %s\n", WiFi.localIP().toString().c_str());
