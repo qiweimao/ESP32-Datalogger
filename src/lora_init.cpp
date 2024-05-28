@@ -45,6 +45,7 @@ void lora_init(void){
   if (LORA_MODE == LORA_GATEWAY){
     Serial.println("Initialized as Gateway");
     lora_gateway_init();
+    loadPeersFromSD();
   }
 
 }
