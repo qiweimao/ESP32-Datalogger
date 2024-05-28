@@ -7,10 +7,27 @@
 #define LORA_SLAVE 0
 #define LORA_GATEWAY 1
 
+#define CHUNK_SIZE 200  // Size of each chunk
+#define ACK_TIMEOUT 2000  // Timeout for ACK in milliseconds
+
 typedef struct vm {
   float freq;
   float temp;
 } vm;
+
+typedef struct file_meta_message {
+  uint8_t msgType;
+  uint8_t mac[6];
+  char filename[40];
+  uint32_t filesize;
+} file_meta_message;
+
+typedef struct file_body_message {
+  uint8_t msgType;
+  uint8_t mac[6];
+  uint8_t data[CHUNK_SIZE];
+  uint8_t len;
+} file_body_message;
 
 typedef struct struct_message {
   uint8_t msgType;
@@ -41,13 +58,14 @@ typedef struct struct_pairing {       // new structure for pairing
   uint32_t pairingKey; // key for network
 } struct_pairing;
 
-// Structure to hold task parameters
-struct TaskParams {
+struct TaskParams {// Structure to hold task parameters
   unsigned long interval;
 };
 
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
-enum MessageType {PAIRING, DATA, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA,};
+enum MessageType {PAIRING, DATA, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA, FILE_META, FILE_BODY};
+
+
 
 extern uint8_t mac_buffer[6];
 extern uint8_t MAC_ADDRESS_STA[6];
