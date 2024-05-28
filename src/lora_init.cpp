@@ -1,5 +1,6 @@
 // #include "utils.h"
 #include "lora_init.h"
+#include "lora_peer.h"
 
 //Define the pins used by the transceiver module
 #define LORA_RST 27
@@ -13,8 +14,8 @@ SPIClass loraSpi(HSPI);// Separate SPI bus for LoRa to avoid conflict with the S
 volatile int dataReceived = 0;// Flag to indicate data received
 const int maxPacketSize = 256; // Define a maximum packet size
 String message = "";
-uint8_t mac_buffer[6];
-uint8_t MAC_ADDRESS_STA[6];
+uint8_t mac_buffer[MAC_ADDR_LENGTH];
+uint8_t MAC_ADDRESS_STA[MAC_ADDR_LENGTH];
 
 void lora_gateway_init();
 void lora_slave_init();
@@ -83,6 +84,7 @@ void taskReceive(void *parameter) {
       dataReceived--; // Reset the flag for the next packet
       bufferIndex = 0; // Reset the buffer index
 
+      Serial.printf("Bytes available for read: %d\n", LoRa.available());
       while (LoRa.available() && bufferIndex < 250) {
         buffer[bufferIndex++] = LoRa.read();
       }

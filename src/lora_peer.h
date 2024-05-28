@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 #define MAX_PEERS 10
-#define MAC_ADDR_LENGTH 8
+#define MAC_ADDR_LENGTH 6
 
 extern uint8_t peers[MAX_PEERS][MAC_ADDR_LENGTH];
 
