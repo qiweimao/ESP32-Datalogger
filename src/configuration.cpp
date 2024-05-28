@@ -15,6 +15,7 @@ String WIFI_PASSWORD;
 String DEVICE_NAME;
 int LORA_MODE; // default set up upon flashing
 int utcOffset;  // UTC offset in hours (Eastern Time Zone is -5 hours)
+uint32_t  PAIRING_KEY;  // UTC offset in hours (Eastern Time Zone is -5 hours)
 
 // Function to save configuration to SD card
 void save_config_to_sd(const char* filename, const String& jsonConfig) {
@@ -47,6 +48,7 @@ void load_system_configuration() {
     DEVICE_NAME = doc["DEVICE_NAME"] | "LOGGER_00";
     utcOffset = doc["UTC_OFFSET"] | -5;
     LORA_MODE = doc["LORA_MODE"] | LORA_GATEWAY;
+    PAIRING_KEY = doc["PAIRING_KEY"] | generateRandomNumber();
     
     serializeJson(doc, jsonConfig);
     save_config_to_sd("/sys_config", jsonConfig);
@@ -58,6 +60,7 @@ void load_system_configuration() {
     DEVICE_NAME = "LOGGER_00";
     utcOffset = -5;
     LORA_MODE = LORA_GATEWAY;
+    PAIRING_KEY = generateRandomNumber();
 
     // Save default configuration
     JsonDocument doc;
@@ -66,6 +69,7 @@ void load_system_configuration() {
     doc["DEVICE_NAME"] = DEVICE_NAME;
     doc["UTC_OFFSET"] = utcOffset;
     doc["LORA_MODE"] = LORA_MODE;
+    doc["PAIRING_KEY"] = PAIRING_KEY;
 
     String jsonConfig;
     serializeJson(doc, jsonConfig);
@@ -120,6 +124,8 @@ void update_system_configuration(String key, String value) {
     doc["UTC_OFFSET"] = value.toInt();
   } else if (key.equals("LORA_MODE")) {
     doc["LORA_MODE"] = value.toInt();
+  } else if (key.equals("PAIRING_KEY")) {
+    doc["PAIRING_KEY"] = static_cast<uint32_t>(strtoul(value.c_str(), NULL, 10));
   } else {
     Serial.println("Invalid key");
   }
