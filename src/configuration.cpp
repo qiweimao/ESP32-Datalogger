@@ -34,7 +34,7 @@ void save_config_to_sd(const char* filename, const String& jsonConfig) {
 }
 
 void load_system_configuration() {
-  Serial.println("Loading system configuration...");
+  Serial.println("\n*** System Configuration ***");
 
   preferences.begin("credentials", false);
 
@@ -50,9 +50,6 @@ void load_system_configuration() {
     LORA_MODE = doc["LORA_MODE"] | LORA_GATEWAY;
     PAIRING_KEY = doc["PAIRING_KEY"] | generateRandomNumber();
     
-    serializeJson(doc, jsonConfig);
-    save_config_to_sd("/sys_config", jsonConfig);
-
   } else {
     Serial.println("Configuration not found. Using default values.");
     WIFI_SSID = "Verizon_F4ZD39";
@@ -78,8 +75,12 @@ void load_system_configuration() {
 
   }
 
-  Serial.printf("Boot as: %s\n", LORA_MODE ? "Gateway" : "Node");
   Serial.printf("Device Name: %s\n", DEVICE_NAME.c_str());
+  Serial.printf("WIFI_SSID: %s\n", WIFI_SSID.c_str());
+  Serial.printf("WIFI_PASSWORD: %s\n", WIFI_PASSWORD.c_str());
+  Serial.printf("Boot as: %s\n", LORA_MODE ? "Gateway" : "Node");
+  Serial.printf("PAIRING_KEY: %ld\n", PAIRING_KEY);
+  Serial.printf("utcOffset: %d\n", utcOffset);
 
   preferences.end();
 }
@@ -136,6 +137,9 @@ void update_system_configuration(String key, String value) {
   save_config_to_sd("/sys_config", jsonConfig);
 
   preferences.end();
+  
+  load_system_configuration(); // reload configuration
+
 }
 
 

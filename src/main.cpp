@@ -21,7 +21,6 @@ TaskHandle_t blinkTaskHandle; // Task handle for the parsing task
 
 void taskInitiNTP(void *parameter) {
   ntp_sync();  // Call the initNTP function
-  Serial.println("Deleted NTP task");
   vTaskDelete(NULL);  // Delete the task once initialization is complete
 }
 
@@ -47,6 +46,7 @@ void setup() {
   load_system_configuration();
   load_data_collection_configuration();
   
+  Serial.println("\n*** Utils ***");
   external_rtc_init();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   oled_init();
   lora_init();
@@ -64,7 +64,6 @@ void setup() {
   xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   /* Logging Capabilities */
   Serial.println("\n------------------Boot Completed----------------\n");
-  Serial.println("Entering Loop");
 }
 
 void loop() {

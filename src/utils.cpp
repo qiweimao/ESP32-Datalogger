@@ -116,7 +116,7 @@ void external_rtc_sync_ntp(){
   if (getLocalTime(&timeinfo)) {
     DateTime ntpTime = tmToDateTime(timeinfo);
     rtc.adjust(ntpTime);
-    Serial.println("DS1307 RTC synchronized with NTP time.");
+    Serial.println("\nDS1307 RTC synchronized with NTP time.");
     DateTime now = rtc.now();
     Serial.print("RTC time: ");
     Serial.println(get_current_time());    return; // Exit the function if synchronization is successful
@@ -134,10 +134,10 @@ void ntp_sync() {
   for (int i = 0; i < numNtpServers; i++) {
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServers[i]);
     struct tm timeinfo;
-    Serial.printf("Syncing with NTP server %s...\n", ntpServers[i]);
+    // Serial.printf("Syncing with NTP server %s...\n", ntpServers[i]);
     if (getLocalTime(&timeinfo)) {
-      Serial.printf("Time synchronized successfully with NTP server %s\n", ntpServers[i]);
-      Serial.printf("NTP Time: %s\n", get_current_time().c_str());
+      // Serial.printf("Time synchronized successfully with NTP server %s\n", ntpServers[i]);
+      // Serial.printf("NTP Time: %s\n", get_current_time().c_str());
       external_rtc_sync_ntp();
       return; // Exit the function if synchronization is successful
     } else {
