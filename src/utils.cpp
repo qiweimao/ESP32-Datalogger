@@ -44,7 +44,7 @@ void wifi_init(){
       i++;
         delay(1000);
         Serial.print(".");
-        if(i > 5){
+        if(i > 10){
           break;
         }
     }
