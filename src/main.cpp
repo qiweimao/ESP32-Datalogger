@@ -41,13 +41,13 @@ void setup() {
   pinMode(TRIGGER_PIN, INPUT_PULLUP);// Pin setting for wifi manager push button
   pinMode(LED,OUTPUT);// onboard blue LED inidcator
   spiffs_init();// Setup SPIFFS -- Flash File System
+  external_rtc_init();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
 
   sd_init();//SD card file system initialization
   load_system_configuration();
   load_data_collection_configuration();
   
   Serial.println("\n*** Utils ***");
-  external_rtc_init();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   oled_init();
   lora_init();
 
