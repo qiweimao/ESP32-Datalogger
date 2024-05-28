@@ -1,4 +1,3 @@
-#include "utils.h"
 
 /* Data Collection Configuration */
 struct DataCollectionConfig {

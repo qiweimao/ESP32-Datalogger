@@ -1,6 +1,8 @@
 #include <Preferences.h>
+#include <SD.h>
 #include <ArduinoJson.h>
 #include "configuration.h"
+#include "lora_init.h"
 
 Preferences preferences;
 
@@ -149,9 +151,6 @@ void update_system_configuration(String key, String value) {
  *                    Data Collection Config                      *
  *                                                                *
  ******************************************************************/
-
-/* Data Collection Configuration */
-
 
 DataCollectionConfig dataConfig;
 

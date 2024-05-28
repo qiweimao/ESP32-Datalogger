@@ -9,19 +9,11 @@
 #include <SPIFFS.h>
 #include <Arduino.h>
 #include <SD.h>
-#include <AsyncTCP.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <ArduinoJson.h>
-#include <LoRa.h>
-
 #include "esp_wifi.h"
-#include "secrets.h"
-#include "data_logging.h"
-
-#define LORA_SLAVE 0
-#define LORA_GATEWAY 1
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels

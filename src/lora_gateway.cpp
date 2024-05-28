@@ -3,7 +3,6 @@
 #include "configuration.h"
 
 struct_message incomingReadings;
-struct_message outgoingSetpoints;
 struct_pairing pairingDataGateway;
 
 void OnDataRecvGateway(const uint8_t *incomingData, int len) { 
@@ -11,7 +10,7 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
   String payload;
   uint8_t type = incomingData[0];       // first message byte is the type of message 
   switch (type) {
-    case DATA :                           // the message is data type
+    case DATA :                         // the message is data type
       memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
       root["mac"] = incomingReadings.mac;      // create a JSON document with received data and send it by event to the web page
       root["temperature"] = incomingReadings.temp;

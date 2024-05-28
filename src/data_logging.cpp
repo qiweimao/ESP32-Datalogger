@@ -1,6 +1,5 @@
 #include <FS.h>
 #include <SPIFFS.h>
-#include "utils.h"
 #include "vibrating_wire.h"
 #include "data_logging.h"
 

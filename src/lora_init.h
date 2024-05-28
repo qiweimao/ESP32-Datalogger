@@ -2,6 +2,10 @@
 #define LORA_INIT_H
 
 #include "utils.h"
+#include <LoRa.h>
+
+#define LORA_SLAVE 0
+#define LORA_GATEWAY 1
 
 typedef struct vm {
   float freq;
@@ -16,7 +20,7 @@ typedef struct struct_message {
   unsigned int readingId;
 } struct_message;
 
-
+// 3 channel VM message
 typedef struct vm_message {
   uint8_t msgType;
   uint8_t mac[6];
@@ -33,8 +37,8 @@ typedef struct adc {
 
 typedef struct struct_pairing {       // new structure for pairing
   uint8_t msgType;
-  uint8_t mac[6];
-  uint32_t pairingKey;
+  uint8_t mac[6]; // identity for device
+  uint32_t pairingKey; // key for network
 } struct_pairing;
 
 // Structure to hold task parameters
@@ -43,8 +47,7 @@ struct TaskParams {
 };
 
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
-
-enum MessageType {PAIRING, DATA,};
+enum MessageType {PAIRING, DATA, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA,};
 
 extern uint8_t mac_buffer[6];
 extern uint8_t MAC_ADDRESS_STA[6];
