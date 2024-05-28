@@ -388,3 +388,15 @@ void oled_print(uint8_t value) {
   snprintf(buffer, 8, "%u", value);
   oled_print(buffer);
 }
+
+// Function to generate a random number using ESP32's hardware RNG
+uint32_t generateRandomNumber() {
+  // Seed the random number generator with a value from the hardware RNG
+  uint32_t seed = esp_random();
+  randomSeed(seed);
+  
+  // Generate a random number between 0 and 4294967294
+  uint32_t randomNumber = random(0, 4294967295);
+  
+  return randomNumber;
+}
