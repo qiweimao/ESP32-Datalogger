@@ -56,6 +56,7 @@ typedef struct struct_pairing {       // new structure for pairing
   uint8_t msgType;
   uint8_t mac[6]; // identity for device
   uint32_t pairingKey; // key for network
+  char deviceName[10];
 } struct_pairing;
 
 struct TaskParams {// Structure to hold task parameters

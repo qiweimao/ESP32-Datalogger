@@ -90,6 +90,7 @@ PairingStatus autoPairing(){
   // set pairing data to send to the server
     Serial.println("\nBegin pairing Request");
     pairingDataNode.msgType = PAIRING;
+    strncpy(pairingDataNode.deviceName, DEVICE_NAME.c_str(), sizeof(pairingDataNode.deviceName) - 1);
     memcpy(pairingDataNode.mac, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
     pairingDataNode.pairingKey = PAIRING_KEY;
     printMacAddress(pairingDataNode.mac);

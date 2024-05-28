@@ -5,7 +5,7 @@
 size_t peerCount = 0;
 const char* filename = "/peers.txt";
 
-uint8_t peers[MAX_PEERS][MAC_ADDR_LENGTH];
+Peer peers[MAX_PEERS];
 
 // Function to print a MAC address
 void printMacAddress(const uint8_t* mac) {
@@ -17,7 +17,7 @@ void printMacAddress(const uint8_t* mac) {
 }
 
 // Function to add a peer gateway
-bool addPeerGateway(const uint8_t peer_addr[MAC_ADDR_LENGTH]) {
+bool addPeerGateway(const uint8_t peer_addr[MAC_ADDR_LENGTH], String DeviceName) {
   if(checkPeerGateway(peer_addr)){
     Serial.println("Peer already added.");
     return false;
@@ -27,9 +27,11 @@ bool addPeerGateway(const uint8_t peer_addr[MAC_ADDR_LENGTH]) {
     Serial.println("Max peers reached. Cannot add more.");
     return false;
   }
+  
   for (size_t i = 0; i < MAC_ADDR_LENGTH; i++) {
-    peers[peerCount][i] = peer_addr[i];
+    peers[peerCount].mac[i] = peer_addr[i];
   }
+  DeviceName.toCharArray(peers[peerCount].deviceName, DEVICE_NAME_MAX_LENGTH);
   peerCount++;
   savePeersToSD();
   return true;
@@ -40,14 +42,14 @@ bool removePeerGateway(const uint8_t peer_addr[MAC_ADDR_LENGTH]) {
   for (size_t i = 0; i < peerCount; i++) {
     bool match = true;
     for (size_t j = 0; j < MAC_ADDR_LENGTH; j++) {
-      if (peers[i][j] != peer_addr[j]) {
+      if (peers[i].mac[j] != peer_addr[j]) {
         match = false;
         break;
       }
     }
     if (match) {
       for (size_t k = i; k < peerCount - 1; k++) {
-        memcpy(peers[k], peers[k + 1], MAC_ADDR_LENGTH);
+        peers[k] = peers[k + 1];
       }
       peerCount--;
       savePeersToSD();
@@ -62,7 +64,7 @@ bool checkPeerGateway(const uint8_t peer_addr[MAC_ADDR_LENGTH]) {
   for (size_t i = 0; i < peerCount; i++) {
     bool match = true;
     for (size_t j = 0; j < MAC_ADDR_LENGTH; j++) {
-      if (peers[i][j] != peer_addr[j]) {
+      if (peers[i].mac[j] != peer_addr[j]) {
         match = false;
         break;
       }
@@ -80,9 +82,8 @@ void savePeersToSD() {
   if (file) {
     file.seek(0); // Move to the beginning of the file
     for (size_t i = 0; i < peerCount; i++) {
-      for (size_t j = 0; j < MAC_ADDR_LENGTH; j++) {
-        file.write(peers[i][j]);
-      }
+      file.write(peers[i].mac, MAC_ADDR_LENGTH);
+      file.write((uint8_t*)peers[i].deviceName, DEVICE_NAME_MAX_LENGTH);
     }
     file.close();
   }
@@ -94,9 +95,15 @@ void loadPeersFromSD() {
   if (file) {
     peerCount = 0;
     while (file.available() && peerCount < MAX_PEERS) {
-      for (size_t j = 0; j < MAC_ADDR_LENGTH; j++) {
-        peers[peerCount][j] = file.read();
-      }
+      file.read(peers[peerCount].mac, MAC_ADDR_LENGTH);
+      file.read((uint8_t*)peers[peerCount].deviceName, DEVICE_NAME_MAX_LENGTH);
+      // Print loaded peer information to serial
+      Serial.print("Loaded Peer ");
+      Serial.print(peerCount + 1);
+      Serial.print(": MAC = ");
+      printMacAddress(peers[peerCount].mac);
+      Serial.print(", Device Name = ");
+      Serial.println(peers[peerCount].deviceName);
       peerCount++;
     }
     file.close();

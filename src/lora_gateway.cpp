@@ -42,7 +42,7 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
           LoRa.beginPacket();
           LoRa.write((uint8_t *) &pairingDataGateway, sizeof(pairingDataGateway));
           LoRa.endPacket();
-          addPeerGateway(pairingDataGateway.mac);
+          addPeerGateway(pairingDataGateway.mac, pairingDataGateway.deviceName);
           LoRa.receive();
         }
         else{
@@ -59,6 +59,8 @@ void lora_gateway_init() {
   LoRa.onReceive(onReceive);
   LoRa.onTxDone(onTxDone);
   LoRa_rxMode();
+
+  loadPeersFromSD();
 
   xTaskCreate(taskReceive, "Data Handler", 10000, (void*)OnDataRecvGateway, 1, NULL);
 
