@@ -37,10 +37,8 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       if (pairingDataGateway.msgType == PAIRING) { 
         if(pairingDataGateway.pairingKey == PAIRING_KEY){
           Serial.println("Correct PAIRING_KEY");
-          Serial.println("send response");
           oled_print("send response");
           Serial.println("Sending packet...");
-          Serial.printf("Packet size: %d\n", sizeof(pairingDataGateway));
           LoRa.beginPacket();
           LoRa.write((uint8_t *) &pairingDataGateway, sizeof(pairingDataGateway));
           LoRa.endPacket();
