@@ -18,6 +18,11 @@ void printMacAddress(const uint8_t* mac) {
 
 // Function to add a peer gateway
 bool addPeerGateway(const uint8_t peer_addr[MAC_ADDR_LENGTH]) {
+  if(checkPeerGateway(peer_addr)){
+    Serial.println("Peer already added.");
+    return false;
+  }
+
   if (peerCount >= MAX_PEERS) {
     Serial.println("Max peers reached. Cannot add more.");
     return false;
@@ -96,4 +101,14 @@ void loadPeersFromSD() {
     }
     file.close();
   }
+}
+
+// Function to compare two MAC addresses
+bool compareMacAddress(const uint8_t mac1[MAC_ADDR_LENGTH], const uint8_t mac2[MAC_ADDR_LENGTH]) {
+  for (size_t i = 0; i < MAC_ADDR_LENGTH; i++) {
+    if (mac1[i] != mac2[i]) {
+      return false; // If any byte doesn't match, return false
+    }
+  }
+  return true; // If all bytes match, return true
 }

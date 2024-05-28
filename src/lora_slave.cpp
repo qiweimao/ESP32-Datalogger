@@ -1,4 +1,5 @@
 #include "lora_slave.h"
+#include "lora_peer.h"
 
 /******************************************************************
  *                                                                *
@@ -45,8 +46,8 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
   switch (type) {
   case DATA :      // we received data from server
     memcpy(&inData, incomingData, sizeof(inData));
-    Serial.print("ID  = ");
-    Serial.println(inData.mac[0]);
+    Serial.print("MAC  = ");
+    printMacAddress(inData.mac);
     Serial.print("Setpoint temp = ");
     Serial.println(inData.temp);
     Serial.print("SetPoint humidity = ");
@@ -58,16 +59,11 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
 
   case PAIRING:    // we received pairing data from server
     memcpy(&pairingDataNode, incomingData, sizeof(pairingDataNode));
-    if (pairingDataNode.mac[0] == 0) {              // the message comes from server
+    if (compareMacAddress(pairingDataNode.mac, MAC_ADDRESS_STA)) {// Is this for me?
       Serial.print("Pairing done for ");
       Serial.print(" in ");
       Serial.print(millis()-NodeStart);
       Serial.println("ms");
-      #ifdef SAVE_CHANNEL
-        lastChannel = pairingDataNode.channel;
-        EEPROM.write(0, pairingDataNode.channel);
-        EEPROM.commit();
-      #endif  
       pairingStatus = PAIR_PAIRED;             // set the pairing status
     }
     break;
@@ -80,8 +76,8 @@ PairingStatus autoPairing(){
 
   // set pairing data to send to the server
     pairingDataNode.msgType = PAIRING;
-    esp_read_mac(mac_buffer, ESP_MAC_WIFI_STA);  
-    memcpy(pairingDataNode.mac, mac_buffer, sizeof(mac_buffer));   
+    memcpy(pairingDataNode.mac, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
+    /* NEED Pairing Key Implementation */   
 
     // add peer and send request
     LoRa.beginPacket();
@@ -118,10 +114,7 @@ void pairingTask(void *pvParameters) {
         delay(500);
         //Set values to send
         myData.msgType = DATA;
-
-        esp_read_mac(mac_buffer, ESP_MAC_WIFI_STA);  
-        memcpy(myData.mac, mac_buffer, sizeof(mac_buffer));
-
+        memcpy(myData.mac, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
         myData.temp = readDHTTemperature();
         myData.hum = readDHTHumidity();
         myData.readingId = readingId++;

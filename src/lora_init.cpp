@@ -15,6 +15,7 @@ volatile int dataReceived = 0;// Flag to indicate data received
 const int maxPacketSize = 256; // Define a maximum packet size
 String message = "";
 uint8_t mac_buffer[6];
+uint8_t MAC_ADDRESS_STA[6];
 
 
 void lora_gateway_init();
@@ -28,6 +29,8 @@ void lora_init(void){
   loraSpi.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_SS);
   LoRa.setSPI(loraSpi);
   LoRa.setPins(LORA_SS, LORA_RST, DIO0);
+
+  esp_read_mac(MAC_ADDRESS_STA, ESP_MAC_WIFI_STA);  
 
   while (!LoRa.begin(915E6)) {  //915E6 for North America
     Serial.println(".");

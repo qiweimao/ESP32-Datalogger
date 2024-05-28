@@ -47,6 +47,7 @@ enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
 enum MessageType {PAIRING, DATA,};
 
 extern uint8_t mac_buffer[6];
+extern uint8_t MAC_ADDRESS_STA[6];
 
 void LoRa_rxMode();
 void LoRa_txMode();

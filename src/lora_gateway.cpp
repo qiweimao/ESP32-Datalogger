@@ -27,14 +27,14 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
 
       Serial.println(pairingDataGateway.msgType);
       Serial.print("Pairing request from: ");
-      Serial.println(pairingDataGateway.mac[0]);
+      printMacAddress(pairingDataGateway.mac);
 
       /* OLED for Dev */
       oled_print(pairingDataGateway.msgType);
       oled_print(pairingDataGateway.mac[0]);
       oled_print("Pairing request from: ");
 
-      if (pairingDataGateway.mac > 0) {     // do not replay to server itself
+      if (pairingDataGateway.mac > 0) {
         if (pairingDataGateway.msgType == PAIRING) { 
             esp_read_mac(mac_buffer, ESP_MAC_WIFI_STA);  
             memcpy(pairingDataGateway.mac, mac_buffer, sizeof(mac_buffer));
