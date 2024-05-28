@@ -16,6 +16,22 @@ String DEVICE_NAME;
 int LORA_MODE; // default set up upon flashing
 int utcOffset;  // UTC offset in hours (Eastern Time Zone is -5 hours)
 
+// Function to save configuration to SD card
+void save_config_to_sd(const char* filename, const String& jsonConfig) {
+
+  // Create and open the file
+  File configFile = SD.open(filename, FILE_WRITE);
+  if (!configFile) {
+    Serial.println("Failed to create file on SD card!");
+    return;
+  }
+
+  // Write the JSON configuration to the file
+  configFile.print(jsonConfig);
+  configFile.close();
+  Serial.println("Configuration saved to SD card.");
+}
+
 void load_system_configuration() {
   Serial.println("Loading system configuration...");
 
@@ -31,6 +47,10 @@ void load_system_configuration() {
     DEVICE_NAME = doc["DEVICE_NAME"] | "LOGGER_00";
     utcOffset = doc["UTC_OFFSET"] | -5;
     LORA_MODE = doc["LORA_MODE"] | LORA_GATEWAY;
+    
+    serializeJson(doc, jsonConfig);
+    save_config_to_sd("/sys_config", jsonConfig);
+
   } else {
     Serial.println("Configuration not found. Using default values.");
     WIFI_SSID = "Verizon_F4ZD39";
@@ -50,6 +70,8 @@ void load_system_configuration() {
     String jsonConfig;
     serializeJson(doc, jsonConfig);
     preferences.putString("sysconfig", jsonConfig);
+    save_config_to_sd("/sys_config", jsonConfig);
+
   }
 
   Serial.printf("Boot as: %s\n", LORA_MODE ? "Gateway" : "Node");
@@ -84,7 +106,7 @@ void update_system_configuration(String key, String value) {
 
   // Load existing configuration
   String jsonConfig = preferences.getString("sysconfig");
-  DynamicJsonDocument doc(1024);
+  JsonDocument doc;
   deserializeJson(doc, jsonConfig);
 
   // Update configuration based on key
@@ -105,6 +127,7 @@ void update_system_configuration(String key, String value) {
   // Save updated configuration
   serializeJson(doc, jsonConfig);
   preferences.putString("sysconfig", jsonConfig);
+  save_config_to_sd("/sys_config", jsonConfig);
 
   preferences.end();
 }
@@ -149,6 +172,9 @@ void load_data_collection_configuration() {
       dataConfig.i2cEnabled[i] = doc["I2C"][i]["enabled"] | false;
       dataConfig.i2cInterval[i] = doc["I2C"][i]["interval"] | 60;
     }
+
+    save_config_to_sd("/collection_config", jsonConfig);
+
   } else {
     Serial.println("Data collection configuration not found. Using default values.");
 
@@ -173,9 +199,9 @@ void load_data_collection_configuration() {
     // Save default configuration
     JsonDocument doc;
     for (int i = 0; i < 16; i++) {
+      doc["ADC"][i]["sensorType"] = dataConfig.adcSensorType[i];
       doc["ADC"][i]["enabled"] = dataConfig.adcEnabled[i];
       doc["ADC"][i]["interval"] = dataConfig.adcInterval[i];
-      doc["ADC"][i]["sensorType"] = dataConfig.adcSensorType[i];
     }
     for (int i = 0; i < 2; i++) {
       doc["UART"][i]["sensorType"] = dataConfig.uartSensorType[i];
@@ -191,6 +217,7 @@ void load_data_collection_configuration() {
     String jsonConfig;
     serializeJson(doc, jsonConfig);
     preferences.putString("dataconfig", jsonConfig);
+    save_config_to_sd("/collection_config", jsonConfig);
   }
 
   preferences.end();
@@ -203,7 +230,7 @@ void update_data_collection_configuration(String type, int index, String key, St
 
   // Load existing configuration
   String jsonConfig = preferences.getString("dataconfig");
-  DynamicJsonDocument doc(4096);
+  JsonDocument doc;
   deserializeJson(doc, jsonConfig);
 
   if (type.equals("ADC") && index >= 0 && index < 16) {
@@ -237,6 +264,7 @@ void update_data_collection_configuration(String type, int index, String key, St
   // Save updated configuration
   serializeJson(doc, jsonConfig);
   preferences.putString("dataconfig", jsonConfig);
+  save_config_to_sd("/collection_config", jsonConfig);
 
   preferences.end();
   Serial.println("Finished updating data collection configuration.");
