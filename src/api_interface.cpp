@@ -65,19 +65,27 @@ void start_http_server(){
   Serial.printf("ESP Board MAC Address: %s\n", WiFi.macAddress().c_str());
 }
 
-AsyncCallbackJsonWebHandler *updateSysConfig (){
+// Function to handle the system configuration update
+AsyncCallbackJsonWebHandler* updateSysConfig() {
   return new AsyncCallbackJsonWebHandler("/api/system-configuration/update", [](AsyncWebServerRequest *request, JsonVariant &json) {
+      // Check if the json is a JsonObject
+      if (!json.is<JsonObject>()) {
+        request->send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+        return;
+      }
 
-      String key = json["key"].as<String>();
-      Serial.printf("key: %s\n", key.c_str());
+      JsonObject jsonObj = json.as<JsonObject>();
 
-      String value = json["value"].as<String>();
-      Serial.printf("value: %s\n", value.c_str());
+      // Iterate through the key-value pairs in the JSON object
+      for (JsonPair kv : jsonObj) {
+        String key = kv.key().c_str();
+        String value = kv.value().as<String>();
 
-      // Error checking inside the function below
-      update_system_configuration(key, value);
+        // Call the update function with the extracted key and value
+        update_system_configuration(key, value);
+      }
 
-      request->send(200); // Send an empty response with HTTP status code 200
+      request->send(200, "application/json", "{\"success\":true}");
     });
 }
 
@@ -193,6 +201,7 @@ void getSysConfig(AsyncWebServerRequest *request){
   obj1["DEVICE_NAME"] = DEVICE_NAME;
   obj1["LORA_MODE"] = LORA_MODE;
   obj1["utcOffset"] = utcOffset;
+  obj1["PAIRING_KEY"] = PAIRING_KEY;
   serveJson(request, doc, 200, false);
 }
 
