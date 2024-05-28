@@ -16,30 +16,48 @@ void serveManifest(AsyncWebServerRequest *request);
 
 // API
 AsyncCallbackJsonWebHandler *updateSysConfig();
+// AsyncCallbackJsonWebHandler *sendSysConfig();
+AsyncCallbackJsonWebHandler *updateCollectionConfig();
+// AsyncCallbackJsonWebHandler *sendCollectionConfig();
+
 void serveGateWayMetaData(AsyncWebServerRequest *request);
 void serveVoltageHistory(AsyncWebServerRequest *request);
 void getSysConfig(AsyncWebServerRequest *request);
+void getCollectionConfig(AsyncWebServerRequest *request);
+void getNodeSysConfig(AsyncWebServerRequest *request);
+void getNodeCollectionConfig(AsyncWebServerRequest *request);
 
 void start_http_server(){
   Serial.println("\n*** Starting Server ***");
   ElegantOTA.begin(&server);
 
   // GET
-  server.on("/", HTTP_GET, serveIndexPage);// Serve the index.html file
-  server.on("/main.d3e2b80d.js", HTTP_GET, serveJS);// Serve the index.html file
-  server.on("/main.6a3097a0.css", HTTP_GET, serveCSS);// Serve the index.html file
-  server.on("/favicon.ico", HTTP_GET, serveFavicon);// Serve the index.html file
-  server.on("/manifest.json", HTTP_GET, serveManifest);// Serve the index.html file
-  server.on("/api/gateway-metadata", HTTP_GET, serveGateWayMetaData);// Serve the index.html file
-  server.on("/api/voltage-history", HTTP_GET, serveVoltageHistory);// Serve the index.html file
-  server.on("/api/system-configuration", HTTP_GET, getSysConfig);// Serve the index.html file
+  server.on("/", HTTP_GET, serveIndexPage);
+  server.on("/main.d3e2b80d.js", HTTP_GET, serveJS);
+  server.on("/main.6a3097a0.css", HTTP_GET, serveCSS);
+  server.on("/favicon.ico", HTTP_GET, serveFavicon);
+  server.on("/manifest.json", HTTP_GET, serveManifest);
+
+  server.on("/api/gateway-metadata", HTTP_GET, serveGateWayMetaData);
+  server.on("/api/voltage-history", HTTP_GET, serveVoltageHistory);
+
+  // Self Configuration
+  server.on("/api/system-configuration", HTTP_GET, getSysConfig);
+  server.addHandler(updateSysConfig());
+  server.on("/api/collection-configuration", HTTP_GET, getCollectionConfig);
+  server.addHandler(updateCollectionConfig());
+
+  // Node Configuration
+  // server.on("/api/node/system-configuration", HTTP_GET, getNodeSysConfig);
+  // server.addHandler(sendSysConfig());
+  // server.on("/api/node/collection-configuration", HTTP_GET, getNodeCollectionConfig);
+  // server.addHandler(sendCollectionConfig());
 
   server.on("/reboot", HTTP_GET, serveRebootLogger);// Serve the text file
   server.on("/pauseLogging", HTTP_GET, pauseLoggingHandler);
   server.on("/resumeLogging", HTTP_GET, resumeLoggingHandler);
 
   // POST
-  server.addHandler(updateSysConfig());
 
   server.begin();  // Start server
   Serial.printf("Server Started @ IP: %s\n", WiFi.localIP().toString().c_str());
@@ -48,29 +66,44 @@ void start_http_server(){
 }
 
 AsyncCallbackJsonWebHandler *updateSysConfig (){
-  return new AsyncCallbackJsonWebHandler("/api/configurations", [](AsyncWebServerRequest *request, JsonVariant &json) {
+  return new AsyncCallbackJsonWebHandler("/api/system-configuration/update", [](AsyncWebServerRequest *request, JsonVariant &json) {
 
-      String newSSID = json["WIFI_SSID"].as<String>();
-      Serial.printf("WiFi SSID: %s\n", newSSID.c_str());
+      String key = json["key"].as<String>();
+      Serial.printf("key: %s\n", key.c_str());
 
-      String newWiFiPassword = json["WIFI_PASSWORD"].as<String>();
-      Serial.printf("WIFI_PASSWORD: %s\n", newWiFiPassword.c_str());
+      String value = json["value"].as<String>();
+      Serial.printf("value: %s\n", value.c_str());
 
-      int newgmtOffset_sec = json["gmtOffset_sec"].as<int>();
-      Serial.printf("gmtOffset_sec: %d\n", newgmtOffset_sec);
-
-      int newLORA_MODE = json["LORA_MODE"].as<int>();
-      Serial.printf("LORA_MODE: %d\n", newLORA_MODE);
-
-      String newProjectName = json["project_name"].as<String>();
-      Serial.printf("LORA_MODE: %s\n", newProjectName);
-      
       // Error checking inside the function below
-      update_system_configuration(newSSID, newWiFiPassword, newgmtOffset_sec, newLORA_MODE, newProjectName);
+      update_system_configuration(key, value);
 
       request->send(200); // Send an empty response with HTTP status code 200
     });
 }
+
+AsyncCallbackJsonWebHandler *updateCollectionConfig (){
+
+  return new AsyncCallbackJsonWebHandler("/api/collection-configuration/update", [](AsyncWebServerRequest *request, JsonVariant &json) {
+
+      String type = json["type"].as<String>();
+      Serial.printf("Type: %s\n", type.c_str());
+
+      int index = json["index"].as<int>();
+      Serial.printf("Index: %d\n", index);
+
+      String key = json["key"].as<String>();
+      Serial.printf("Key: %s\n", key.c_str());
+
+      String value = json["value"].as<String>();
+      Serial.printf("Value: %s\n", value.c_str());
+
+      // Error checking inside the function below
+      update_data_collection_configuration(type, index, key, value);
+
+      request->send(200); // Send an empty response with HTTP status code 200
+    });
+}
+
 
 void serveFile(AsyncWebServerRequest *request, const char* filePath, const char* contentType, int responseCode, bool isGzip) {
   File file = SPIFFS.open(filePath, "r");
@@ -87,10 +120,10 @@ void serveFile(AsyncWebServerRequest *request, const char* filePath, const char*
   file.close();
 }
 
+// Serves json doc as a list
 void serveJson(AsyncWebServerRequest *request, JsonDocument doc, int responseCode, bool isGzip) {
   String jsonString;
   serializeJson(doc, jsonString);
-  // Serial.println(jsonString);
   AsyncWebServerResponse *response = request->beginResponse(responseCode, "application/json", jsonString);
   request->send(response);
 }
@@ -160,6 +193,40 @@ void getSysConfig(AsyncWebServerRequest *request){
   obj1["DEVICE_NAME"] = DEVICE_NAME;
   obj1["LORA_MODE"] = LORA_MODE;
   obj1["utcOffset"] = utcOffset;
+  serveJson(request, doc, 200, false);
+}
+
+void getCollectionConfig(AsyncWebServerRequest *request) {
+  JsonDocument doc;
+  Serial.println("Received request for data collection configuring, ");
+
+  // Adding ADC configurations
+  JsonArray adcArray = doc["ADC"].to<JsonArray>();
+  for (int i = 0; i < 16; i++) {
+    JsonObject adcObj = adcArray.add<JsonObject>();
+    adcObj["enabled"] = dataConfig.adcEnabled[i];
+    adcObj["interval"] = dataConfig.adcInterval[i];
+  }
+
+  // Adding UART configurations
+  JsonArray uartArray = doc["UART"].to<JsonArray>();
+  for (int i = 0; i < 2; i++) {
+    JsonObject uartObj = uartArray.add<JsonObject>();
+    uartObj["sensorType"] = dataConfig.uartSensorType[i];
+    uartObj["enabled"] = dataConfig.uartEnabled[i];
+    uartObj["interval"] = dataConfig.uartInterval[i];
+  }
+
+  // Adding I2C configurations
+  JsonArray i2cArray = doc["I2C"].to<JsonArray>();
+  for (int i = 0; i < 5; i++) {
+    JsonObject i2cObj = i2cArray.add<JsonObject>();
+    i2cObj["sensorType"] = dataConfig.i2cSensorType[i];
+    i2cObj["enabled"] = dataConfig.i2cEnabled[i];
+    i2cObj["interval"] = dataConfig.i2cInterval[i];
+  }
+
+  // Serve the JSON document
   serveJson(request, doc, 200, false);
 }
 

@@ -1,48 +1,59 @@
 #include <Preferences.h>
+#include <ArduinoJson.h>
 #include "configuration.h"
 
 Preferences preferences;
 
-/* Lists of Configuration Parameters */
+/******************************************************************
+ *                                                                *
+ *                        System Config                           *
+ *                                                                *
+ ******************************************************************/
+
 String WIFI_SSID;
 String WIFI_PASSWORD;
 String DEVICE_NAME;
 int LORA_MODE; // default set up upon flashing
 int utcOffset;  // UTC offset in hours (Eastern Time Zone is -5 hours)
 
-void load_preference(const char* key, String& value, const char* defaultValue) {
-  if (preferences.isKey(key)) {
-    value = preferences.getString(key, defaultValue);
-  } else {
-    Serial.printf("%s not found. Using default value.\n", key);
-    value = defaultValue;
-    preferences.putString(key, value);
-  }
-}
-
-void load_preference(const char* key, int& value, int defaultValue) {
-  if (preferences.isKey(key)) {
-    value = preferences.getInt(key, defaultValue);
-  } else {
-    Serial.printf("%s not found. Using default value.\n", key);
-    value = defaultValue;
-    preferences.putInt(key, value);
-  }
-}
-
 void load_system_configuration() {
-  Serial.println("Loading configuration...");
+  Serial.println("Loading system configuration...");
 
   preferences.begin("credentials", false);
 
-  load_preference("WIFI_SSID", WIFI_SSID, "Verizon_F4ZD39");
-  load_preference("WIFI_PASSWORD", WIFI_PASSWORD, "aft9-grid-knot");
-  load_preference("DEVICE_NAME", DEVICE_NAME, "LOGGER_00");
-  load_preference("UTC_OFFSET", utcOffset, -5);
-  load_preference("LORA_MODE", LORA_MODE, LORA_GATEWAY);
+  if (preferences.isKey("sysconfig")) {
+    String jsonConfig = preferences.getString("sysconfig");
+    JsonDocument doc;
+    deserializeJson(doc, jsonConfig);
 
-  Serial.printf("Boot as: %s\n", LORA_MODE ? "Gateway": "Node");
-  Serial.printf("Device Name: %s\n", DEVICE_NAME);
+    WIFI_SSID = doc["WIFI_SSID"] | "Verizon_F4ZD39";
+    WIFI_PASSWORD = doc["WIFI_PASSWORD"] | "aft9-grid-knot";
+    DEVICE_NAME = doc["DEVICE_NAME"] | "LOGGER_00";
+    utcOffset = doc["UTC_OFFSET"] | -5;
+    LORA_MODE = doc["LORA_MODE"] | LORA_GATEWAY;
+  } else {
+    Serial.println("Configuration not found. Using default values.");
+    WIFI_SSID = "Verizon_F4ZD39";
+    WIFI_PASSWORD = "aft9-grid-knot";
+    DEVICE_NAME = "LOGGER_00";
+    utcOffset = -5;
+    LORA_MODE = LORA_GATEWAY;
+
+    // Save default configuration
+    JsonDocument doc;
+    doc["WIFI_SSID"] = WIFI_SSID;
+    doc["WIFI_PASSWORD"] = WIFI_PASSWORD;
+    doc["DEVICE_NAME"] = DEVICE_NAME;
+    doc["UTC_OFFSET"] = utcOffset;
+    doc["LORA_MODE"] = LORA_MODE;
+
+    String jsonConfig;
+    serializeJson(doc, jsonConfig);
+    preferences.putString("sysconfig", jsonConfig);
+  }
+
+  Serial.printf("Boot as: %s\n", LORA_MODE ? "Gateway" : "Node");
+  Serial.printf("Device Name: %s\n", DEVICE_NAME.c_str());
 
   preferences.end();
 }
@@ -66,28 +77,167 @@ bool is_valid_configuration(String newSSID, String newWiFiPassword, int newUtcOf
   return true;
 }
 
-void update_preference(const char* key, const String& value) {
-  preferences.putString(key, value);
-}
-
-void update_preference(const char* key, int value) {
-  preferences.putInt(key, value);
-}
-
-void update_system_configuration(String newSSID, String newWiFiPassword, int newUtcOffset, int newLORA_MODE, String newProjectName) {
-  if (!is_valid_configuration(newSSID, newWiFiPassword, newUtcOffset, newLORA_MODE)) {
-    return;
-  }
-
-  Serial.println("Updating configuration...");
+void update_system_configuration(String key, String value) {
+  Serial.println("Updating system configuration...");
 
   preferences.begin("credentials", false);
 
-  update_preference("WIFI_SSID", newSSID);
-  update_preference("WIFI_PASSWORD", newWiFiPassword);
-  update_preference("UTC_OFFSET", newUtcOffset);
-  update_preference("LORA_MODE", newLORA_MODE);
-  update_preference("PROJECT_NAME", newProjectName);
+  // Load existing configuration
+  String jsonConfig = preferences.getString("sysconfig");
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, jsonConfig);
+
+  // Update configuration based on key
+  if (key.equals("WIFI_SSID")) {
+    doc["WIFI_SSID"] = value;
+  } else if (key.equals("WIFI_PASSWORD")) {
+    doc["WIFI_PASSWORD"] = value;
+  } else if (key.equals("DEVICE_NAME")) {
+    doc["DEVICE_NAME"] = value;
+  } else if (key.equals("UTC_OFFSET")) {
+    doc["UTC_OFFSET"] = value.toInt();
+  } else if (key.equals("LORA_MODE")) {
+    doc["LORA_MODE"] = value.toInt();
+  } else {
+    Serial.println("Invalid key");
+  }
+
+  // Save updated configuration
+  serializeJson(doc, jsonConfig);
+  preferences.putString("sysconfig", jsonConfig);
 
   preferences.end();
+}
+
+
+
+/******************************************************************
+ *                                                                *
+ *                    Data Collection Config                      *
+ *                                                                *
+ ******************************************************************/
+
+/* Data Collection Configuration */
+
+
+DataCollectionConfig dataConfig;
+
+void load_data_collection_configuration() {
+  Serial.println("Loading data collection configuration...");
+
+  preferences.begin("datacollection", false);
+
+  if (preferences.isKey("dataconfig")) {
+    String jsonConfig = preferences.getString("dataconfig");
+    JsonDocument doc;
+    deserializeJson(doc, jsonConfig);
+
+    for (int i = 0; i < 16; i++) {
+      dataConfig.adcSensorType[i] = doc["ADC"][i]["sensorType"] | "Unknown";
+      dataConfig.adcEnabled[i] = doc["ADC"][i]["enabled"] | false;
+      dataConfig.adcInterval[i] = doc["ADC"][i]["interval"] | 60;
+    }
+
+    for (int i = 0; i < 2; i++) {
+      dataConfig.uartSensorType[i] = doc["UART"][i]["sensorType"] | "VW";
+      dataConfig.uartEnabled[i] = doc["UART"][i]["enabled"] | false;
+      dataConfig.uartInterval[i] = doc["UART"][i]["interval"] | 60;
+    }
+
+    for (int i = 0; i < 5; i++) {
+      dataConfig.i2cSensorType[i] = doc["I2C"][i]["sensorType"] | "Barometric";
+      dataConfig.i2cEnabled[i] = doc["I2C"][i]["enabled"] | false;
+      dataConfig.i2cInterval[i] = doc["I2C"][i]["interval"] | 60;
+    }
+  } else {
+    Serial.println("Data collection configuration not found. Using default values.");
+
+    for (int i = 0; i < 16; i++) {
+      dataConfig.adcSensorType[i] = "Unknown";
+      dataConfig.adcEnabled[i] = false;
+      dataConfig.adcInterval[i] = 60;
+    }
+
+    for (int i = 0; i < 2; i++) {
+      dataConfig.uartSensorType[i] = "VW";
+      dataConfig.uartEnabled[i] = false;
+      dataConfig.uartInterval[i] = 60;
+    }
+
+    for (int i = 0; i < 5; i++) {
+      dataConfig.i2cSensorType[i] = "Barometric";
+      dataConfig.i2cEnabled[i] = false;
+      dataConfig.i2cInterval[i] = 60;
+    }
+
+    // Save default configuration
+    JsonDocument doc;
+    for (int i = 0; i < 16; i++) {
+      doc["ADC"][i]["enabled"] = dataConfig.adcEnabled[i];
+      doc["ADC"][i]["interval"] = dataConfig.adcInterval[i];
+      doc["ADC"][i]["sensorType"] = dataConfig.adcSensorType[i];
+    }
+    for (int i = 0; i < 2; i++) {
+      doc["UART"][i]["sensorType"] = dataConfig.uartSensorType[i];
+      doc["UART"][i]["enabled"] = dataConfig.uartEnabled[i];
+      doc["UART"][i]["interval"] = dataConfig.uartInterval[i];
+    }
+    for (int i = 0; i < 5; i++) {
+      doc["I2C"][i]["sensorType"] = dataConfig.i2cSensorType[i];
+      doc["I2C"][i]["enabled"] = dataConfig.i2cEnabled[i];
+      doc["I2C"][i]["interval"] = dataConfig.i2cInterval[i];
+    }
+
+    String jsonConfig;
+    serializeJson(doc, jsonConfig);
+    preferences.putString("dataconfig", jsonConfig);
+  }
+
+  preferences.end();
+}
+
+void update_data_collection_configuration(String type, int index, String key, String value) {
+  Serial.println("Updating data collection configuration...");
+
+  preferences.begin("datacollection", false);
+
+  // Load existing configuration
+  String jsonConfig = preferences.getString("dataconfig");
+  DynamicJsonDocument doc(4096);
+  deserializeJson(doc, jsonConfig);
+
+  if (type.equals("ADC") && index >= 0 && index < 16) {
+    if (key.equals("enabled")) {
+      doc["ADC"][index]["enabled"] = (value.equals("true"));
+    } else if (key.equals("interval")) {
+      doc["ADC"][index]["interval"] = value.toInt();
+    } else if (key.equals("sensorType")) {
+      doc["ADC"][index]["sensorType"] = value;
+    }
+  } else if (type.equals("UART") && index >= 0 && index < 2) {
+    if (key.equals("enabled")) {
+      doc["UART"][index]["enabled"] = (value.equals("true"));
+    } else if (key.equals("interval")) {
+      doc["UART"][index]["interval"] = value.toInt();
+    } else if (key.equals("sensorType")) {
+      doc["UART"][index]["sensorType"] = value;
+    }
+  } else if (type.equals("I2C") && index >= 0 && index < 5) {
+    if (key.equals("enabled")) {
+      doc["I2C"][index]["enabled"] = (value.equals("true"));
+    } else if (key.equals("interval")) {
+      doc["I2C"][index]["interval"] = value.toInt();
+    } else if (key.equals("sensorType")) {
+      doc["I2C"][index]["sensorType"] = value;
+    }
+  } else {
+    Serial.println("Invalid type or index");
+  }
+
+  // Save updated configuration
+  serializeJson(doc, jsonConfig);
+  preferences.putString("dataconfig", jsonConfig);
+
+  preferences.end();
+  Serial.println("Finished updating data collection configuration.");
 }
