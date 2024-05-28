@@ -1,29 +1,9 @@
 #include "lora_gateway.h"
+#include "lora_peer.h"
 
 struct_message incomingReadings;
 struct_message outgoingSetpoints;
 struct_pairing pairingDataGateway;
-
-#define MAX_PEERS 10 // Define the maximum number of peers
-#define PEER_ADDR_LENGTH 6 // Define the length of the peer address
-uint8_t peers[MAX_PEERS][PEER_ADDR_LENGTH];// Array to store peer addresses
-int peerCount = 0;// Counter to keep track of the number of peers
-
-// Function to add a peer gateway
-bool addPeerGateway(const uint8_t peer_addr[8]) {
-  if (peerCount >= MAX_PEERS) {  // Check if we have space for more peers
-    Serial.println("Max peers reached. Cannot add more.");
-    return false;
-  }
-  for (size_t i = 0; i < 8; i++)
-  {
-    peers[peerCount][i] = peer_addr[i];
-  }
-  
-  peerCount++;  // Increment the peer count
-  Serial.println();
-  return true;
-}
 
 void OnDataRecvGateway(const uint8_t *incomingData, int len) { 
   JsonDocument root;
