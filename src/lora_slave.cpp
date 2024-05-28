@@ -43,7 +43,11 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
   Serial.println();
   Serial.print("data size = ");
   Serial.println(sizeof(incomingData));
+  Serial.print("struct size = ");
+  Serial.println(sizeof(pairingDataNode));
   uint8_t type = incomingData[0];
+  Serial.printf("type = %d", type);
+
   switch (type) {
   case DATA :      // we received data from server
     memcpy(&inData, incomingData, sizeof(inData));
@@ -60,12 +64,20 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
 
   case PAIRING:    // we received pairing data from server
     memcpy(&pairingDataNode, incomingData, sizeof(pairingDataNode));
+    Serial.println();
+    printMacAddress(pairingDataNode.mac);
+    Serial.println();
+    printMacAddress(MAC_ADDRESS_STA);
+    Serial.println();
     if (compareMacAddress(pairingDataNode.mac, MAC_ADDRESS_STA)) {// Is this for me?
       Serial.print("Pairing done for ");
       Serial.print(" in ");
       Serial.print(millis()-NodeStart);
       Serial.println("ms");
       pairingStatus = PAIR_PAIRED;             // set the pairing status
+    }
+    else{
+      Serial.print("Pairing mac address is not for me");
     }
     break;
   }  
@@ -76,10 +88,12 @@ PairingStatus autoPairing(){
     case PAIR_REQUEST:
 
   // set pairing data to send to the server
+    Serial.println("\nBegin pairing Request");
     pairingDataNode.msgType = PAIRING;
     memcpy(pairingDataNode.mac, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
     pairingDataNode.pairingKey = PAIRING_KEY;
-
+    printMacAddress(pairingDataNode.mac);
+    Serial.println();
     // add peer and send request
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &pairingDataNode, sizeof(pairingDataNode));
@@ -87,7 +101,7 @@ PairingStatus autoPairing(){
     LoRa.receive();
     previousMillis = millis();
     pairingStatus = PAIR_REQUESTED;
-    Serial.println("Pairing request sent");
+    Serial.println("Pairing request sent\n");
     break;
 
     case PAIR_REQUESTED:

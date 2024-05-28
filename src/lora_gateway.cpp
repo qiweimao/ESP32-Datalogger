@@ -25,32 +25,33 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
     case PAIRING:                            // the message is a pairing request 
       memcpy(&pairingDataGateway, incomingData, sizeof(pairingDataGateway));
 
-      Serial.println(pairingDataGateway.msgType);
-      Serial.print("Pairing request from: ");
+      Serial.print("\nPairing request from: ");
       printMacAddress(pairingDataGateway.mac);
+      Serial.println();
 
       /* OLED for Dev */
       oled_print(pairingDataGateway.msgType);
       oled_print("Pairing request from: ");
       oled_print(pairingDataGateway.mac[0]);
 
-      if (pairingDataGateway.mac > 0) {
-        if (pairingDataGateway.msgType == PAIRING) { 
-          if(pairingDataGateway.pairingKey == PAIRING_KEY){
-            Serial.println("send response");
-            oled_print("send response");
-            Serial.println("Sending packet...");
-            LoRa.beginPacket();
-            LoRa.write((uint8_t *) &pairingDataGateway, sizeof(pairingDataGateway));
-            LoRa.endPacket();
-            addPeerGateway(pairingDataGateway.mac);
-            LoRa.receive();
-          }
-          {
-            Serial.println("Wrong PAIRING_KEY");
-          }
-        }  
+      if (pairingDataGateway.msgType == PAIRING) { 
+        if(pairingDataGateway.pairingKey == PAIRING_KEY){
+          Serial.println("Correct PAIRING_KEY");
+          Serial.println("send response");
+          oled_print("send response");
+          Serial.println("Sending packet...");
+          Serial.printf("Packet size: %d\n", sizeof(pairingDataGateway));
+          LoRa.beginPacket();
+          LoRa.write((uint8_t *) &pairingDataGateway, sizeof(pairingDataGateway));
+          LoRa.endPacket();
+          addPeerGateway(pairingDataGateway.mac);
+          LoRa.receive();
+        }
+        else{
+          Serial.println("Wrong PAIRING_KEY");
+        }
       }  
+
       break; 
   }
 }
