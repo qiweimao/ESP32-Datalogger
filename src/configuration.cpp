@@ -15,7 +15,7 @@ String WIFI_PASSWORD;
 String DEVICE_NAME;
 int LORA_MODE; // default set up upon flashing
 int utcOffset;  // UTC offset in hours (Eastern Time Zone is -5 hours)
-uint32_t  PAIRING_KEY;  // UTC offset in hours (Eastern Time Zone is -5 hours)
+uint32_t PAIRING_KEY;  // UTC offset in hours (Eastern Time Zone is -5 hours)
 
 // Function to save configuration to SD card
 void save_config_to_sd(const char* filename, const String& jsonConfig) {
