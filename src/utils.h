@@ -13,7 +13,6 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <SimpleFTPServer.h>
 #include <ArduinoJson.h>
 #include <LoRa.h>
 
@@ -38,8 +37,6 @@ extern int utcOffset;  // UTC offset in hours (Eastern Time Zone is -5 hours)
 
 void wifi_setting_reset();
 void wifi_init();
-void load_system_configuration();
-void update_system_configuration(String newSSID, String newWiFiPassword, long newgmtOffset_sec, int newESP_NOW_MODE, String newProjectName);
 String get_current_time(bool getFilename = false);
 void external_rtc_init();
 void ntp_sync();
@@ -62,13 +59,5 @@ void appendFile(fs::FS &fs, const char * path, const char * message);
 void renameFile(fs::FS &fs, const char * path1, const char * path2);
 void deleteFile(fs::FS &fs, const char * path);
 void testFileIO(fs::FS &fs, const char * path);
-
-/* Sensors */
-void vm501_init();
-void sendCommandVM501(void *parameter);
-void parseCommand(const char* command);
-void VM501ListenTaskFunc(void *parameter);
-unsigned int crc16(unsigned char *dat, unsigned int len);
-
 
 #endif

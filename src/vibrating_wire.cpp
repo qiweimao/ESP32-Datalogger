@@ -4,39 +4,27 @@ extern HardwareSerial VM; // UART port 1 on ESP32
 
 const int MAX_COMMANDSIZE = 6;
 
-void vm501_init() {
-  VM.begin(9600, SERIAL_8N1, 16, 17); // Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX
-}
-
-String readVM(){
-    const char * command = "$MSFT=3\n";
-    VM.write(command);
-    delay(500);
-    if (VM.available() > 0) {
-        String receivedChar = VM.readString();
-        return receivedChar;
-    }
-    else{
-        return "NaN";
-    }
-}
-
-void sendCommandVM501(void *parameter) {
-    while (true) {
-        // Check if data is available on the serial port
-        if (Serial.available() > 0) {
-            // Read the input command from the serial port
-            String input = Serial.readStringUntil('\n');
-            // Convert String to C-string
-            char command[input.length() + 1];
-            input.toCharArray(command, sizeof(command));
-
-            // Parse the command
-            parseCommand(command);
+unsigned int crc16(unsigned char *dat, unsigned int len)
+{
+    unsigned int crc = 0xffff;
+    unsigned char i;
+    while (len != 0)
+    {
+        crc ^= *dat;
+        for (i = 0; i < 8; i++)
+        {
+            if ((crc & 0x0001) == 0)
+                crc = crc >> 1;
+            else
+            {
+                crc = crc >> 1;
+                crc ^= 0xa001;
+            }
         }
-        // Delay for a short period to avoid busy-waiting
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        len -= 1;
+        dat++;
     }
+    return crc;
 }
 
 void parseCommand(const char* command) {
@@ -104,25 +92,41 @@ void parseCommand(const char* command) {
   }
 }
 
-unsigned int crc16(unsigned char *dat, unsigned int len)
-{
-    unsigned int crc = 0xffff;
-    unsigned char i;
-    while (len != 0)
-    {
-        crc ^= *dat;
-        for (i = 0; i < 8; i++)
-        {
-            if ((crc & 0x0001) == 0)
-                crc = crc >> 1;
-            else
-            {
-                crc = crc >> 1;
-                crc ^= 0xa001;
-            }
-        }
-        len -= 1;
-        dat++;
-    }
-    return crc;
+void vm501_init() {
+  VM.begin(9600, SERIAL_8N1, 16, 17); // Initialize UART port 1 with GPIO16 as RX and GPIO17 as TX
 }
+
+String readVM(){
+    const char * command = "$MSFT=3\n";
+    VM.write(command);
+    delay(500);
+    if (VM.available() > 0) {
+        String receivedChar = VM.readString();
+        return receivedChar;
+    }
+    else{
+        return "NaN";
+    }
+}
+
+void sendCommandVM501(void *parameter) {
+    while (true) {
+        // Check if data is available on the serial port
+        if (Serial.available() > 0) {
+            // Read the input command from the serial port
+            String input = Serial.readStringUntil('\n');
+            // Convert String to C-string
+            char command[input.length() + 1];
+            input.toCharArray(command, sizeof(command));
+
+            // Parse the command
+            parseCommand(command);
+        }
+        // Delay for a short period to avoid busy-waiting
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+}
+
+
+
+

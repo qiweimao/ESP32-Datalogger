@@ -2,8 +2,9 @@
 #include "data_logging.h"
 #include "utils.h"
 #include "api_interface.h"
-#include "vm_501.h"
+#include "vibrating_wire.h"
 #include "lora_init.h"
+#include "configuration.h"
 #include "ESP-FTP-Server-Lib.h"
 #include "FTPFilesystem.h"
 
@@ -44,6 +45,7 @@ void setup() {
 
   sd_init();//SD card file system initialization
   load_system_configuration();
+  load_data_collection_configuration();
   
   external_rtc_init();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   oled_init();

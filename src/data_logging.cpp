@@ -1,7 +1,7 @@
 #include <FS.h>
 #include <SPIFFS.h>
 #include "utils.h"
-#include "vm_501.h"
+#include "vibrating_wire.h"
 #include "data_logging.h"
 
 bool loggingPaused = false;
