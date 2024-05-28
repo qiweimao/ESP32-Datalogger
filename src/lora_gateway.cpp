@@ -1,5 +1,6 @@
 #include "lora_gateway.h"
 #include "lora_peer.h"
+#include "configuration.h"
 
 struct_message incomingReadings;
 struct_message outgoingSetpoints;
@@ -31,13 +32,12 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
 
       /* OLED for Dev */
       oled_print(pairingDataGateway.msgType);
-      oled_print(pairingDataGateway.mac[0]);
       oled_print("Pairing request from: ");
+      oled_print(pairingDataGateway.mac[0]);
 
       if (pairingDataGateway.mac > 0) {
         if (pairingDataGateway.msgType == PAIRING) { 
-            esp_read_mac(mac_buffer, ESP_MAC_WIFI_STA);  
-            memcpy(pairingDataGateway.mac, mac_buffer, sizeof(mac_buffer));
+          if(pairingDataGateway.pairingKey == PAIRING_KEY){
             Serial.println("send response");
             oled_print("send response");
             Serial.println("Sending packet...");
@@ -46,6 +46,10 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
             LoRa.endPacket();
             addPeerGateway(pairingDataGateway.mac);
             LoRa.receive();
+          }
+          {
+            Serial.println("Wrong PAIRING_KEY");
+          }
         }  
       }  
       break; 

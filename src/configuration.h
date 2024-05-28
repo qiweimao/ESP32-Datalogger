@@ -18,6 +18,7 @@ extern String WIFI_PASSWORD;
 extern int LORA_MODE;
 extern String DEVICE_NAME;
 extern long gmtOffset_sec;
+extern uint32_t  PAIRING_KEY;
 
 extern DataCollectionConfig dataConfig;
 

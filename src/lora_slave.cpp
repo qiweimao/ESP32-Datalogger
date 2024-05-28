@@ -1,5 +1,6 @@
 #include "lora_slave.h"
 #include "lora_peer.h"
+#include "configuration.h"
 
 /******************************************************************
  *                                                                *
@@ -77,7 +78,7 @@ PairingStatus autoPairing(){
   // set pairing data to send to the server
     pairingDataNode.msgType = PAIRING;
     memcpy(pairingDataNode.mac, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
-    /* NEED Pairing Key Implementation */   
+    pairingDataNode.pairingKey = PAIRING_KEY;
 
     // add peer and send request
     LoRa.beginPacket();
