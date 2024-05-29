@@ -23,7 +23,7 @@ unsigned long currentMillis = millis();
 unsigned long previousMillis = 0;   // Stores last time temperature was published
 const long interval = 5000;        // Interval at which to publish sensor readings
 unsigned long NodeStart;                // used to measure Pairing time
-unsigned int readingId = 0;   
+unsigned int readingId = 0;
 
 // simulate temperature reading
 float readDHTTemperature() {
@@ -37,7 +37,6 @@ float readDHTHumidity() {
   return h;
 }
 
-
 void OnDataRecvNode(const uint8_t *incomingData, int len) { 
   Serial.print("Packet received from: ");
   Serial.println();
@@ -47,6 +46,14 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
   Serial.println(sizeof(pairingDataNode));
   uint8_t type = incomingData[0];
   Serial.printf("type = %d", type);
+
+  // Check if message is for me
+  uint8_t buffer[6];
+  memcpy(buffer, incomingData + 1, 6);
+  if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
+    Serial.println("This message is not for me.");
+    return;
+  };
 
   switch (type) {
   case DATA :      // we received data from server
@@ -79,6 +86,10 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
     else{
       Serial.print("Pairing mac address is not for me");
     }
+    break;
+  
+  case ACK:
+    ack_count++;
     break;
   }  
 }

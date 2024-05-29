@@ -12,6 +12,8 @@
 SPIClass loraSpi(HSPI);// Separate SPI bus for LoRa to avoid conflict with the SD Card
 
 volatile int dataReceived = 0;// Flag to indicate data received
+int ack_count = 0;// Flag to indicate data received
+
 const int maxPacketSize = 256; // Define a maximum packet size
 String message = "";
 uint8_t mac_buffer[MAC_ADDR_LENGTH];
@@ -57,11 +59,11 @@ void LoRa_txMode(){
   LoRa.idle();                          // set standby mode
 }
 
-void LoRa_sendMessage(String message) {
-  LoRa_txMode();                        // set tx mode
-  LoRa.beginPacket();                   // start packet
-  LoRa.print(message);                  // add payload
-  LoRa.endPacket(true);                 // finish packet and send it
+void sendLoraMessage(uint8_t* data, size_t size) {
+    LoRa.beginPacket();
+    LoRa.write(data, size);
+    LoRa.endPacket();
+    LoRa.receive();
 }
 
 void onReceive(int packetSize) {

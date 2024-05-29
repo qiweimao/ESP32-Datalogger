@@ -4,6 +4,7 @@
 
 struct_message incomingReadings;
 struct_pairing pairingDataGateway;
+file_meta_message file_meta_gateway;
 
 void OnDataRecvGateway(const uint8_t *incomingData, int len) { 
   JsonDocument root;
@@ -51,6 +52,11 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       }  
 
       break; 
+
+    case FILE_META:
+      memcpy(&file_meta_gateway, incomingData, sizeof(file_meta_gateway));
+      // file_meta_gateway.mac
+
   }
 }
 
