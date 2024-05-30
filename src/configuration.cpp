@@ -56,7 +56,7 @@ void load_system_configuration() {
     Serial.println("Configuration not found. Using default values.");
     WIFI_SSID = "Verizon_F4ZD39";
     WIFI_PASSWORD = "aft9-grid-knot";
-    DEVICE_NAME = "LOGGER_00";
+    DEVICE_NAME = "DEFAULT";
     utcOffset = -5;
     LORA_MODE = LORA_GATEWAY;
     PAIRING_KEY = generateRandomNumber();
@@ -122,6 +122,11 @@ void update_system_configuration(String key, String value) {
   } else if (key.equals("WIFI_PASSWORD")) {
     doc["WIFI_PASSWORD"] = value;
   } else if (key.equals("DEVICE_NAME")) {
+    if (value.length() > 9) {
+      Serial.println("Error: DEVICE_NAME should be shorter than 9 characters.");
+      preferences.end();
+      return;
+    }
     doc["DEVICE_NAME"] = value;
   } else if (key.equals("UTC_OFFSET")) {
     doc["UTC_OFFSET"] = value.toInt();
