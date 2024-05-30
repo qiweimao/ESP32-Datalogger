@@ -7,6 +7,9 @@ file_meta_message file_meta;
 file_body_message file_body;
 file_end_message file_end;
 
+char filename_in_transfer[MAX_FILENAME_LEN];
+char device_in_transfer[MAX_DEVICE_NAME_LEN];
+
 /******************************************************************
  *                             Sender                             *
  ******************************************************************/
@@ -107,6 +110,18 @@ bool waitForAck() {
   }
   return false;
 }
+
+void unpack_file_name(file_meta_message* file_meta_gateway, char* output_buffer, size_t buffer_len) {
+  if (buffer_len < MAX_FILENAME_LEN + 1) {
+    // Handle error: output_buffer is too small
+    printf("Error: buffer too small\n");
+    return;
+  }
+  
+  strncpy(output_buffer, file_meta_gateway->filename, MAX_FILENAME_LEN);
+  output_buffer[MAX_FILENAME_LEN] = '\0'; // Ensure null-termination
+}
+
 
 /******************************************************************
  *                             Receiver                           *

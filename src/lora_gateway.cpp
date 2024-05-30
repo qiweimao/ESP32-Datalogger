@@ -54,11 +54,11 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
             
             Serial.println("First time pairing, create a dir for this node");
 
-            char deviceFolder[11]; // 10 for the name + 1 for the null terminator
+            char deviceFolder[MAX_DEVICE_NAME_LEN + 1]; // 10 for the name + 1 for the null terminator
             strncpy(deviceFolder, pairingDataGateway.deviceName, 10);
-            deviceFolder[10] = '\0'; // Ensure null-termination
+            deviceFolder[MAX_DEVICE_NAME_LEN] = '\0'; // Ensure null-termination
 
-            char folderPath[16]; // 1 for '/' + 4 for 'data' + 1 for '/' + 10 for the name + 1 for the null terminator
+            char folderPath[MAX_DEVICE_NAME_LEN + 6]; // 1 for '/' + 4 for 'data' + 1 for '/' + 10 for the name + 1 for the null terminator
             snprintf(folderPath, sizeof(folderPath), "/node/%s", deviceFolder);
             Serial.println(folderPath);
 
@@ -81,7 +81,17 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
 
     case FILE_META:
       memcpy(&file_meta_gateway, incomingData, sizeof(file_meta_gateway));
-      // file_meta_gateway.mac
+
+      // Get File Name
+      char buffer[MAX_FILENAME_LEN + 1]; // 10 for the name + 1 for the null terminator
+      strncpy(buffer, file_meta_gateway.filename, MAX_FILENAME_LEN);
+      buffer[MAX_FILENAME_LEN] = '\0'; // Ensure null-termination
+
+      char filename[MAX_FILENAME_LEN + 2]; // 1 for '/' + 4 for 'data' + 1 for '/' + 10 for the name + 1 for the null terminator
+      snprintf(filename, sizeof(filename), "%s", buffer);
+      Serial.println(filename);
+
+      
 
   }
 }
