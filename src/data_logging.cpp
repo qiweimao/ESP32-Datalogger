@@ -18,13 +18,13 @@ LogErrorCode logData() {
   if (!SD.exists(file_name)) {
       Serial.println("File does not exist");
       const char* message = "Time, SensorName, Reading\n";
-      writeFile(SD, file_name.c_str(), message);
+      // writeFile(SD, file_name.c_str(), message);
   }
 
   String row = get_current_time(0) +  "," + "QM_PZ-01" + "," + String(random(5000)) + "\n";
   // Serial.println(row);
 
-  appendFile(SD, file_name.c_str(), row.c_str());
+  // appendFile(SD, file_name.c_str(), row.c_str());
   // Serial.println("Logged successfully.");
 
   delay(LOG_INTERVAL);
