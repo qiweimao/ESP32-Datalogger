@@ -10,6 +10,9 @@
 #define CHUNK_SIZE 200  // Size of each chunk
 #define ACK_TIMEOUT 2000  // Timeout for ACK in milliseconds
 
+#define MAX_DEVICE_NAME_LEN 10  
+#define MAX_FILENAME_LEN 40
+
 typedef struct vm {
   float freq;
   float temp;
@@ -18,7 +21,7 @@ typedef struct vm {
 typedef struct file_meta_message {
   uint8_t msgType;
   uint8_t mac[6];
-  char filename[40];
+  char filename[MAX_FILENAME_LEN];
   uint32_t filesize;
 } file_meta_message;
 
@@ -50,18 +53,18 @@ typedef struct vm_message {
   vm vm_data[3];
 } vm_message;
 
-typedef struct adc {
+typedef struct adc_message {
   uint8_t msgType;
   uint8_t mac[6];
   const char* time;
   float adc[16];
-} adc;
+} adc_message;
 
 typedef struct struct_pairing {       // new structure for pairing
   uint8_t msgType;
   uint8_t mac[6]; // identity for device
   uint32_t pairingKey; // key for network
-  char deviceName[10];
+  char deviceName[MAX_DEVICE_NAME_LEN];
 } struct_pairing;
 
 struct TaskParams {// Structure to hold task parameters

@@ -122,7 +122,7 @@ void update_system_configuration(String key, String value) {
   } else if (key.equals("WIFI_PASSWORD")) {
     doc["WIFI_PASSWORD"] = value;
   } else if (key.equals("DEVICE_NAME")) {
-    if (value.length() > 9) {
+    if (value.length() > MAX_DEVICE_NAME_LEN) {
       Serial.println("Error: DEVICE_NAME should be shorter than 9 characters.");
       preferences.end();
       return;
