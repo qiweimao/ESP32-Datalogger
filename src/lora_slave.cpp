@@ -96,12 +96,13 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
 
 PairingStatus autoPairing(){
   switch(pairingStatus) {
-    case PAIR_REQUEST:
 
-  // set pairing data to send to the server
+    case PAIR_REQUEST:
+    // set pairing data to send to the server
     Serial.println("\nBegin pairing Request");
     pairingDataNode.msgType = PAIRING;
     strncpy(pairingDataNode.deviceName, DEVICE_NAME.c_str(), sizeof(pairingDataNode.deviceName) - 1);
+    pairingDataNode.deviceName[sizeof(pairingDataNode.deviceName) - 1] = '\0';
     memcpy(pairingDataNode.mac, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
     pairingDataNode.pairingKey = PAIRING_KEY;
     printMacAddress(pairingDataNode.mac);
@@ -139,17 +140,6 @@ void pairingTask(void *pvParameters) {
   while(true){
     if (autoPairing() == PAIR_PAIRED) {
         delay(500);
-        //Set values to send
-        myData.msgType = DATA;
-        memcpy(myData.mac, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
-        myData.temp = readDHTTemperature();
-        myData.hum = readDHTHumidity();
-        myData.readingId = readingId++;
-        LoRa.beginPacket();
-        LoRa.write((uint8_t *) &myData, sizeof(myData));
-        LoRa.endPacket();
-        LoRa.receive();
-        Serial.printf("Sent sensor data packet...");
     }
     vTaskDelay(10 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
   }
