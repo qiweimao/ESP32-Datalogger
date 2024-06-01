@@ -52,6 +52,8 @@ void load_system_configuration() {
     LORA_MODE = doc["LORA_MODE"] | LORA_GATEWAY;
     PAIRING_KEY = doc["PAIRING_KEY"] | generateRandomNumber();
     
+    save_config_to_sd("/sys_config", jsonConfig);
+
   } else {
     Serial.println("Configuration not found. Using default values.");
     WIFI_SSID = "Verizon_F4ZD39";
