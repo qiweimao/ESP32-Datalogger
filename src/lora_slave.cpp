@@ -130,7 +130,7 @@ PairingStatus autoPairing(){
 
     case PAIR_PAIRED:
       // nothing to do here 
-      Serial.println("Paired");
+      // Serial.println("Paired");
     break;
   }
   return pairingStatus;
@@ -139,9 +139,8 @@ PairingStatus autoPairing(){
 void pairingTask(void *pvParameters) {
   while(true){
     if (autoPairing() == PAIR_PAIRED) {
-        delay(500);
     }
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
+    vTaskDelay(1 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
   }
 }
 
