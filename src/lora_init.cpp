@@ -38,14 +38,14 @@ void lora_init(void){
     delay(500);
   }
   LoRa.setSyncWord(0xF3);
-  Serial.println("LoRa Initializing OK!");
+  Serial.println("LoRa Initializing - OK");
   
   if (LORA_MODE == LORA_SLAVE){
-    Serial.println("Initialized as Sender");
+    Serial.println("Lora Mode: Sender");
     lora_slave_init();
   }
   if (LORA_MODE == LORA_GATEWAY){
-    Serial.println("Initialized as Gateway");
+    Serial.println("Lora Mode: Gateway");
     lora_gateway_init();
   }
 

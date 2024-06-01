@@ -112,10 +112,8 @@ void lora_gateway_init() {
     } else {
       Serial.println("Failed to create 'node' directory");
     }
-  } else {
-    Serial.println("'node' directory already exists");
   }
-
+  
   xTaskCreate(taskReceive, "Data Handler", 10000, (void*)OnDataRecvGateway, 1, NULL);
 
 }

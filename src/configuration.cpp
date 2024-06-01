@@ -32,7 +32,7 @@ void save_config_to_sd(const char* filename, const String& jsonConfig) {
   // Write the JSON configuration to the file
   configFile.print(jsonConfig);
   configFile.close();
-  Serial.println("Configuration saved to SD card.");
+  // Serial.println("Configuration saved to SD card.");
 }
 
 void load_system_configuration() {
@@ -78,7 +78,7 @@ void load_system_configuration() {
     save_config_to_sd("/sys_config", jsonConfig);
 
   }
-
+  Serial.println("-- Loaded System Configuration --");
   Serial.printf("Device Name: %s\n", DEVICE_NAME.c_str());
   Serial.printf("WIFI_SSID: %s\n", WIFI_SSID.c_str());
   Serial.printf("WIFI_PASSWORD: %s\n", WIFI_PASSWORD.c_str());
@@ -162,7 +162,7 @@ void update_system_configuration(String key, String value) {
 DataCollectionConfig dataConfig;
 
 void load_data_collection_configuration() {
-  Serial.println("Loading data collection configuration...");
+  Serial.println("\n-- Loaded Data Collection Configuration --");
 
   preferences.begin("datacollection", false);
 

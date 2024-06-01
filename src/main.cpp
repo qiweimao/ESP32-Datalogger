@@ -30,22 +30,24 @@ void setup() {
 
   /* Core System */
   Serial.println("*** Core System ***");
-  wifi_setting_reset();
+
   pinMode(TRIGGER_PIN, INPUT_PULLUP);// Pin setting for wifi manager push button
   pinMode(LED,OUTPUT);// onboard blue LED inidcator
-  spiffs_init();// Setup SPIFFS -- Flash File System
+
   external_rtc_init();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
-  sd_init();//SD card file system initialization
+  spiffs_init();
+  sd_init();
   load_system_configuration();
   load_data_collection_configuration();
-  Serial.println("\n*** Utils ***");
+  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   oled_init();
+
+  Serial.println("\n*** Connectivity ***");
   lora_init();
+  wifi_setting_reset();
   wifi_init();
   start_http_server();// start Async server with api-interfaces
   ftp_init();
-  // xTaskCreate(logDataTask, "logDataTask", 4096, NULL, 1, NULL);
-  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
 
   Serial.println("\n------------------Boot Completed----------------\n");
 }

@@ -100,7 +100,7 @@ void loadPeersFromSD() {
       // Print loaded peer information to serial
       Serial.print("Loaded Peer ");
       Serial.print(peerCount + 1);
-      Serial.print(": MAC = ");
+      Serial.print(":\n MAC = ");
       printMacAddress(peers[peerCount].mac);
       Serial.print(", Device Name = ");
       Serial.println(peers[peerCount].deviceName);

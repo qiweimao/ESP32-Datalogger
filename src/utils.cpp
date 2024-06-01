@@ -35,12 +35,12 @@ void wifi_setting_reset(){
 // Function to connect to WiFi
 void wifi_init(){
 
-    // WiFi.mode(WIFI_AP_STA);
+    WiFi.mode(WIFI_AP_STA);
 
-    Serial.print("Connecting to WiFi...");
+    Serial.print("Connecting to WiFi");
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    Serial.println(WIFI_SSID);
-    Serial.println(WIFI_PASSWORD);
+    // Serial.println(WIFI_SSID);
+    // Serial.println(WIFI_PASSWORD);
 
     // Wait for connection
     int i = 0;
@@ -58,16 +58,16 @@ void wifi_init(){
     Serial.print("Connected to WiFi. IP address: ");
     Serial.println(WiFi.localIP());
 
-    // // Set up Access Point (AP)
-    // Serial.print("Setting up AP...");
-    // bool ap_started = WiFi.softAP(DEVICE_NAME, DEVICE_NAME);
-    // if(ap_started){
-    //     Serial.println("AP started");
-    //     Serial.print("AP IP address: ");
-    //     Serial.println(WiFi.softAPIP());
-    // } else {
-    //     Serial.println("Failed to start AP");
-    // }
+    // Set up Access Point (AP)
+    Serial.print("Setting up AP...");
+    bool ap_started = WiFi.softAP(DEVICE_NAME, "SenseLynk101");
+    if(ap_started){
+        Serial.println("AP started");
+        Serial.print("AP IP address: ");
+        Serial.println(WiFi.softAPIP());
+    } else {
+        Serial.println("Failed to start AP");
+    }
 
 }
 
@@ -128,6 +128,18 @@ void external_rtc_init(){
   DateTime now = rtc.now();
   Serial.print("RTC time: ");
   Serial.println(get_current_time());
+
+  // Set the ESP32 system time to the RTC time
+  struct tm timeinfo;
+  timeinfo.tm_year = now.year() - 1900; // tm_year is year since 1900
+  timeinfo.tm_mon = now.month() - 1;    // tm_mon is 0-based
+  timeinfo.tm_mday = now.day();
+  timeinfo.tm_hour = now.hour();
+  timeinfo.tm_min = now.minute();
+  timeinfo.tm_sec = now.second();
+  time_t t = mktime(&timeinfo);
+  struct timeval now_tv = { .tv_sec = t };
+  settimeofday(&now_tv, NULL);
 }
 
 void external_rtc_sync_ntp(){
@@ -229,8 +241,6 @@ void sd_init(){
     } else {
       Serial.println("Failed to create 'data' directory");
     }
-  } else {
-    Serial.println("'data' directory already exists");
   }
 
 }
