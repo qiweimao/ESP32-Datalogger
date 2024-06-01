@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "configuration.h"
 
 const int CS = 5; // SD Card chip select
 HardwareSerial VM(1); // UART port 1 on ESP32
@@ -33,6 +34,9 @@ void wifi_setting_reset(){
 
 // Function to connect to WiFi
 void wifi_init(){
+
+    // WiFi.mode(WIFI_AP_STA);
+
     Serial.print("Connecting to WiFi...");
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     Serial.println(WIFI_SSID);
@@ -53,6 +57,18 @@ void wifi_init(){
     Serial.println();
     Serial.print("Connected to WiFi. IP address: ");
     Serial.println(WiFi.localIP());
+
+    // // Set up Access Point (AP)
+    // Serial.print("Setting up AP...");
+    // bool ap_started = WiFi.softAP(DEVICE_NAME, DEVICE_NAME);
+    // if(ap_started){
+    //     Serial.println("AP started");
+    //     Serial.print("AP IP address: ");
+    //     Serial.println(WiFi.softAPIP());
+    // } else {
+    //     Serial.println("Failed to start AP");
+    // }
+
 }
 
 String get_public_ip() {
@@ -80,6 +96,8 @@ String get_public_ip() {
  *                                                                *
  ******************************************************************/
 
+int rtc_mounted = 0;
+
 /* Time */
 const char *ntpServers[] = {
   "pool.ntp.org",
@@ -105,12 +123,20 @@ void external_rtc_init(){
     return;
   }
 
+  rtc_mounted = 1;
+
   DateTime now = rtc.now();
   Serial.print("RTC time: ");
   Serial.println(get_current_time());
 }
 
 void external_rtc_sync_ntp(){
+
+  if(!rtc_mounted){
+    Serial.println("Skip RTC sync, external RTC not mounted.");
+    return;
+  }
+
   // Synchronize DS1307 RTC with NTP time
   struct tm timeinfo;
   if (getLocalTime(&timeinfo)) {
@@ -149,6 +175,12 @@ void ntp_sync() {
 }
 
 String get_current_time(bool getFilename) {
+
+  if(!rtc_mounted){
+    Serial.println("External RTC not mounted. Cannot get current time.");
+    return "error.";
+  }
+
   struct tm timeinfo;
   DateTime now = rtc.now();
   
@@ -223,6 +255,9 @@ void oled_init() {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;); // Don't proceed, loop forever
   }
+
+  Serial.println("SSD1306 allocation done.");
+
   display.clearDisplay();
   display.display();
   display.setTextSize(1);
@@ -286,4 +321,60 @@ uint32_t generateRandomNumber() {
   uint32_t randomNumber = random(0, 4294967295);
   
   return randomNumber;
+}
+
+/******************************************************************
+ *                                                                *
+ *                            FTP                                 *
+ *                                                                *
+ ******************************************************************/
+
+FtpServer ftpSrv;   //set #define FTP_DEBUG in ESP8266FtpServer.h to see ftp verbose on serial
+
+void _callback(FtpOperation ftpOperation, unsigned int freeSpace, unsigned int totalSpace){
+	Serial.print(">>>>>>>>>>>>>>> _callback " );
+	Serial.print(ftpOperation);
+	/* FTP_CONNECT,
+	 * FTP_DISCONNECT,
+	 * FTP_FREE_SPACE_CHANGE
+	 */
+	Serial.print(" ");
+	Serial.print(freeSpace);
+	Serial.print(" ");
+	Serial.println(totalSpace);
+
+	// freeSpace : totalSpace = x : 360
+
+	if (ftpOperation == FTP_CONNECT) Serial.println(F("CONNECTED"));
+	if (ftpOperation == FTP_DISCONNECT) Serial.println(F("DISCONNECTED"));
+};
+
+void _transferCallback(FtpTransferOperation ftpOperation, const char* name, unsigned int transferredSize){
+	Serial.print(">>>>>>>>>>>>>>> _transferCallback " );
+	Serial.print(ftpOperation);
+	/* FTP_UPLOAD_START = 0,
+	 * FTP_UPLOAD = 1,
+	 *
+	 * FTP_DOWNLOAD_START = 2,
+	 * FTP_DOWNLOAD = 3,
+	 *
+	 * FTP_TRANSFER_STOP = 4,
+	 * FTP_DOWNLOAD_STOP = 4,
+	 * FTP_UPLOAD_STOP = 4,
+	 *
+	 * FTP_TRANSFER_ERROR = 5,
+	 * FTP_DOWNLOAD_ERROR = 5,
+	 * FTP_UPLOAD_ERROR = 5
+	 */
+	Serial.print(" ");
+	Serial.print(name);
+	Serial.print(" ");
+	Serial.println(transferredSize);
+};
+
+void ftp_init(){
+  ftpSrv.setCallback(_callback);
+  // ftpSrv.setTransferCallback(_transferCallback);
+
+  ftpSrv.begin("esp32","esp32");    //username, password for ftp.   (default 21, 50009 for PASV)
 }
