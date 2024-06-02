@@ -38,18 +38,13 @@ float readDHTHumidity() {
 }
 
 void OnDataRecvNode(const uint8_t *incomingData, int len) { 
-  Serial.print("Packet received from: ");
-  Serial.println();
-  Serial.print("data size = ");
-  Serial.println(sizeof(incomingData));
-  Serial.print("struct size = ");
-  Serial.println(sizeof(pairingDataNode));
   uint8_t type = incomingData[0];
-  Serial.printf("type = %d", type);
+  Serial.printf("type = %d\n", type);
 
   // Check if message is for me
   uint8_t buffer[6];
   memcpy(buffer, incomingData + 1, 6);
+  printMacAddress(buffer);
   if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
     Serial.println("This message is not for me.");
     return;
@@ -70,6 +65,7 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
     break;
 
   case PAIRING:    // we received pairing data from server
+    Serial.println("\nPAIRING message processing");
     memcpy(&pairingDataNode, incomingData, sizeof(pairingDataNode));
     Serial.println();
     printMacAddress(pairingDataNode.mac);
