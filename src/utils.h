@@ -18,8 +18,8 @@
 #include "esp_log.h"
 #include "esp32-hal-log.h"
 
-#define LOG_LEVEL ESP_LOG_WARN
-#define MY_ESP_LOG_LEVEL ESP_LOG_INFO
+#define LOG_LEVEL ESP_LOG_ERROR
+#define MY_ESP_LOG_LEVEL ESP_LOG_ERROR
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels

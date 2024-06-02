@@ -20,7 +20,7 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       root["humidity"] = incomingReadings.hum;
       root["readingId"] = String(incomingReadings.readingId);
       serializeJson(root, payload);
-      oled_print(payload.c_str());
+      oled_print(payload.c_str(), sizeof(payload.c_str()));
       serializeJson(root, Serial);
       Serial.println();
       break;
@@ -35,9 +35,8 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       Serial.println(pairingDataGateway.deviceName);
 
       /* OLED for Dev */
-      oled_print(pairingDataGateway.msgType);
-      oled_print("Pairing request from: ");
-      oled_print(pairingDataGateway.mac[0]);
+      oled_print("Pair request: ");
+      // oled_print(pairingDataGateway.mac[0]);
 
       if (pairingDataGateway.msgType == PAIRING) { 
 

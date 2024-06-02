@@ -289,42 +289,9 @@ void oled_init() {
 
 }
 
+// Overloaded function to print text to OLED display assuming null-terminated string
 void oled_print(const char* text) {
-    static int readingIndex = 0; // Keep track of the current reading index
-    const int maxLineLength = sizeof(screenBuffer[0]) - 1; // Maximum length of a line in the buffer
-
-    // Split the input text into lines and add to the buffer
-    const char* ptr = text;
-    while (*ptr != '\0') {
-        // Scroll up if the screen is full
-        if (readingIndex >= NUM_ROWS) {
-            // Shift all rows up by copying the content from the next row
-            for (int i = 0; i < NUM_ROWS - 1; i++) {
-                strcpy(screenBuffer[i], screenBuffer[i + 1]);
-            }
-            readingIndex = NUM_ROWS - 1;
-        }
-
-        // Copy a portion of the text to the current buffer line
-        strncpy(screenBuffer[readingIndex], ptr, maxLineLength);
-        screenBuffer[readingIndex][maxLineLength] = '\0';  // Ensure null termination
-
-        // Move the pointer forward by the length of the copied text
-        ptr += maxLineLength;
-
-        // Clear the display
-        display.clearDisplay();
-
-        // Redraw all the buffer content
-        for (int i = 0; i < NUM_ROWS; i++) {
-            display.setCursor(0, i * CHAR_HEIGHT);
-            display.print(screenBuffer[i]);
-        }
-        display.display();
-
-        // Update the reading index
-        readingIndex++;
-    }
+    oled_print(text, strlen(text));
 }
 
 void oled_print(const char* text, size_t size) {
@@ -375,7 +342,7 @@ void oled_print(const char* text, size_t size) {
 void oled_print(uint8_t value) {
   char buffer[8];
   snprintf(buffer, 8, "%u", value);
-  oled_print(buffer);
+  oled_print(buffer, sizeof(buffer));
 }
 
 // Function to generate a random number using ESP32's hardware RNG
@@ -455,7 +422,7 @@ void ftp_init(){
 int sdCardLogOutput(const char *format, va_list args)
 {
 	// Serial.println("Callback running");
-	char buf[128];
+  char buf[128] = {0}; // Initialize buffer with zeros
 	int ret = vsnprintf(buf, sizeof(buf), format, args);
   Serial.println(buf);
   oled_print(buf, ret);

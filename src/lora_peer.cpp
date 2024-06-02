@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <SD.h>
 #include "lora_peer.h"
+#include "utils.h"
 
 size_t peerCount = 0;
 const char* filename = "/peers.txt";
@@ -20,11 +21,13 @@ void printMacAddress(const uint8_t* mac) {
 bool addPeerGateway(const uint8_t peer_addr[MAC_ADDR_LENGTH], String DeviceName) {
   if(checkPeerGateway(peer_addr)){
     Serial.println("Peer already added.");
+    oled_print("Peer already added.");
     return false;
   }
 
   if (peerCount >= MAX_PEERS) {
     Serial.println("Max peers reached. Cannot add more.");
+    oled_print("Max peers reached. Cannot add more.");
     return false;
   }
   
@@ -86,6 +89,7 @@ void savePeersToSD() {
       file.write((uint8_t*)peers[i].deviceName, DEVICE_NAME_MAX_LENGTH);
     }
     file.close();
+    Serial.print("Saved peers to SD card");
   }
 }
 
