@@ -290,34 +290,86 @@ void oled_init() {
 }
 
 void oled_print(const char* text) {
-  static int readingIndex = 0; // Keep track of the current reading index
+    static int readingIndex = 0; // Keep track of the current reading index
+    const int maxLineLength = sizeof(screenBuffer[0]) - 1; // Maximum length of a line in the buffer
 
-  // Scroll up if the screen is full
-  if (readingIndex >= NUM_ROWS) {
-    // Shift all rows up by copying the content from the next row
-    for (int i = 0; i < NUM_ROWS - 1; i++) {
-      strcpy(screenBuffer[i], screenBuffer[i + 1]);
+    // Split the input text into lines and add to the buffer
+    const char* ptr = text;
+    while (*ptr != '\0') {
+        // Scroll up if the screen is full
+        if (readingIndex >= NUM_ROWS) {
+            // Shift all rows up by copying the content from the next row
+            for (int i = 0; i < NUM_ROWS - 1; i++) {
+                strcpy(screenBuffer[i], screenBuffer[i + 1]);
+            }
+            readingIndex = NUM_ROWS - 1;
+        }
+
+        // Copy a portion of the text to the current buffer line
+        strncpy(screenBuffer[readingIndex], ptr, maxLineLength);
+        screenBuffer[readingIndex][maxLineLength] = '\0';  // Ensure null termination
+
+        // Move the pointer forward by the length of the copied text
+        ptr += maxLineLength;
+
+        // Clear the display
+        display.clearDisplay();
+
+        // Redraw all the buffer content
+        for (int i = 0; i < NUM_ROWS; i++) {
+            display.setCursor(0, i * CHAR_HEIGHT);
+            display.print(screenBuffer[i]);
+        }
+        display.display();
+
+        // Update the reading index
+        readingIndex++;
     }
-    readingIndex = NUM_ROWS - 1;
-  }
-
-  // Add the new reading to the buffer
-  strncpy(screenBuffer[readingIndex], text, sizeof(screenBuffer[readingIndex]));
-  screenBuffer[readingIndex][sizeof(screenBuffer[readingIndex]) - 1] = '\0';  // Ensure null termination
-
-  // Clear the display
-  display.clearDisplay();
-
-  // Redraw all the buffer content
-  for (int i = 0; i <= readingIndex; i++) {
-    display.setCursor(0, i * CHAR_HEIGHT);
-    display.print(screenBuffer[i]);
-  }
-  display.display();
-
-  // Update the reading index
-  readingIndex++;
 }
+
+void oled_print(const char* text, size_t size) {
+    static int readingIndex = 0; // Keep track of the current reading index
+    const int maxLineLength = sizeof(screenBuffer[0]) - 1; // Maximum length of a line in the buffer
+
+    const char* ptr = text;
+    const char* end = text + size;
+
+    while (ptr < end) {
+        // Scroll up if the screen is full
+        if (readingIndex >= NUM_ROWS) {
+            // Shift all rows up by copying the content from the next row
+            for (int i = 0; i < NUM_ROWS - 1; i++) {
+                strcpy(screenBuffer[i], screenBuffer[i + 1]);
+            }
+            readingIndex = NUM_ROWS - 1;
+        }
+
+        // Copy a portion of the text to the current buffer line
+        size_t copyLength = maxLineLength;
+        if (ptr + copyLength > end) {
+            copyLength = end - ptr;
+        }
+        strncpy(screenBuffer[readingIndex], ptr, copyLength);
+        screenBuffer[readingIndex][copyLength] = '\0';  // Ensure null termination
+
+        // Move the pointer forward by the length of the copied text
+        ptr += copyLength;
+
+        // Clear the display
+        display.clearDisplay();
+
+        // Redraw all the buffer content
+        for (int i = 0; i < NUM_ROWS; i++) {
+            display.setCursor(0, i * CHAR_HEIGHT);
+            display.print(screenBuffer[i]);
+        }
+        display.display();
+
+        // Update the reading index
+        readingIndex++;
+    }
+}
+
 
 // Overloaded function for uint8_t data type
 void oled_print(uint8_t value) {
@@ -392,4 +444,33 @@ void ftp_init(){
   // ftpSrv.setTransferCallback(_transferCallback);
 
   ftpSrv.begin("esp32","esp32");    //username, password for ftp.   (default 21, 50009 for PASV)
+}
+
+/******************************************************************
+ *                                                                *
+ *                       Error Logging                            *
+ *                                                                *
+ ******************************************************************/
+
+int sdCardLogOutput(const char *format, va_list args)
+{
+	// Serial.println("Callback running");
+	char buf[128];
+	int ret = vsnprintf(buf, sizeof(buf), format, args);
+  Serial.println(buf);
+  oled_print(buf, ret);
+	return ret;
+}
+
+void esp_error_init_sd_oled(){
+
+  Serial.println("Setting log levels and callback");
+  esp_log_level_set("TEST", LOG_LEVEL);
+  esp_log_level_set(TAG, MY_ESP_LOG_LEVEL);
+  esp_log_set_vprintf(sdCardLogOutput);
+  
+  // ESP_LOGE(TAG, "Error message");
+  // ESP_LOGW(TAG, "Warning message");
+  // // ESP_LOGI("TEST", "Info message");
+  // ESP_LOGD(TAG, "Verbose message"); 
 }

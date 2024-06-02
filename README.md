@@ -16,7 +16,7 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
     - [WiFi Reconnect Capability](#wifi-reconnect-capability)
     - [WiFi Manager](#wifi-manager)
     - [Dynamic IP Address](#dynamic-ip-address)
-  - [ESPNOW](#espnow)
+  - [Radio Network](#radio-network)
     - [How do devices interconnect?](#how-do-devices-interconnect)
     - [Hardware](#hardware)
   - [Data Logging Functions](#data-logging-functions)
@@ -25,6 +25,7 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
       - [VM501](#vm501)
   - [OTA](#ota)
   - [Troubleshooting](#troubleshooting)
+    - [System Log](#system-log)
     - [ESP-Prog](#esp-prog)
 - [API](#api)
   - [Logger System Control](#logger-system-control)
@@ -33,6 +34,7 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
     - [File system TODO](#file-system-todo)
   - [Data Retrieval TODO](#data-retrieval-todo)
     - [Timeseries request](#timeseries-request)
+- [License](#license)
 - [Useful References](#useful-references)
 # Architecture
 ## Power Supply
@@ -125,6 +127,60 @@ For commercial applications, a simple Arduino OTA wrapper library can be develop
 TODO develope own version of OTA to avoid restrictions.
 Importantly, remember to enable async webserver opetion in `ElegantOTA.h` in `./pio/libdeps/esp32dev/ElegantOTA`.
 ## Troubleshooting
+### System Log
+Use this guide: https://community.platformio.org/t/redirect-esp32-log-messages-to-sd-card/33734
+```
+#ifdef USE_ESP_IDF_LOG
+In esp32-hal-log.h I have now:
+#ifndef TAG
+#define TAG "myAPP"
+#endif
+//#define log_n(format, ...) myLog(ESP_LOG_NONE, format, ##__VA_ARGS__)
+#else
+```
+My platformio.ini looks like:
+```
+[env:firebeetle32]
+platform = espressif32
+board = firebeetle32
+framework = arduino
+build_flags= -DUSE_ESP_IDF_LOG -DCORE_DEBUG_LEVEL=5
+```
+Code like this:
+```
+#include "esp_log.h"
+#include "esp32-hal-log.h"
+
+#define LOG_LEVEL ESP_LOG_WARN
+#define MY_ESP_LOG_LEVEL ESP_LOG_INFO
+
+File logFile;
+
+int sdCardLogOutput(const char *format, va_list args)
+{
+	Serial.println("Callback running");
+	char buf[128];
+	int ret = vsnprintf(buf, sizeof(buf), format, args);
+	if (logFile)
+	{
+		logFile.print(buf);
+		logFile.flush();
+	}
+	return ret;
+}
+
+void setup()
+{
+
+  Serial.println("Setting log levels and callback");
+  esp_log_level_set("TEST", LOG_LEVEL);
+  esp_log_level_set(TAG, MY_ESP_LOG_LEVEL);
+  esp_log_set_vprintf(sdCardLogOutput);
+
+}
+
+Thank you for your help Max.
+```
 ### ESP-Prog
 MAC OS driver issue:
 https://arduino.stackexchange.com/questions/91111/how-to-install-ftdi-serial-drivers-on-mac

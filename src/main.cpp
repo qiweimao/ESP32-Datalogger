@@ -29,18 +29,17 @@ void setup() {
   Serial.println("\n------------------Booting-------------------\n");
 
   /* Core System */
+  external_rtc_init();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   Serial.println("*** Core System ***");
-
+  oled_init();
+  esp_error_init_sd_oled();
   pinMode(TRIGGER_PIN, INPUT_PULLUP);// Pin setting for wifi manager push button
   pinMode(LED,OUTPUT);// onboard blue LED inidcator
-
-  external_rtc_init();// Initialize external RTC, MUST BE INITIALIZED BEFORE NTP
   spiffs_init();
   sd_init();
   load_system_configuration();
   load_data_collection_configuration();
   xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
-  oled_init();
 
   Serial.println("\n*** Connectivity ***");
   lora_init();

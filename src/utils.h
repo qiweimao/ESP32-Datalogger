@@ -15,6 +15,11 @@
 #include <ArduinoJson.h>
 #include "esp_wifi.h"
 #include <SimpleFTPServer.h>
+#include "esp_log.h"
+#include "esp32-hal-log.h"
+
+#define LOG_LEVEL ESP_LOG_WARN
+#define MY_ESP_LOG_LEVEL ESP_LOG_INFO
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -39,6 +44,7 @@ void spiffs_init();
 void oled_init();
 void oled_print(const char* text);
 void oled_print(uint8_t value);
+void oled_print(const char* text, size_t size);
 
 void lora_init(void);
 
@@ -46,5 +52,8 @@ void lora_init(void);
 void sd_init();
 uint32_t generateRandomNumber();
 void ftp_init();
+
+int sdCardLogOutput(const char *format, va_list args);
+void esp_error_init_sd_oled();
 
 #endif
