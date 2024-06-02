@@ -39,8 +39,6 @@ void wifi_init(){
 
     Serial.print("Connecting to WiFi");
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    // Serial.println(WIFI_SSID);
-    // Serial.println(WIFI_PASSWORD);
 
     // Wait for connection
     int i = 0;
@@ -54,15 +52,22 @@ void wifi_init(){
     }
 
     // Print local IP address
-    Serial.println();
-    Serial.print("Connected to WiFi. IP address: ");
-    Serial.println(WiFi.localIP());
+    if(WiFi.status() != WL_CONNECTED){
+      Serial.println();
+      Serial.println("Connected to WiFi. IP address: ");
+      Serial.println(WiFi.localIP());
+    }
+    else{
+      Serial.println("NOT Connected to WiFi. Will keep trying.");
+    }
 
     // Set up Access Point (AP)
     Serial.print("Setting up AP...");
     bool ap_started = WiFi.softAP(DEVICE_NAME, "SenseLynk101");
     if(ap_started){
         Serial.println("AP started");
+        Serial.printf("AP SSID: %s\n", DEVICE_NAME);
+        Serial.printf("AP Password: SenseLynk101\n");
         Serial.print("AP IP address: ");
         Serial.println(WiFi.softAPIP());
     } else {
