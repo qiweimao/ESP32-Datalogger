@@ -25,6 +25,11 @@ typedef struct file_meta_message {
   uint32_t filesize;
 } file_meta_message;
 
+typedef struct ack {
+  uint8_t msgType;
+  uint8_t mac[6];
+} ack_message;
+
 typedef struct file_body_message {
   uint8_t msgType;
   uint8_t mac[6];

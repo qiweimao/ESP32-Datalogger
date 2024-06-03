@@ -123,3 +123,13 @@ bool compareMacAddress(const uint8_t mac1[MAC_ADDR_LENGTH], const uint8_t mac2[M
   }
   return true; // If all bytes match, return true
 }
+
+// Function to get device name by MAC address
+String getDeviceNameByMac(const uint8_t peer_addr[MAC_ADDR_LENGTH]) {
+  for (size_t i = 0; i < peerCount; i++) {
+    if (compareMacAddress(peers[i].mac, peer_addr)) {
+      return String(peers[i].deviceName);
+    }
+  }
+  return String(""); // Return empty string if not found
+}

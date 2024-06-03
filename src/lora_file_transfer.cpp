@@ -20,11 +20,20 @@ void sendFile(const char* filename) {
     Serial.println("Failed to open file!");
     return;
   }
-
   size_t fileSize = file.size();
   sendMetadata(filename, fileSize);
 
+
+// typedef struct file_body_message {
+//   uint8_t msgType;
+//   uint8_t mac[6];
+//   uint8_t data[CHUNK_SIZE];
+//   uint8_t len;
+// } file_body_message;
+
   while ((file_body.len = file.read(file_body.data, CHUNK_SIZE)) > 0) {
+    file_body.msgType = FILE_BODY;
+    memcpy(file_body.mac, MAC_ADDRESS_STA, sizeof(file_meta.mac));
     sendChunk(file_body);
     delay(500);  // Small delay to avoid congestion
   }
@@ -47,9 +56,11 @@ void sendMetadata(String filename, size_t fileSize) {
   while (attempts < MAX_ATTEMPS) {
 
     sendLoraMessage((uint8_t*)&file_meta, sizeof(file_meta));
+    Serial.println();
     Serial.println("Sent metadata");
 
     if (waitForAck()) {
+      Serial.println("Received ACK");
       return;
     } else {
       Serial.println("ACK for metadata not received, resending");
@@ -67,7 +78,7 @@ void sendChunk(file_body_message file_body) {
   while (attempts < MAX_ATTEMPS) {
 
     sendLoraMessage((uint8_t*)&file_body, sizeof(file_body));
-    Serial.print("Sent chunk of size: ");
+    Serial.print("\nSent chunk of size: ");
     Serial.println(file_body.len);
 
     if (waitForAck()) {
@@ -104,9 +115,10 @@ void sendEndOfTransfer() {
 bool waitForAck() {
   unsigned long startTime = millis();
   while (millis() - startTime < ACK_TIMEOUT) {
-      ack_count > 0;
-      ack_count--;
-      return true;
+      if(ack_count){
+        ack_count--;
+        return true;
+      }
   }
   return false;
 }
