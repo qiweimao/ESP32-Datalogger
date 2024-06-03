@@ -1,5 +1,6 @@
 #include "lora_slave.h"
 #include "lora_peer.h"
+#include "lora_file_transfer.h"
 #include "configuration.h"
 
 /******************************************************************
@@ -135,6 +136,17 @@ PairingStatus autoPairing(){
 void pairingTask(void *pvParameters) {
   while(true){
     if (autoPairing() == PAIR_PAIRED) {
+      // Open the file in read mode
+      delay(15000);
+      File file = SD.open("/collection_config");
+      if (!file) {
+        Serial.println("Failed to open file");
+        return;
+      }
+      size_t fileSize = file.size();
+      // sendMetadata("collection_config", fileSize);
+      sendFile("/collection_config");
+      delay(1000000);
     }
     vTaskDelay(1 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
   }
