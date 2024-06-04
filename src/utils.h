@@ -14,7 +14,6 @@
 #include <Adafruit_SSD1306.h>
 #include <ArduinoJson.h>
 #include "esp_wifi.h"
-#include <SimpleFTPServer.h>
 #include "esp_log.h"
 #include "esp32-hal-log.h"
 
@@ -32,7 +31,6 @@ extern char daysOfWeek[7][12];
 extern String WIFI_SSID;
 extern String WIFI_PASSWORD;
 extern int utcOffset;  // UTC offset in hours (Eastern Time Zone is -5 hours)
-extern FtpServer ftpSrv;   //set #define FTP_DEBUG in ESP8266FtpServer.h to see ftp verbose on serial
 
 void wifi_setting_reset();
 void wifi_init();
@@ -51,7 +49,6 @@ void lora_init(void);
 /* SD Card */
 void sd_init();
 uint32_t generateRandomNumber();
-void ftp_init();
 
 int sdCardLogOutput(const char *format, va_list args);
 void esp_error_init_sd_oled();

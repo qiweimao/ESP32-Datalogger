@@ -6,6 +6,14 @@
 #include "lora_init.h"
 #include "configuration.h"
 
+#include "ESP-FTP-Server-Lib.h"
+#include "FTPFilesystem.h"
+
+#define FTP_USER     "esp32"
+#define FTP_PASSWORD "esp32"
+
+FTPServer ftp;
+
 /* Tasks */
 SemaphoreHandle_t logMutex;
 TaskHandle_t parsingTask; // Task handle for the parsing task
@@ -81,7 +89,17 @@ void setup() {
   wifi_setting_reset();
   wifi_init();
   start_http_server();// start Async server with api-interfaces
-  ftp_init();
+
+
+  ftp.addUser(FTP_USER, FTP_PASSWORD);
+#if defined(ESP32)
+  ftp.addFilesystem("SD", &SD);
+#endif
+  ftp.addFilesystem("SPIFFS", &SPIFFS);
+
+  ftp.begin();
+
+  Serial.println("...---'''---...---'''---...---'''---...");
 
   xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("\n------------------Boot Completed----------------\n");
@@ -89,5 +107,5 @@ void setup() {
 
 void loop() {
   ElegantOTA.loop();
-  ftpSrv.handleFTP();        //make sure in loop you call handleFTP()!!
+  ftp.handle();
 }
