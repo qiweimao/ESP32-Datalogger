@@ -23,6 +23,39 @@ void logDataTask(void *parameter) {
   }
 }
 
+void printFileTime(time_t t) {
+  struct tm *tmstruct = localtime(&t);
+  Serial.printf("%04d-%02d-%02d %02d:%02d:%02d\n", 
+                tmstruct->tm_year + 1900, 
+                tmstruct->tm_mon + 1, 
+                tmstruct->tm_mday, 
+                tmstruct->tm_hour, 
+                tmstruct->tm_min, 
+                tmstruct->tm_sec);
+}
+
+void listFiles(File dir, int numTabs) {
+  while (true) {
+    File entry = dir.openNextFile();
+    if (!entry) {
+      // No more files
+      break;
+    }
+    for (uint8_t i = 0; i < numTabs; i++) {
+      Serial.print('\t');
+    }
+    Serial.print(entry.name());
+    if (entry.isDirectory()) {
+      Serial.println("/");
+      listFiles(entry, numTabs + 1);
+    } else {
+      Serial.print("\t\t");
+      printFileTime(entry.getLastWrite());
+    }
+    entry.close();
+  }
+}
+
 void setup() {
 
   Serial.begin(115200);
@@ -37,9 +70,11 @@ void setup() {
   pinMode(LED,OUTPUT);// onboard blue LED inidcator
   spiffs_init();
   sd_init();
+
+  listFiles(SD.open("/"), 0);
+
   load_system_configuration();
   load_data_collection_configuration();
-  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
 
   Serial.println("\n*** Connectivity ***");
   lora_init();
@@ -48,6 +83,7 @@ void setup() {
   start_http_server();// start Async server with api-interfaces
   ftp_init();
 
+  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   Serial.println("\n------------------Boot Completed----------------\n");
 }
 
