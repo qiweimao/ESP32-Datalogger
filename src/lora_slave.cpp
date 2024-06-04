@@ -137,7 +137,7 @@ void pairingTask(void *pvParameters) {
   while(true){
     if (autoPairing() == PAIR_PAIRED) {
       // Open the file in read mode
-      delay(15000);
+      // delay(15000);
       File file = SD.open("/collection_config");
       if (!file) {
         Serial.println("Failed to open file");
