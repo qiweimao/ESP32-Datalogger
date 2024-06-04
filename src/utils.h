@@ -17,6 +17,12 @@
 #include "esp_log.h"
 #include "esp32-hal-log.h"
 
+#include "ESP-FTP-Server-Lib.h"
+#include "FTPFilesystem.h"
+
+#define FTP_USER     "esp32"
+#define FTP_PASSWORD "esp32"
+
 #define LOG_LEVEL ESP_LOG_ERROR
 #define MY_ESP_LOG_LEVEL ESP_LOG_ERROR
 
@@ -52,5 +58,9 @@ uint32_t generateRandomNumber();
 
 int sdCardLogOutput(const char *format, va_list args);
 void esp_error_init_sd_oled();
+
+extern FTPServer ftp;
+void ftp_server_init();
+
 
 #endif

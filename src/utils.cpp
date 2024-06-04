@@ -385,3 +385,20 @@ void esp_error_init_sd_oled(){
   // // ESP_LOGI("TEST", "Info message");
   // ESP_LOGD(TAG, "Verbose message"); 
 }
+
+
+FTPServer ftp;
+
+void ftp_server_init(){
+  ftp.addUser(FTP_USER, FTP_PASSWORD);
+
+  #if defined(ESP32)
+    ftp.addFilesystem("SD", &SD);
+  #endif
+  
+  ftp.addFilesystem("SPIFFS", &SPIFFS);
+
+  ftp.begin();
+
+  Serial.println("...---'''---...---'''---...---'''---...");
+}
