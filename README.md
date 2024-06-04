@@ -1,6 +1,12 @@
 # Introduction
 The ESP32 Data Logger is a cost efficient data acquisition system that supports vibrating wire sensors and other sensors with RS-485, TTL protocol. To set up the data logger as an end user, you can plug it into your computer, and configure the logger in a website using the browser. For advanced configurations, you can program your own code and flash the logger on PC, using PlatformIO or Arduino IDE.
 - [Introduction](#introduction)
+- [Development Environment](#development-environment)
+  - [System Log](#system-log)
+  - [ESP-Prog](#esp-prog)
+  - [Settings to update in Dependencies](#settings-to-update-in-dependencies)
+    - [ElegantOTA](#elegantota)
+    - [FTP Server SD Card Settings](#ftp-server-sd-card-settings)
 - [Architecture](#architecture)
   - [Power Supply](#power-supply)
     - [Power Consumption per Mode](#power-consumption-per-mode)
@@ -24,9 +30,6 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
     - [Sensor Type Supported](#sensor-type-supported)
       - [VM501](#vm501)
   - [OTA](#ota)
-  - [Troubleshooting](#troubleshooting)
-    - [System Log](#system-log)
-    - [ESP-Prog](#esp-prog)
 - [API](#api)
   - [Logger System Control](#logger-system-control)
     - [Logger Configuration](#logger-configuration)
@@ -36,6 +39,40 @@ The ESP32 Data Logger is a cost efficient data acquisition system that supports 
     - [Timeseries request](#timeseries-request)
 - [License](#license)
 - [Useful References](#useful-references)
+  
+# Development Environment
+## System Log
+Use this guide: https://community.platformio.org/t/redirect-esp32-log-messages-to-sd-card/33734, update `esp32-hal-log.h` to define `TAG`
+```
+#ifdef USE_ESP_IDF_LOG
+#ifndef TAG
+#define TAG "myAPP"
+#endif
+```
+Update `platformio.ini` to include:
+```
+build_flags= -DUSE_ESP_IDF_LOG -DCORE_DEBUG_LEVEL=5
+```
+Include the following libraries and definitions:
+```
+#include "esp_log.h"
+#include "esp32-hal-log.h"
+
+#define LOG_LEVEL ESP_LOG_WARN
+#define MY_ESP_LOG_LEVEL ESP_LOG_INFO
+```
+## ESP-Prog
+MAC OS driver issue:
+https://arduino.stackexchange.com/questions/91111/how-to-install-ftdi-serial-drivers-on-mac
+## Settings to update in Dependencies
+### ElegantOTA
+Enable async webserver in the 
+```
+  #define ELEGANTOTA_USE_ASYNC_WEBSERVER 1
+```
+### FTP Server SD Card Settings
+
+
 # Architecture
 ## Power Supply
 For powering the ESP32 development kit via USB, an 18650 battery is utilized. However, for production purposes, a custom PCB will be designed, and the module should be powered via the 3V3 or VIN pin to minimize power loss.
@@ -126,64 +163,7 @@ Currently ElegantOTA free version is used without licensing for commercial appli
 For commercial applications, a simple Arduino OTA wrapper library can be developed to avoid ElegantOTA.
 TODO develope own version of OTA to avoid restrictions.
 Importantly, remember to enable async webserver opetion in `ElegantOTA.h` in `./pio/libdeps/esp32dev/ElegantOTA`.
-## Troubleshooting
-### System Log
-Use this guide: https://community.platformio.org/t/redirect-esp32-log-messages-to-sd-card/33734
-```
-#ifdef USE_ESP_IDF_LOG
-In esp32-hal-log.h I have now:
-#ifndef TAG
-#define TAG "myAPP"
-#endif
-//#define log_n(format, ...) myLog(ESP_LOG_NONE, format, ##__VA_ARGS__)
-#else
-```
-My platformio.ini looks like:
-```
-[env:firebeetle32]
-platform = espressif32
-board = firebeetle32
-framework = arduino
-build_flags= -DUSE_ESP_IDF_LOG -DCORE_DEBUG_LEVEL=5
-```
-Code like this:
-```
-#include "esp_log.h"
-#include "esp32-hal-log.h"
 
-#define LOG_LEVEL ESP_LOG_WARN
-#define MY_ESP_LOG_LEVEL ESP_LOG_INFO
-
-File logFile;
-
-int sdCardLogOutput(const char *format, va_list args)
-{
-	Serial.println("Callback running");
-	char buf[128];
-	int ret = vsnprintf(buf, sizeof(buf), format, args);
-	if (logFile)
-	{
-		logFile.print(buf);
-		logFile.flush();
-	}
-	return ret;
-}
-
-void setup()
-{
-
-  Serial.println("Setting log levels and callback");
-  esp_log_level_set("TEST", LOG_LEVEL);
-  esp_log_level_set(TAG, MY_ESP_LOG_LEVEL);
-  esp_log_set_vprintf(sdCardLogOutput);
-
-}
-
-Thank you for your help Max.
-```
-### ESP-Prog
-MAC OS driver issue:
-https://arduino.stackexchange.com/questions/91111/how-to-install-ftdi-serial-drivers-on-mac
 # API
 An instance of AsyncWebServer is created on port 80. A Callback function is set up to handle incoming HTTP GET requests at the root ("/") by responding with the content of a file stored in the SPIFFS file system. Adjust the filename variable to match the desired file. After configuring the server, it is started with `server.begin()`.
 ## Logger System Control
@@ -219,6 +199,8 @@ The logger should liten on route `/api/readings` for timeseries requests. The cl
 ```
 /api/readings?sensorId=238&start=2024-02-06T13:40:00&end=2024-02-13T13:40:00&readingsOptions=0
 ```
+
+
 
 # License
 Created by Qiwei Mao
