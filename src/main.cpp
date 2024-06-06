@@ -1,4 +1,3 @@
-#include "secrets.h"
 #include "data_logging.h"
 #include "utils.h"
 #include "api_interface.h"
