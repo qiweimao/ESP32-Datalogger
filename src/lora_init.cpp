@@ -86,7 +86,7 @@ void taskReceive(void *parameter) {
       dataReceived--; // Reset the flag for the next packet
       bufferIndex = 0; // Reset the buffer index
 
-      Serial.printf("Bytes available for read: %d\n", LoRa.available());
+      Serial.printf("\nBytes available for read: %d\n", LoRa.available());
       while (LoRa.available() && bufferIndex < 250) {
         buffer[bufferIndex++] = LoRa.read();
       }

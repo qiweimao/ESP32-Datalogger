@@ -80,6 +80,7 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       
       Serial.println("Received FILE_BODY.");
       memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
+      Serial.println(current_file_path);
       file = SD.open(current_file_path, FILE_APPEND);
       if (!file) {
         Serial.println("Failed to create file");
@@ -116,7 +117,7 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       char filename[MAX_FILENAME_LEN + 2]; // 1 for '/' + 4 for 'data' + 1 for '/' + 10 for the name + 1 for the null terminator
       snprintf(filename, sizeof(filename), "%s", buffer);
 
-      Serial.println("\nRecieved FILE_META");
+      Serial.println("Recieved FILE_META");
       Serial.println(filename);
       Serial.printf("File size: %d bytes.\n",file_meta_gateway.filesize);
 
