@@ -14,35 +14,35 @@ char device_in_transfer[MAX_DEVICE_NAME_LEN];
  *                             Sender                             *
  ******************************************************************/
 
-void sendFile(const char* filename) {
+bool sendFile(const char* filename) {
   File file = SD.open(filename);
   if (!file) {
     Serial.println("Failed to open file!");
-    return;
+    return false;
   }
   size_t fileSize = file.size();
-  sendMetadata(filename, fileSize);
-
-
-// typedef struct file_body_message {
-//   uint8_t msgType;
-//   uint8_t mac[6];
-//   uint8_t data[CHUNK_SIZE];
-//   uint8_t len;
-// } file_body_message;
+  if(!sendMetadata(filename, fileSize)){
+    return false;
+  }
 
   while ((file_body.len = file.read(file_body.data, CHUNK_SIZE)) > 0) {
     file_body.msgType = FILE_BODY;
     memcpy(file_body.mac, MAC_ADDRESS_STA, sizeof(file_meta.mac));
-    sendChunk(file_body);
+    if(!sendChunk(file_body)){
+      return false;
+    }
     delay(500);  // Small delay to avoid congestion
   }
 
-  sendEndOfTransfer();
+  if(!sendEndOfTransfer()){
+    return false;
+  }
   file.close();
+  Serial.println("File Transfer: SUCCESS");
+  return true;
 }
 
-void sendMetadata(String filename, size_t fileSize) {
+bool sendMetadata(String filename, size_t fileSize) {
   file_meta_message file_meta;
   file_meta.msgType = FILE_META;
   memcpy(file_meta.mac, MAC_ADDRESS_STA, sizeof(file_meta.mac));
@@ -61,18 +61,19 @@ void sendMetadata(String filename, size_t fileSize) {
 
     if (waitForAck()) {
       Serial.println("Received ACK");
-      return;
+      return true;
     } else {
       Serial.println("ACK for metadata not received, resending");
       attempts++;
     }
   }
   Serial.println("Failed to send metadata after maximum attempts");
+  return false;
 }
 
 
 
-void sendChunk(file_body_message file_body) {
+bool sendChunk(file_body_message file_body) {
   int attempts = 0;
 
   while (attempts < MAX_ATTEMPS) {
@@ -82,17 +83,18 @@ void sendChunk(file_body_message file_body) {
     Serial.println(file_body.len);
 
     if (waitForAck()) {
-      return;
+      return true;
     } else {
       Serial.println("ACK not received, resending chunk");
       attempts++;
     }
   }
   Serial.println("Failed to send chunk after maximum attempts");
+  return false;
 }
 
 
-void sendEndOfTransfer() {
+bool sendEndOfTransfer() {
   int attempts = 0;
 
   file_end.msgType = FILE_END;
@@ -103,13 +105,14 @@ void sendEndOfTransfer() {
     Serial.println("Sent end of transfer");
 
     if (waitForAck()) {
-      return;
+      return true;
     } else {
       Serial.println("ACK for end of transfer not received, resending");
       attempts++;
     }
   }
   Serial.println("Failed to send end of transfer after maximum attempts");
+  return false;
 }
 
 bool waitForAck() {

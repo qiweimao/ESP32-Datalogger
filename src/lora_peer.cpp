@@ -95,6 +95,12 @@ void savePeersToSD() {
 
 // Function to load peers from SD card
 void loadPeersFromSD() {
+  
+  if (!SD.exists(filename)) {
+    Serial.println("File does not exist, skipping loading peers.");
+    return;
+  }
+
   File file = SD.open(filename, FILE_READ);
   if (file) {
     peerCount = 0;

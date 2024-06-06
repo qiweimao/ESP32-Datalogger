@@ -16,27 +16,11 @@ struct_message myData;  // data to send
 struct_message inData;  // data received
 struct_pairing pairingDataNode;
 
-// simulate temperature and humidity data
-float t = 0;
-float h = 0;
-
 unsigned long currentMillis = millis();
 unsigned long previousMillis = 0;   // Stores last time temperature was published
 const long interval = 5000;        // Interval at which to publish sensor readings
 unsigned long NodeStart;                // used to measure Pairing time
 unsigned int readingId = 0;
-
-// simulate temperature reading
-float readDHTTemperature() {
-  t = random(0,40);
-  return t;
-}
-
-// simulate humidity reading
-float readDHTHumidity() {
-  h = random(0,100);
-  return h;
-}
 
 void OnDataRecvNode(const uint8_t *incomingData, int len) { 
   uint8_t type = incomingData[0];
@@ -52,18 +36,6 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
   };
 
   switch (type) {
-  case DATA :      // we received data from server
-    memcpy(&inData, incomingData, sizeof(inData));
-    Serial.print("MAC  = ");
-    printMacAddress(inData.mac);
-    Serial.print("Setpoint temp = ");
-    Serial.println(inData.temp);
-    Serial.print("SetPoint humidity = ");
-    Serial.println(inData.hum);
-    Serial.print("reading Id  = ");
-    Serial.println(inData.readingId);
-
-    break;
 
   case PAIRING:    // we received pairing data from server
     Serial.println("\nPAIRING message processing");

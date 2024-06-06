@@ -22,18 +22,6 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
   uint8_t type = incomingData[0];       // first message byte is the type of message 
 
   switch (type) {
-
-    case DATA :                         // the message is data type
-      memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
-      root["mac"] = incomingReadings.mac;      // create a JSON document with received data and send it by event to the web page
-      root["temperature"] = incomingReadings.temp;
-      root["humidity"] = incomingReadings.hum;
-      root["readingId"] = String(incomingReadings.readingId);
-      serializeJson(root, payload);
-      oled_print(payload.c_str(), sizeof(payload.c_str()));
-      serializeJson(root, Serial);
-      Serial.println();
-      break;
     
     case PAIRING:                            // the message is a pairing request 
 
@@ -170,6 +158,10 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
 
       break;
+
+    default:
+    
+      Serial.print("This message is not for me.");
 
   }
 }
