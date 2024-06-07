@@ -8,7 +8,7 @@
 #define LORA_GATEWAY 1
 
 #define CHUNK_SIZE 200  // Size of each chunk
-#define ACK_TIMEOUT 2000  // Timeout for ACK in milliseconds
+#define ACK_TIMEOUT 5000  // Timeout for ACK in milliseconds
 
 #define MAX_DEVICE_NAME_LEN 10  
 #define MAX_FILENAME_LEN 40
@@ -29,6 +29,11 @@ typedef struct ack {
   uint8_t msgType;
   uint8_t mac[6];
 } ack_message;
+
+typedef struct reject {
+  uint8_t msgType;
+  uint8_t mac[6];
+} reject_message;
 
 typedef struct file_body_message {
   uint8_t msgType;
@@ -77,11 +82,12 @@ struct TaskParams {// Structure to hold task parameters
 };
 
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
-enum MessageType {PAIRING, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA, FILE_META, FILE_BODY, FILE_END, ACK};
+enum MessageType {PAIRING, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA, FILE_META, FILE_BODY, FILE_END, ACK, REJ, TIMEOUT};
 
 extern uint8_t mac_buffer[6];
 extern uint8_t MAC_ADDRESS_STA[6];
 extern int ack_count;
+extern int rej_count;
 
 void LoRa_rxMode();
 void LoRa_txMode();

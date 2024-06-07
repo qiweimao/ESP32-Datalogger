@@ -59,19 +59,24 @@ bool sendMetadata(String filename, size_t fileSize) {
     Serial.println();
     Serial.println("Sent metadata");
 
-    if (waitForAck()) {
+    int res = waitForAck();
+    if (res == ACK) {
       Serial.println("Received ACK");
       return true;
     } else {
-      Serial.println("ACK for metadata not received, resending");
+      if (res == REJ){
+        Serial.println("Received REJ, Abort Transmission");
+        return false;
+      }
+      // Check rejection before reattempt
+      Serial.println("Time out. ACK for metadata not received, resending");
       attempts++;
     }
+
   }
   Serial.println("Failed to send metadata after maximum attempts");
   return false;
 }
-
-
 
 bool sendChunk(file_body_message file_body) {
   int attempts = 0;
@@ -82,12 +87,20 @@ bool sendChunk(file_body_message file_body) {
     Serial.print("\nSent chunk of size: ");
     Serial.println(file_body.len);
 
-    if (waitForAck()) {
+    int res = waitForAck();
+    if (res == ACK) {
+      Serial.println("Received ACK");
       return true;
     } else {
-      Serial.println("ACK not received, resending chunk");
+      if (res == REJ){
+        Serial.println("Received REJ, Abort Transmission");
+        return false;
+      }
+      // Check rejection before reattempt
+      Serial.println("Time out. ACK for metadata not received, resending");
       attempts++;
     }
+
   }
   Serial.println("Failed to send chunk after maximum attempts");
   return false;
@@ -104,26 +117,38 @@ bool sendEndOfTransfer() {
     sendLoraMessage((uint8_t*)&file_end, sizeof(file_end));
     Serial.println("Sent end of transfer");
 
-    if (waitForAck()) {
+    int res = waitForAck();
+    if (res == ACK) {
+      Serial.println("Received ACK");
       return true;
     } else {
-      Serial.println("ACK for end of transfer not received, resending");
+      if (res == REJ){
+        Serial.println("Received REJ, Abort Transmission");
+        return false;
+      }
+      // Check rejection before reattempt
+      Serial.println("Time out. ACK for metadata not received, resending");
       attempts++;
     }
+
   }
   Serial.println("Failed to send end of transfer after maximum attempts");
   return false;
 }
 
-bool waitForAck() {
+int waitForAck() {
   unsigned long startTime = millis();
   while (millis() - startTime < ACK_TIMEOUT) {
       if(ack_count){
         ack_count--;
-        return true;
+        return ACK;
+      }
+      if(rej_count){
+        rej_count--;
+        return REJ;
       }
   }
-  return false;
+  return TIMEOUT;
 }
 
 void unpack_file_name(file_meta_message* file_meta_gateway, char* output_buffer, size_t buffer_len) {

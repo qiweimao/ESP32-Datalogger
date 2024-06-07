@@ -60,7 +60,13 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
   case ACK:
     ack_count++;
     break;
-  }  
+
+  case REJ:
+    rej_count++;
+    break;
+
+  }
+
 }
 
 PairingStatus autoPairing(){
@@ -75,6 +81,7 @@ PairingStatus autoPairing(){
     memcpy(pairingDataNode.mac, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
     pairingDataNode.pairingKey = PAIRING_KEY;
     printMacAddress(pairingDataNode.mac);
+    Serial.println(pairingDataNode.deviceName);
     Serial.println();
     // add peer and send request
     LoRa.beginPacket();
@@ -89,7 +96,7 @@ PairingStatus autoPairing(){
     case PAIR_REQUESTED:
     // time out to allow receiving response from server
     currentMillis = millis();
-    if(currentMillis - previousMillis > 5000) {
+    if(currentMillis - previousMillis > ACK_TIMEOUT) {
       previousMillis = currentMillis;
       // time out expired,  try next channel
       pairingStatus = PAIR_REQUEST;
@@ -116,7 +123,6 @@ void pairingTask(void *pvParameters) {
         return;
       }
       size_t fileSize = file.size();
-      // sendMetadata("collection_config", fileSize);
       sendFile("/collection_config");
       delay(1000000);
     }
