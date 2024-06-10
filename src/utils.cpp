@@ -211,7 +211,7 @@ String get_current_time(bool getFilename) {
       int roundedMinutes = (now.minute() / 15) * 15;
       snprintf(buffer, sizeof(buffer), "%04d_%02d_%02d_%02d_%02d", 
               now.year(), now.month(), now.day(), now.hour(), roundedMinutes);
-    }
+    } 
     return buffer;
   return ""; // Return an empty string in case of failure
 }
