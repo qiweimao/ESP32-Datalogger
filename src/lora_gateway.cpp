@@ -11,11 +11,21 @@ reject_message reject_message_gateway;
 file_body_message file_body_gateway;
 String current_file_path;
 file_end_message file_end_gateway;
+time_sync_message time_sync_gateway;
 size_t total_bytes_received;
 size_t total_bytes_written;
 size_t bytes_written;
 
 File file;
+
+unsigned long lastPollTime = 0;
+unsigned long lastTimeSyncTime = 0;
+unsigned long lastConfigSyncTime = 0;
+const unsigned long pollInterval = 300000; // 5 minute
+const unsigned long timeSyncInterval = 86400000; // 24 hours
+const unsigned long configSyncInterval = 86400000; // 24 hours
+
+bool apiTriggered = false;
 
 void OnDataRecvGateway(const uint8_t *incomingData, int len) { 
   JsonDocument root;
@@ -191,6 +201,76 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
   }
 }
 
+time_sync_message get_current_time_struct() {
+  time_sync_message msg;
+
+  if(!rtc_mounted){
+    Serial.println("External RTC not mounted. Cannot get current time.");
+    // Return a message with an invalid type or handle this error as needed
+    msg.msgType = 0xFF; // Invalid type for error indication
+    return msg;
+  }
+
+  DateTime now = rtc.now();
+  msg.msgType = TIME_SYNC; // Define TIME_SYNC as the message type for time synchronization
+  msg.year = now.year();
+  msg.month = now.month();
+  msg.day = now.day();
+  msg.hour = now.hour();
+  msg.minute = now.minute();
+  msg.second = now.second();
+
+  return msg;
+}
+
+// Control Callback
+void gateway_control(){
+  unsigned long currentTime = millis();
+
+  // Check if it's time to poll data
+  if ((currentTime - lastPollTime) >= pollInterval) {
+    lastPollTime = currentTime;
+    // Poll data from slaves
+    // Your polling code here
+  }
+
+  // Check if the API triggered flag is set
+  if (apiTriggered) {
+    apiTriggered = false;
+    // Handle Web API commands
+    // Your Web API command handling code here
+  }
+
+  // Check if it's time to perform time synchronization
+  if ((currentTime - lastTimeSyncTime) >= timeSyncInterval) {
+    lastTimeSyncTime = currentTime;
+    time_sync_message msg = get_current_time_struct();
+    
+    if (msg.msgType == 0xFF) {
+      // Handle error if time retrieval failed
+      return;
+    }
+
+    // Convert the struct to a byte array for sending
+    uint8_t buffer[sizeof(time_sync_message)];
+    memcpy(buffer, &msg, sizeof(time_sync_message));
+    
+    // Send the message to the sub stations
+    sendLoraMessage(buffer, sizeof(time_sync_message));
+  }
+
+  // Check if it's time to perform configuration synchronization
+  if ((currentTime - lastConfigSyncTime) >= configSyncInterval) {
+    lastConfigSyncTime = currentTime;
+    // Perform configuration synchronization
+    // Your config sync code here
+  }
+
+  // Sleep for a short interval before next check (if needed)
+  delay(100);
+}
+
+
 void lora_gateway_init() {
 
   LoRa.onReceive(onReceive);
@@ -209,6 +289,7 @@ void lora_gateway_init() {
     }
   }
   
-  xTaskCreate(taskReceive, "Data Handler", 10000, (void*)OnDataRecvGateway, 1, NULL);
+  xTaskCreate(taskReceive, "Data Receive Handler", 10000, (void*)OnDataRecvGateway, 1, NULL);
+  xTaskCreate(taskReceive, "Data Send Handler", 10000, (void*)gateway_control, 1, NULL);
 
 }

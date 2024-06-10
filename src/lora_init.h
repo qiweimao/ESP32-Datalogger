@@ -18,6 +18,17 @@ typedef struct vm {
   float temp;
 } vm;
 
+typedef struct time_sync_message {
+  uint8_t msgType;
+  uint16_t year;
+  uint8_t month;
+  uint8_t day;
+  uint8_t hour;
+  uint8_t minute;
+  uint8_t second;
+} time_sync_message;
+
+
 typedef struct file_meta_message {
   uint8_t msgType;
   uint8_t mac[6];
@@ -82,7 +93,7 @@ struct TaskParams {// Structure to hold task parameters
 };
 
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
-enum MessageType {PAIRING, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA, FILE_META, FILE_BODY, FILE_END, ACK, REJ, TIMEOUT};
+enum MessageType {PAIRING, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA, FILE_META, FILE_BODY, FILE_END, ACK, REJ, TIMEOUT, TIME_SYNC};
 
 extern uint8_t mac_buffer[6];
 extern uint8_t MAC_ADDRESS_STA[6];

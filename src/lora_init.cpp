@@ -9,6 +9,8 @@
 #define LORA_MISO 12
 #define LORA_MOSI 13
 #define LORA_SS 15
+
+bool enableCRC = true; // Default CRC setting
 SPIClass loraSpi(HSPI);// Separate SPI bus for LoRa to avoid conflict with the SD Card
 
 volatile int dataReceived = 0;// Flag to indicate data received
@@ -40,7 +42,15 @@ void lora_init(void){
   }
   LoRa.setSyncWord(0xF3);
   Serial.println("LoRa Initializing - OK");
+
+  // Conditionally enable CRC
+  if (enableCRC) {
+    LoRa.enableCrc();
+  } else {
+    LoRa.disableCrc();
+  }
   
+  // Callback Initialization based on Mode
   if (LORA_MODE == LORA_SLAVE){
     Serial.println("Lora Mode: Sender");
     lora_slave_init();
