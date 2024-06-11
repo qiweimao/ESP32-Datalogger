@@ -46,8 +46,10 @@ void lora_init(void){
   // Conditionally enable CRC
   if (enableCRC) {
     LoRa.enableCrc();
+    Serial.println("CRC enabled.");
   } else {
     LoRa.disableCrc();
+    Serial.println("CRC disabled.");
   }
   
   // Callback Initialization based on Mode
