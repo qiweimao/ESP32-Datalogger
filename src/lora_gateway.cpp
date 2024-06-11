@@ -27,6 +27,12 @@ const unsigned long configSyncInterval = 86400000; // 24 hours
 
 bool apiTriggered = false;
 
+/******************************************************************
+ *                                                                *
+ *                        Receive Control                         *
+ *                                                                *
+ ******************************************************************/
+
 void OnDataRecvGateway(const uint8_t *incomingData, int len) { 
   JsonDocument root;
   String payload;
@@ -43,7 +49,6 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       Serial.println();
       Serial.println(pairingDataGateway.deviceName);
 
-      /* OLED for Dev */
       oled_print("Pair request: ");
       // oled_print(pairingDataGateway.mac[0]);
 
@@ -201,6 +206,16 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
   }
 }
 
+/******************************************************************
+ *                                                                *
+ *                         Send Control                           *
+ *                                                                *
+ ******************************************************************/
+
+// ***********************
+// * Time Sync
+// ***********************
+
 time_sync_message get_current_time_struct() {
   time_sync_message msg;
 
@@ -212,7 +227,8 @@ time_sync_message get_current_time_struct() {
   }
 
   DateTime now = rtc.now();
-  msg.msgType = TIME_SYNC; // Define TIME_SYNC as the message type for time synchronization
+  msg.msgType = TIME_SYNC; // Define TIME_SYNC
+  msg.pairingKey = PAIRING_KEY; // key for network
   msg.year = now.year();
   msg.month = now.month();
   msg.day = now.day();
@@ -223,8 +239,25 @@ time_sync_message get_current_time_struct() {
   return msg;
 }
 
+void send_time_sync_message() {
+  time_sync_message msg = get_current_time_struct();
+
+  if (msg.msgType == 0xFF) {
+    // Handle error if time retrieval failed
+    return;
+  }
+
+  uint8_t buffer[sizeof(time_sync_message)];
+  memcpy(buffer, &msg, sizeof(time_sync_message));
+  sendLoraMessage(buffer, sizeof(time_sync_message));
+}
+
+// ***********************
+// * Control Loop
+// ***********************
+
 // Control Callback
-void gateway_control(){
+void gateway_send_control(void *parameter){
   unsigned long currentTime = millis();
 
   // Check if it's time to poll data
@@ -243,20 +276,8 @@ void gateway_control(){
 
   // Check if it's time to perform time synchronization
   if ((currentTime - lastTimeSyncTime) >= timeSyncInterval) {
-    lastTimeSyncTime = currentTime;
-    time_sync_message msg = get_current_time_struct();
-    
-    if (msg.msgType == 0xFF) {
-      // Handle error if time retrieval failed
-      return;
-    }
-
-    // Convert the struct to a byte array for sending
-    uint8_t buffer[sizeof(time_sync_message)];
-    memcpy(buffer, &msg, sizeof(time_sync_message));
-    
-    // Send the message to the sub stations
-    sendLoraMessage(buffer, sizeof(time_sync_message));
+    lastPollTime = currentTime;
+    send_time_sync_message();
   }
 
   // Check if it's time to perform configuration synchronization
@@ -270,6 +291,12 @@ void gateway_control(){
   delay(100);
 }
 
+
+/******************************************************************
+ *                                                                *
+ *                        Initialization                          *
+ *                                                                *
+ ******************************************************************/
 
 void lora_gateway_init() {
 
@@ -290,6 +317,13 @@ void lora_gateway_init() {
   }
   
   xTaskCreate(taskReceive, "Data Receive Handler", 10000, (void*)OnDataRecvGateway, 1, NULL);
-  xTaskCreate(taskReceive, "Data Send Handler", 10000, (void*)gateway_control, 1, NULL);
-
+  // Create the task for the control loop
+  xTaskCreate(
+    gateway_send_control,    // Task function
+    "Control Task",     // Name of the task
+    10000,              // Stack size in words
+    NULL,               // Task input parameter
+    1,                  // Priority of the task
+    NULL                // Task handle
+  );
 }

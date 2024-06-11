@@ -20,6 +20,7 @@ typedef struct vm {
 
 typedef struct time_sync_message {
   uint8_t msgType;
+  uint32_t pairingKey; // key for network
   uint16_t year;
   uint8_t month;
   uint8_t day;
@@ -27,7 +28,6 @@ typedef struct time_sync_message {
   uint8_t minute;
   uint8_t second;
 } time_sync_message;
-
 
 typedef struct file_meta_message {
   uint8_t msgType;
