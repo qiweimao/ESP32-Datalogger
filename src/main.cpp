@@ -40,7 +40,7 @@ void setup() {
   sd_init();
 
   load_system_configuration();
-  load_data_collection_configuration();
+  loadDataConfigFromPreferences();
 
   Serial.println("\n*** Connectivity ***");
   lora_init();

@@ -106,7 +106,7 @@ AsyncCallbackJsonWebHandler *updateCollectionConfig (){
       Serial.printf("Value: %s\n", value.c_str());
 
       // Error checking inside the function below
-      update_data_collection_configuration(type, index, key, value);
+      updateDataCollectionConfiguration(type, index, key, value);
 
       request->send(200); // Send an empty response with HTTP status code 200
     });
