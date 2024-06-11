@@ -93,17 +93,13 @@ String get_public_ip() {
   http.end();  // End the request
 }
 
-
-
 /******************************************************************
  *                                                                *
  *                             Time                               *
  *                                                                *
  ******************************************************************/
 
-int rtc_mounted = 0;
 
-/* Time */
 const char *ntpServers[] = {
   "pool.ntp.org",
   "time.google.com",
@@ -114,6 +110,7 @@ const char *ntpServers[] = {
 const int numNtpServers = sizeof(ntpServers) / sizeof(ntpServers[0]);
 int daylightOffset_sec = 3600;
 RTC_DS1307 rtc;
+bool rtc_mounted = 0;
 
 DateTime tmToDateTime(struct tm timeinfo) {
   return DateTime(timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
@@ -337,24 +334,11 @@ void oled_print(const char* text, size_t size) {
     }
 }
 
-
 // Overloaded function for uint8_t data type
 void oled_print(uint8_t value) {
   char buffer[8];
   snprintf(buffer, 8, "%u", value);
   oled_print(buffer, sizeof(buffer));
-}
-
-// Function to generate a random number using ESP32's hardware RNG
-uint32_t generateRandomNumber() {
-  // Seed the random number generator with a value from the hardware RNG
-  uint32_t seed = esp_random();
-  randomSeed(seed);
-  
-  // Generate a random number between 0 and 4294967294
-  uint32_t randomNumber = random(0, 4294967295);
-  
-  return randomNumber;
 }
 
 /******************************************************************
@@ -386,6 +370,11 @@ void esp_error_init_sd_oled(){
   // ESP_LOGD(TAG, "Verbose message"); 
 }
 
+/******************************************************************
+ *                                                                *
+ *                           FTP                                  *
+ *                                                                *
+ ******************************************************************/
 
 FTPServer ftp;
 
@@ -401,4 +390,22 @@ void ftp_server_init(){
   ftp.begin();
 
   Serial.println("...---'''---...---'''---...---'''---...");
+}
+
+/******************************************************************
+ *                                                                *
+ *                       Miscellaneous                            *
+ *                                                                *
+ ******************************************************************/
+
+// Function to generate a random number using ESP32's hardware RNG
+uint32_t generateRandomNumber() {
+  // Seed the random number generator with a value from the hardware RNG
+  uint32_t seed = esp_random();
+  randomSeed(seed);
+  
+  // Generate a random number between 0 and 4294967294
+  uint32_t randomNumber = random(0, 4294967295);
+  
+  return randomNumber;
 }

@@ -33,7 +33,7 @@
 
 extern int LORA_MODE;
 extern RTC_DS1307 rtc;
-extern int rtc_mounted;
+extern bool rtc_mounted;
 extern char daysOfWeek[7][12];
 extern String WIFI_SSID;
 extern String WIFI_PASSWORD;
