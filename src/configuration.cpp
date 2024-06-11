@@ -17,7 +17,7 @@ SystemConfig systemConfig;
 void load_system_configuration() {
   Serial.println("\n*** System Configuration ***");
 
-  preferences.begin("credentials", false);
+  preferences.begin("configurations", false);
 
   if (preferences.isKey("sysconfig")) {
     preferences.getBytes("sysconfig", &systemConfig, sizeof(systemConfig));
@@ -102,7 +102,7 @@ void update_system_configuration(String key, String value) {
 DataCollectionConfig dataConfig;
 
 void loadDataConfigFromPreferences() {
-  preferences.begin("datacollection", false);
+  preferences.begin("configurations", false);
   if (preferences.isKey("dataconfig")) {
     preferences.getBytes("dataconfig", &dataConfig, sizeof(dataConfig));
   } else {
