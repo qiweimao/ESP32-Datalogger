@@ -1,4 +1,4 @@
-// #include "utils.h"
+#include "configuration.h"
 #include "lora_init.h"
 #include "lora_peer.h"
 
@@ -51,11 +51,11 @@ void lora_init(void){
   }
   
   // Callback Initialization based on Mode
-  if (LORA_MODE == LORA_SLAVE){
+  if (systemConfig.LORA_MODE == LORA_SLAVE){
     Serial.println("Lora Mode: Sender");
     lora_slave_init();
   }
-  if (LORA_MODE == LORA_GATEWAY){
+  if (systemConfig.LORA_MODE == LORA_GATEWAY){
     Serial.println("Lora Mode: Gateway");
     lora_gateway_init();
   }

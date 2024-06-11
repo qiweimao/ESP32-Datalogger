@@ -54,7 +54,7 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
 
       if (pairingDataGateway.msgType == PAIRING) { 
 
-        if(pairingDataGateway.pairingKey == PAIRING_KEY){
+        if(pairingDataGateway.pairingKey == systemConfig.PAIRING_KEY){
 
           Serial.println("Correct PAIRING_KEY");
 
@@ -228,7 +228,7 @@ time_sync_message get_current_time_struct() {
 
   DateTime now = rtc.now();
   msg.msgType = TIME_SYNC; // Define TIME_SYNC
-  msg.pairingKey = PAIRING_KEY; // key for network
+  msg.pairingKey = systemConfig.PAIRING_KEY; // key for network
   msg.year = now.year();
   msg.month = now.month();
   msg.day = now.day();

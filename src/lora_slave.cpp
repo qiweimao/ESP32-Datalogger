@@ -76,10 +76,10 @@ PairingStatus autoPairing(){
     // set pairing data to send to the server
     Serial.println("\nBegin pairing Request");
     pairingDataNode.msgType = PAIRING;
-    strncpy(pairingDataNode.deviceName, DEVICE_NAME.c_str(), sizeof(pairingDataNode.deviceName) - 1);
+    strncpy(pairingDataNode.deviceName, systemConfig.DEVICE_NAME, sizeof(pairingDataNode.deviceName) - 1);
     pairingDataNode.deviceName[sizeof(pairingDataNode.deviceName) - 1] = '\0';
     memcpy(pairingDataNode.mac, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
-    pairingDataNode.pairingKey = PAIRING_KEY;
+    pairingDataNode.pairingKey = systemConfig.PAIRING_KEY;
     printMacAddress(pairingDataNode.mac);
     Serial.println(pairingDataNode.deviceName);
     Serial.println();

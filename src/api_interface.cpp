@@ -196,12 +196,12 @@ void serveVoltageHistory(AsyncWebServerRequest *request){
 void getSysConfig(AsyncWebServerRequest *request){
   JsonDocument doc;
   JsonObject obj1 = doc.add<JsonObject>();
-  obj1["WIFI_SSID"] = WIFI_SSID;
-  obj1["WIFI_PASSWORD"] = WIFI_PASSWORD;
-  obj1["DEVICE_NAME"] = DEVICE_NAME;
-  obj1["LORA_MODE"] = LORA_MODE;
-  obj1["utcOffset"] = utcOffset;
-  obj1["PAIRING_KEY"] = PAIRING_KEY;
+  obj1["WIFI_SSID"] = systemConfig.WIFI_SSID;
+  obj1["WIFI_PASSWORD"] = systemConfig.WIFI_PASSWORD;
+  obj1["DEVICE_NAME"] = systemConfig.DEVICE_NAME;
+  obj1["LORA_MODE"] = systemConfig.LORA_MODE;
+  obj1["utcOffset"] = systemConfig.utcOffset;
+  obj1["PAIRING_KEY"] = systemConfig.PAIRING_KEY;
   serveJson(request, doc, 200, false);
 }
 

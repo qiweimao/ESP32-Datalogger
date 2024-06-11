@@ -1,6 +1,17 @@
 
 /* Data Collection Configuration */
 
+#include <Arduino.h>  // Include this header for fixed-width integer types
+
+struct SystemConfig {
+  char WIFI_SSID[32];       // Adjust size as needed
+  char WIFI_PASSWORD[32];   // Adjust size as needed
+  char DEVICE_NAME[16];     // Adjust size as needed
+  int LORA_MODE;
+  int utcOffset;            // UTC offset in hours
+  uint32_t PAIRING_KEY;
+};
+
 enum SensorType : uint8_t {
   Unknown,
   VibratingWire,
@@ -22,13 +33,8 @@ struct DataCollectionConfig {
   uint16_t i2cInterval[5];       // 5 * 2 bytes = 10 bytes
 };
 
-extern String WIFI_SSID;
-extern String WIFI_PASSWORD;
-extern int LORA_MODE;
-extern String DEVICE_NAME;
-extern long gmtOffset_sec;
-extern uint32_t  PAIRING_KEY;
-
+// Expose structs
+extern SystemConfig systemConfig;
 extern DataCollectionConfig dataConfig;
 
 void load_system_configuration();

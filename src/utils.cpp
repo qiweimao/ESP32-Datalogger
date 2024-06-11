@@ -38,7 +38,7 @@ void wifi_init(){
     WiFi.mode(WIFI_AP_STA);
 
     Serial.print("Connecting to WiFi");
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    WiFi.begin(systemConfig.WIFI_SSID, systemConfig.WIFI_PASSWORD);
 
     // Wait for connection
     int i = 0;
@@ -63,10 +63,10 @@ void wifi_init(){
 
     // Set up Access Point (AP)
     Serial.print("Setting up AP...");
-    bool ap_started = WiFi.softAP(DEVICE_NAME, "SenseLynk101");
+    bool ap_started = WiFi.softAP(systemConfig.DEVICE_NAME, "SenseLynk101");
     if(ap_started){
         Serial.println("AP started");
-        Serial.printf("AP SSID: %s\n", DEVICE_NAME);
+        Serial.printf("AP SSID: %s\n", systemConfig.DEVICE_NAME);
         Serial.printf("AP Password: SenseLynk101\n");
         Serial.print("AP IP address: ");
         Serial.println(WiFi.softAPIP());
@@ -171,7 +171,7 @@ void external_rtc_sync_ntp(){
 
 void ntp_sync() {
 
-  long gmtOffset_sec = utcOffset * 60 * 60;
+  long gmtOffset_sec = systemConfig.utcOffset * 60 * 60;
 
   // Attempt synchronization with each NTP server in the list
   for (int i = 0; i < numNtpServers; i++) {
