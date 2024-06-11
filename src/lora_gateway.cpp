@@ -258,37 +258,39 @@ void send_time_sync_message() {
 
 // Control Callback
 void gateway_send_control(void *parameter){
-  unsigned long currentTime = millis();
+  while(true){
+    unsigned long currentTime = millis();
 
-  // Check if it's time to poll data
-  if ((currentTime - lastPollTime) >= pollInterval) {
-    lastPollTime = currentTime;
-    // Poll data from slaves
-    // Your polling code here
+    // Check if it's time to poll data
+    if ((currentTime - lastPollTime) >= pollInterval) {
+      lastPollTime = currentTime;
+      // Poll data from slaves
+      // Your polling code here
+    }
+
+    // Check if the API triggered flag is set
+    if (apiTriggered) {
+      apiTriggered = false;
+      // Handle Web API commands
+      // Your Web API command handling code here
+    }
+
+    // Check if it's time to perform time synchronization
+    if ((currentTime - lastTimeSyncTime) >= timeSyncInterval) {
+      lastPollTime = currentTime;
+      send_time_sync_message();
+    }
+
+    // Check if it's time to perform configuration synchronization
+    if ((currentTime - lastConfigSyncTime) >= configSyncInterval) {
+      lastConfigSyncTime = currentTime;
+      // Perform configuration synchronization
+      // Your config sync code here
+    }
+
+    // Sleep for a short interval before next check (if needed)
+    delay(100);
   }
-
-  // Check if the API triggered flag is set
-  if (apiTriggered) {
-    apiTriggered = false;
-    // Handle Web API commands
-    // Your Web API command handling code here
-  }
-
-  // Check if it's time to perform time synchronization
-  if ((currentTime - lastTimeSyncTime) >= timeSyncInterval) {
-    lastPollTime = currentTime;
-    send_time_sync_message();
-  }
-
-  // Check if it's time to perform configuration synchronization
-  if ((currentTime - lastConfigSyncTime) >= configSyncInterval) {
-    lastConfigSyncTime = currentTime;
-    // Perform configuration synchronization
-    // Your config sync code here
-  }
-
-  // Sleep for a short interval before next check (if needed)
-  delay(100);
 }
 
 
@@ -316,7 +318,10 @@ void lora_gateway_init() {
     }
   }
   
+  Serial.println("Finished checking node dir");
+
   xTaskCreate(taskReceive, "Data Receive Handler", 10000, (void*)OnDataRecvGateway, 1, NULL);
+  Serial.println("Added Data receieve handler");
   // Create the task for the control loop
   xTaskCreate(
     gateway_send_control,    // Task function
