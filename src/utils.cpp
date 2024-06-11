@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "configuration.h"
+#include "esp_sntp.h"
 
 const int CS = 5; // SD Card chip select
 HardwareSerial VM(1); // UART port 1 on ESP32
@@ -101,16 +102,16 @@ String get_public_ip() {
 
 
 const char *ntpServers[] = {
+  "time.nist.gov",  // Add more NTP servers as needed
   "pool.ntp.org",
   "time.google.com",
   "time.windows.com",
-  "time.nist.gov",  // Add more NTP servers as needed
 };
 
 const int numNtpServers = sizeof(ntpServers) / sizeof(ntpServers[0]);
 int daylightOffset_sec = 3600;
 RTC_DS1307 rtc;
-bool rtc_mounted = 0;
+bool rtc_mounted = false;
 
 DateTime tmToDateTime(struct tm timeinfo) {
   return DateTime(timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
@@ -125,11 +126,11 @@ void external_rtc_init(){
     return;
   }
 
-  rtc_mounted = 1;
+  rtc_mounted = true;
 
   DateTime now = rtc.now();
   Serial.print("RTC time: ");
-  Serial.println(get_current_time());
+  Serial.println(get_current_time(false));
 
   // Set the ESP32 system time to the RTC time
   struct tm timeinfo;
@@ -159,59 +160,86 @@ void external_rtc_sync_ntp(){
     Serial.println("\nDS1307 RTC synchronized with NTP time.");
     DateTime now = rtc.now();
     Serial.print("RTC time: ");
-    Serial.println(get_current_time());    return; // Exit the function if synchronization is successful
+    Serial.println(get_current_time(false));    return; // Exit the function if synchronization is successful
   } else {
-    Serial.printf("Failed to get NTP Time for DS1307\n");
+    Serial.println("Failed to get NTP Time for DS1307.");
     return;
   }
 }
 
 void ntp_sync() {
-
-  long gmtOffset_sec = systemConfig.utcOffset * 60 * 60;
+  const int maxAttempts = 5;  // Maximum number of attempts per server
+  long gmtOffset_sec = systemConfig.utcOffset * 3600;
+  Serial.println(gmtOffset_sec);
 
   // Attempt synchronization with each NTP server in the list
   for (int i = 0; i < numNtpServers; i++) {
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServers[i]);
-    struct tm timeinfo;
-    // Serial.printf("Syncing with NTP server %s...\n", ntpServers[i]);
-    if (getLocalTime(&timeinfo)) {
-      // Serial.printf("Time synchronized successfully with NTP server %s\n", ntpServers[i]);
-      // Serial.printf("NTP Time: %s\n", get_current_time().c_str());
-      external_rtc_sync_ntp();
+    Serial.printf("Syncing with NTP server %s...\n", ntpServers[i]);
+
+    bool syncSuccess = false;
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      delay(2000); // Wait for the NTP time to be updated
+
+      // Check synchronization status
+      if (sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED) {
+        struct tm timeinfo;
+        if (getLocalTime(&timeinfo)) {
+          Serial.println(&timeinfo, "NTP Time from internet: %A, %B %d %Y %H:%M:%S");
+          external_rtc_sync_ntp();
+          syncSuccess = true;
+          break; // Exit the retry loop if synchronization is successful
+        }
+      } else {
+        Serial.printf("Attempt %d failed to synchronize with NTP server %s\n", attempt + 1, ntpServers[i]);
+      }
+    }
+
+    if (syncSuccess) {
       return; // Exit the function if synchronization is successful
     } else {
-      Serial.printf("Failed to synchronize with NTP server %s\n", ntpServers[i]);
+      Serial.printf("Failed to synchronize with NTP server %s after %d attempts\n", ntpServers[i], maxAttempts);
     }
   }
   // If synchronization fails with all servers
   Serial.println("Failed to synchronize with any NTP server.");
 }
 
+
 String get_current_time(bool getFilename) {
-
-  if(!rtc_mounted){
-    Serial.println("External RTC not mounted. Cannot get current time.");
-    return "error.";
-  }
-
   struct tm timeinfo;
-  DateTime now = rtc.now();
-  
-    char buffer[20]; // Adjust the buffer size based on your format
-    if(!getFilename){
+
+  if (rtc_mounted) {
+    DateTime now = rtc.now();
+    char buffer[30];
+    if (!getFilename) {
       snprintf(buffer, sizeof(buffer), "%04d/%02d/%02d %02d:%02d:%02d", 
-              now.year(), now.month(), now.day(), now.hour(), now.minute(),now.second());
-    }
-    else{
-      // Round minutes to the nearest 15-minute interval
+               now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
+    } else {
       int roundedMinutes = (now.minute() / 15) * 15;
       snprintf(buffer, sizeof(buffer), "%04d_%02d_%02d_%02d_%02d", 
-              now.year(), now.month(), now.day(), now.hour(), roundedMinutes);
-    } 
-    return buffer;
-  return ""; // Return an empty string in case of failure
+               now.year(), now.month(), now.day(), now.hour(), roundedMinutes);
+    }
+    return String(buffer);
+  } else if (getLocalTime(&timeinfo)) {
+    char buffer[30];
+    if (!getFilename) {
+      snprintf(buffer, sizeof(buffer), "%04d/%02d/%02d %02d:%02d:%02d", 
+               timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
+               timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+    } else {
+      int roundedMinutes = (timeinfo.tm_min / 15) * 15;
+      snprintf(buffer, sizeof(buffer), "%04d_%02d_%02d_%02d_%02d", 
+               timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
+               timeinfo.tm_hour, roundedMinutes);
+    }
+    return String(buffer);
+  } else {
+    Serial.println("Failed to get system time. Cannot get current time.");
+    return "error.";
+  }
 }
+
 
 /******************************************************************
  *                                                                *
