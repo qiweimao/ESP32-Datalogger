@@ -11,7 +11,9 @@ unsigned long lastLogTimeI2C[I2C_CHANNEL_COUNT] = {0};
 bool loggingPaused = false;
 
 String createFilename(String type, unsigned long timestamp) {
-  return "data/" + type + "/" + String(timestamp) + ".dat";
+  String filename = "/data/" + type + "/" + String(timestamp) + ".dat";
+  Serial.println(filename);
+  return filename;
 }
 
 void logADCData(int channel, unsigned long timestamp) {
@@ -83,6 +85,54 @@ void logDataTask(void *parameter) {
 }
 
 void log_data_init(){
+
+  Serial.println("Initializing data logging.");
+
+  // Check and create folders if they don't exist
+  if (!SD.exists("/data/ADC")) {
+    SD.mkdir("/data/ADC");
+    Serial.println("Created /ADC directory on SD card.");
+  }
+  if (!SD.exists("/data/UART")) {
+    SD.mkdir("/data/UART");
+    Serial.println("Created /UART directory on SD card.");
+  }
+  if (!SD.exists("/data/I2C")) {
+    SD.mkdir("/data/I2C");
+    Serial.println("Created /I2C directory on SD card.");
+  }
+
+  // Current time in minutes
+  unsigned long currentTime = millis() / 60000; // Convert milliseconds to minutes
+  
+  // Initial log for ADC channels
+  for (int i = 0; i < ADC_CHANNEL_COUNT; i++) {
+    if (dataConfig.adcEnabled[i]) {
+      Serial.println("ADC channel: is enabled");
+      Serial.println(i);
+      logADCData(i, currentTime);
+      lastLogTimeADC[i] = currentTime;
+    }
+  }
+
+  // Initial log for UART channels
+  for (int i = 0; i < UART_CHANNEL_COUNT; i++) {
+    if (dataConfig.uartEnabled[i]) {
+      logUARTData(i, currentTime);
+      lastLogTimeUART[i] = currentTime;
+    }
+  }
+
+  // Initial log for I2C channels
+  for (int i = 0; i < I2C_CHANNEL_COUNT; i++) {
+    if (dataConfig.i2cEnabled[i]) {
+      logI2CData(i, currentTime);
+      lastLogTimeI2C[i] = currentTime;
+    }
+  }
+
+  Serial.println("Finished Initial Scan.");
+
   // Create the logging task
   xTaskCreate(
     logDataTask,        // Task function
@@ -92,5 +142,5 @@ void log_data_init(){
     1,                  // Priority of the task
     NULL                // Task handle
   );
-  Serial.println("Initializing Data logging task....");
+  Serial.println("Added Data Logging Task.");
 }
