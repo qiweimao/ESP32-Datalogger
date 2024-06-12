@@ -12,6 +12,6 @@ enum LogErrorCode {
   PAUSED
 };  // Add more error codes as needed
 
-LogErrorCode logData();
+void log_data_init();
 
 #endif

@@ -3,6 +3,10 @@
 
 #include <Arduino.h>  // Include this header for fixed-width integer types
 
+#define ADC_CHANNEL_COUNT 16
+#define UART_CHANNEL_COUNT 2
+#define I2C_CHANNEL_COUNT 2
+
 struct SystemConfig {
   char WIFI_SSID[32];       // Adjust size as needed
   char WIFI_PASSWORD[32];   // Adjust size as needed
@@ -22,15 +26,18 @@ enum SensorType : uint8_t {
 };
 
 struct DataCollectionConfig {
-  SensorType adcSensorType[16];  // 16 * 1 byte = 16 bytes
-  bool adcEnabled[16];           // 16 * 1 byte = 16 bytes
-  uint16_t adcInterval[16];      // 16 * 2 bytes = 32 bytes
-  SensorType uartSensorType[2];  // 2 * 1 byte = 2 bytes
-  bool uartEnabled[2];           // 2 * 1 byte = 2 bytes
-  uint16_t uartInterval[2];      // 2 * 2 bytes = 4 bytes
-  SensorType i2cSensorType[5];   // 5 * 1 byte = 5 bytes
-  bool i2cEnabled[5];            // 5 * 1 byte = 5 bytes
-  uint16_t i2cInterval[5];       // 5 * 2 bytes = 10 bytes
+
+  SensorType adcSensorType[ADC_CHANNEL_COUNT];  // 16 * 1 byte = 16 bytes
+  bool adcEnabled[ADC_CHANNEL_COUNT];           // 16 * 1 byte = 16 bytes
+  uint16_t adcInterval[ADC_CHANNEL_COUNT];      // 16 * 2 bytes = 32 bytes
+
+  SensorType uartSensorType[UART_CHANNEL_COUNT];  // 2 * 1 byte = 2 bytes
+  bool uartEnabled[UART_CHANNEL_COUNT];           // 2 * 1 byte = 2 bytes
+  uint16_t uartInterval[UART_CHANNEL_COUNT];      // 2 * 2 bytes = 4 bytes
+
+  SensorType i2cSensorType[I2C_CHANNEL_COUNT];   // 5 * 1 byte = 5 bytes
+  bool i2cEnabled[I2C_CHANNEL_COUNT];            // 5 * 1 byte = 5 bytes
+  uint16_t i2cInterval[I2C_CHANNEL_COUNT];       // 5 * 2 bytes = 10 bytes
 };
 
 // Expose structs

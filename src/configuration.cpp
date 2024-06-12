@@ -109,19 +109,19 @@ void loadDataConfigFromPreferences() {
     Serial.println("Data collection configuration not found. Using default values.");
 
     // Initialize with default values
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < ADC_CHANNEL_COUNT; i++) {
       dataConfig.adcSensorType[i] = Unknown;
       dataConfig.adcEnabled[i] = false;
       dataConfig.adcInterval[i] = 60;
     }
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < UART_CHANNEL_COUNT; i++) {
       dataConfig.uartSensorType[i] = VibratingWire;
       dataConfig.uartEnabled[i] = false;
       dataConfig.uartInterval[i] = 60;
     }
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < I2C_CHANNEL_COUNT; i++) {
       dataConfig.i2cSensorType[i] = Barometric;
       dataConfig.i2cEnabled[i] = false;
       dataConfig.i2cInterval[i] = 60;

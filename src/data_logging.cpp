@@ -2,31 +2,95 @@
 #include <SPIFFS.h>
 #include "vibrating_wire.h"
 #include "data_logging.h"
+#include "configuration.h"
+
+unsigned long lastLogTimeADC[ADC_CHANNEL_COUNT] = {0};
+unsigned long lastLogTimeUART[UART_CHANNEL_COUNT] = {0};
+unsigned long lastLogTimeI2C[I2C_CHANNEL_COUNT] = {0};
 
 bool loggingPaused = false;
-int LOG_INTERVAL = 1000;
 
-LogErrorCode logData() {
-  
-  if(loggingPaused){
-    return PAUSED;
+String createFilename(String type, unsigned long timestamp) {
+  return "data/" + type + "/" + String(timestamp) + ".dat";
+}
+
+void logADCData(int channel, unsigned long timestamp) {
+  String filename = createFilename("ADC", timestamp);
+  File dataFile = SD.open(filename, FILE_WRITE);
+  if (dataFile) {
+    // Simulate reading data from the ADC channel
+    String data = String(timestamp) + "," + String(channel) + ",ADC data";
+    dataFile.println(data);
+    dataFile.close();
   }
+}
 
-  File file;
-  String file_name = "/"+get_current_time(1) + ".csv";
-  // Serial.println(file_name);
-  if (!SD.exists(file_name)) {
-      Serial.println("File does not exist");
-      const char* message = "Time, SensorName, Reading\n";
-      // writeFile(SD, file_name.c_str(), message);
+void logUARTData(int channel, unsigned long timestamp) {
+  String filename = createFilename("UART", timestamp);
+  File dataFile = SD.open(filename, FILE_WRITE);
+  if (dataFile) {
+    // Simulate reading data from the UART channel
+    String data = String(timestamp) + "," + String(channel) + ",UART data";
+    dataFile.println(data);
+    dataFile.close();
   }
+}
 
-  String row = get_current_time(0) +  "," + "QM_PZ-01" + "," + String(random(5000)) + "\n";
-  // Serial.println(row);
+void logI2CData(int channel, unsigned long timestamp) {
+  String filename = createFilename("I2C", timestamp);
+  File dataFile = SD.open(filename, FILE_WRITE);
+  if (dataFile) {
+    // Simulate reading data from the I2C channel
+    String data = String(timestamp) + "," + String(channel) + ",I2C data";
+    dataFile.println(data);
+    dataFile.close();
+  }
+}
 
-  // appendFile(SD, file_name.c_str(), row.c_str());
-  // Serial.println("Logged successfully.");
 
-  delay(LOG_INTERVAL);
-  return LOG_SUCCESS;
+void logDataTask(void *parameter) {
+  while (true)
+  {
+    // Current time
+    unsigned long currentTime = millis() / 60000; // Convert milliseconds to minutes
+    
+    // Check and log ADC channels
+    for (int i = 0; i < ADC_CHANNEL_COUNT; i++) {
+      if (dataConfig.adcEnabled[i] && (currentTime - lastLogTimeADC[i] >= dataConfig.adcInterval[i])) {
+        logADCData(i, currentTime);
+        lastLogTimeADC[i] = currentTime;
+      }
+    }
+
+    // Check and log UART channels
+    for (int i = 0; i < UART_CHANNEL_COUNT; i++) {
+      if (dataConfig.uartEnabled[i] && (currentTime - lastLogTimeUART[i] >= dataConfig.uartInterval[i])) {
+        logUARTData(i, currentTime);
+        lastLogTimeUART[i] = currentTime;
+      }
+    }
+
+    // Check and log I2C channels
+    for (int i = 0; i < I2C_CHANNEL_COUNT; i++) {
+      if (dataConfig.i2cEnabled[i] && (currentTime - lastLogTimeI2C[i] >= dataConfig.i2cInterval[i])) {
+        logI2CData(i, currentTime);
+        lastLogTimeI2C[i] = currentTime;
+      }
+    }
+
+    vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
+  }
+}
+
+void log_data_init(){
+  // Create the logging task
+  xTaskCreate(
+    logDataTask,        // Task function
+    "Log Data Task",    // Name of the task (for debugging)
+    10000,              // Stack size (in words, not bytes)
+    NULL,               // Task input parameter
+    1,                  // Priority of the task
+    NULL                // Task handle
+  );
+  Serial.println("Initializing Data logging task....");
 }

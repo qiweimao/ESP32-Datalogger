@@ -17,13 +17,6 @@ void taskInitiNTP(void *parameter) {
   vTaskDelete(NULL);  // Delete the task once initialization is complete
 }
 
-void logDataTask(void *parameter) {
-  while(true){
-    LogErrorCode result = logData();
-  }
-}
-
-
 void setup() {
 
   Serial.begin(115200);
@@ -50,6 +43,9 @@ void setup() {
   ftp_server_init();
 
   xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
+
+  log_data_init();
+  
   Serial.println("\n------------------Boot Completed----------------\n");
 }
 
