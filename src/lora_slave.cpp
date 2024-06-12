@@ -52,8 +52,7 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       break;
     
     case POLL_DATA:
-      // SAA data is large send as file
-      // other data send as row
+      // go through data file and identify files that have not yet sent
       break;
     
     case ACK:

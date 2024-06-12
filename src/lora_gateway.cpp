@@ -260,8 +260,18 @@ void lora_gateway_init() {
   
   Serial.println("Finished checking node dir");
 
-  xTaskCreate(taskReceive, "Data Receive Handler", 10000, (void*)OnDataRecvGateway, 1, NULL);
+  // Create the task for the receive loop
+  xTaskCreate(
+    taskReceive,
+    "Data Receive Handler",
+    10000,
+    (void*)OnDataRecvGateway,
+    1,
+    NULL
+  );
+
   Serial.println("Added Data receieve handler");
+
   // Create the task for the control loop
   xTaskCreate(
     gateway_send_control,    // Task function
@@ -271,4 +281,6 @@ void lora_gateway_init() {
     1,                  // Priority of the task
     NULL                // Task handle
   );
+  Serial.println("Added Data send handler");
+  
 }
