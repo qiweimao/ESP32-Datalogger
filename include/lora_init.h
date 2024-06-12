@@ -48,6 +48,14 @@ typedef struct vm {
   float temp;
 } vm;
 
+// three channel vm message
+typedef struct vm_message {
+  uint8_t msgType;
+  uint8_t mac[MAC_ADDR_LENGTH];
+  const char* time;
+  vm vm_data[3];
+} vm_message;
+
 typedef struct time_sync_message {
   uint8_t msgType;
   uint32_t pairingKey; // key for network
@@ -64,12 +72,6 @@ typedef struct poll_data_message {
   uint8_t mac[MAC_ADDR_LENGTH];
 } poll_data_message;
 
-typedef struct vm_message {
-  uint8_t msgType;
-  uint8_t mac[MAC_ADDR_LENGTH];
-  const char* time;
-  vm vm_data[3];
-} vm_message;
 
 typedef struct adc_message {
   uint8_t msgType;
