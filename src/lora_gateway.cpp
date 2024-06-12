@@ -3,7 +3,6 @@
 #include "configuration.h"
 #include "utils.h"
 
-struct_message incomingReadings;
 struct_pairing pairingDataGateway;
 file_meta_message file_meta_gateway;
 ack_message ackMessage_gateway;
@@ -12,6 +11,8 @@ file_body_message file_body_gateway;
 String current_file_path;
 file_end_message file_end_gateway;
 time_sync_message time_sync_gateway;
+poll_data_message poll_data_message_gateway;
+vm_message vm_message_gateway;
 size_t total_bytes_received;
 size_t total_bytes_written;
 size_t bytes_written;
@@ -26,6 +27,8 @@ const unsigned long timeSyncInterval = 86400000; // 24 hours
 const unsigned long configSyncInterval = 86400000; // 24 hours
 
 bool apiTriggered = false;
+bool peer_ack[MAX_PEERS];
+bool poll_data_success = false;
 
 /******************************************************************
  *                                                                *
@@ -33,176 +36,229 @@ bool apiTriggered = false;
  *                                                                *
  ******************************************************************/
 
+// ***********************
+// * Handle Pairing
+// ***********************
+void handle_pairing(const uint8_t *incomingData){
+
+  memcpy(&pairingDataGateway, incomingData, sizeof(pairingDataGateway));
+
+  Serial.print("\nPairing request from: ");
+  printMacAddress(pairingDataGateway.mac_origin);
+  Serial.println();
+  Serial.println(pairingDataGateway.deviceName);
+
+  oled_print("Pair request: ");
+  // oled_print(pairingDataGateway.mac[0]);
+
+  if(pairingDataGateway.pairingKey == systemConfig.PAIRING_KEY){
+
+    Serial.println("Correct PAIRING_KEY");
+
+    oled_print("send response");
+    
+    memcpy(&pairingDataGateway.mac_master, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
+    sendLoraMessage((uint8_t *) &pairingDataGateway, sizeof(pairingDataGateway));
+    Serial.println("Sent pairing response...");
+
+    // If first time pairing, create a dir for this node
+    if(addPeerGateway(pairingDataGateway.mac_origin, pairingDataGateway.deviceName)){
+      
+      Serial.println("First time pairing, create a dir for this node");
+
+      char deviceFolder[MAX_DEVICE_NAME_LEN + 1]; // 10 for the name + 1 for the null terminator
+      strncpy(deviceFolder, pairingDataGateway.deviceName, 10);
+      deviceFolder[MAX_DEVICE_NAME_LEN] = '\0'; // Ensure null-termination
+
+      char folderPath[MAX_DEVICE_NAME_LEN + 6]; // 1 for '/' + 4 for 'data' + 1 for '/' + 10 for the name + 1 for the null terminator
+      snprintf(folderPath, sizeof(folderPath), "/node/%s", deviceFolder);
+      Serial.println(folderPath);
+
+      if (SD.mkdir(folderPath)) {
+        Serial.println("Directory created successfully.");
+      } else {
+        Serial.println("Failed to create directory.");
+      }
+
+      Serial.println("End of dir creation.");
+    }
+
+  }
+  else{
+    Serial.println("Wrong PAIRING_KEY");
+  }
+}
+
+// ***********************
+// * Handle File Body
+// ***********************
+void handle_file_body(const uint8_t *incomingData){
+  memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
+  Serial.println("Received FILE_BODY.");
+
+  // If file path is not set
+  if(current_file_path == ""){
+    Serial.println("Reject file body, no path set.");
+    reject_message_gateway.msgType = REJ;
+    memcpy(&reject_message_gateway.mac, file_body_gateway.mac, sizeof(file_body_gateway.mac));
+    sendLoraMessage((uint8_t *) &reject_message_gateway, sizeof(reject_message_gateway));
+  }
+
+  Serial.println(current_file_path);
+  file = SD.open(current_file_path, FILE_APPEND);
+  if (!file) {
+    Serial.println("Failed to create file");
+    return;
+  }
+
+  // Write the file_body_gateway structure to the file
+  Serial.printf("Received %d bytes\n", file_body_gateway.len);
+  total_bytes_received += file_body_gateway.len;
+
+  bytes_written = file.write((const uint8_t*)&file_body_gateway.data, file_body_gateway.len);
+  total_bytes_written += bytes_written;
+  Serial.printf("Wrote %d bytes\n", bytes_written);
+  
+  file.close();
+
+  ackMessage_gateway.msgType = ACK;
+  memcpy(&ackMessage_gateway.mac, file_body_gateway.mac, sizeof(file_meta_gateway.mac));
+  sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
+
+  Serial.println("Data written to file successfully");
+
+}
+
+// ***********************
+// * Handle File Meta
+// ***********************
+void handle_file_meta(const uint8_t *incomingData){
+  memcpy(&file_meta_gateway, incomingData, sizeof(file_meta_gateway));
+
+  // Reject new transmission, if already in transmission
+  if(current_file_path != ""){
+    Serial.println("Already in transfer mode, Reject New file transfer");
+    reject_message_gateway.msgType = REJ;
+    memcpy(&reject_message_gateway.mac, file_meta_gateway.mac, sizeof(file_meta_gateway.mac));
+    sendLoraMessage((uint8_t *) &reject_message_gateway, sizeof(reject_message_gateway));
+    return;
+  }
+
+  // Get File Name
+  char buffer[MAX_FILENAME_LEN + 1]; // 10 for the name + 1 for the null terminator
+  strncpy(buffer, file_meta_gateway.filename, MAX_FILENAME_LEN);
+  buffer[MAX_FILENAME_LEN] = '\0'; // Ensure null-termination
+  char filename[MAX_FILENAME_LEN + 2]; // 1 for '/' + 4 for 'data' + 1 for '/' + 10 for the name + 1 for the null terminator
+  snprintf(filename, sizeof(filename), "%s", buffer);
+
+  Serial.println("Recieved FILE_META");
+  Serial.println(filename);
+  Serial.printf("File size: %d bytes.\n",file_meta_gateway.filesize);
+
+  // Get Node Name
+  current_file_path = "/node/" + getDeviceNameByMac(file_meta_gateway.mac) + String(filename);
+  Serial.println(current_file_path);
+
+  // Create and open an empty file
+  file = SD.open(current_file_path, FILE_WRITE);
+  if (!file) {
+    Serial.println("Failed to create file");
+    return;
+  }
+  
+  Serial.println("File created successfully");
+
+  // Close the file
+  file.close();
+  Serial.println("File closed successfully");
+  
+  ackMessage_gateway.msgType = ACK;
+  memcpy(&ackMessage_gateway.mac, file_meta_gateway.mac, sizeof(ackMessage_gateway.mac));
+  sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
+
+  total_bytes_received = 0;
+}
+
+// ***********************
+// * Handle File End
+// ***********************
+void handle_file_end(const uint8_t *incomingData){
+  /* Need to verify if node has the permission to end file transmission */
+  // Add if encounters collision, current one to many design assumes node
+  // would not reach this point before getting rejected
+  /* Need to verify if node has the permission to end file transmission */
+
+  memcpy(&file_end_gateway, incomingData, sizeof(file_end_gateway));
+  Serial.print("\nReceived FILE_END from:");
+  printMacAddress(file_end_gateway.mac); Serial.println();
+  Serial.print("Total bytes received: "); Serial.println(total_bytes_received);
+  current_file_path = "";
+
+  ackMessage_gateway.msgType = ACK;
+  memcpy(&ackMessage_gateway.mac, file_end_gateway.mac, sizeof(ackMessage_gateway.mac));
+  sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
+}
+
+// ***********************
+// * Handle Data VM
+// ***********************
+void handle_vm_message(const uint8_t *incomingData) {
+  // Copy incoming data into vm_message_gateway
+  memcpy(&vm_message_gateway, incomingData, sizeof(vm_message));
+
+  // Create file path
+  char file_path[100];
+  snprintf(file_path, sizeof(file_path), "/node/%s/VM/%s", 
+           getDeviceNameByMac(vm_message_gateway.mac), 
+           get_current_time(true).c_str());
+
+  // Open file on SD card
+  File file = SD.open(file_path, FILE_WRITE);
+  if (!file) {
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+
+  // Write data to file
+  file.print(vm_message_gateway.time);
+  for (int i = 0; i < 3; ++i) {
+    file.print(',');
+    file.print(vm_message_gateway.vm_data[i].freq);
+    file.print(',');
+    file.print(vm_message_gateway.vm_data[i].temp);
+  }
+  file.println();
+
+  // Close the file
+  file.close();
+}
+
+// *************************************
+// * OnReceive Handlers Registration
+// *************************************
 void OnDataRecvGateway(const uint8_t *incomingData, int len) { 
-  JsonDocument root;
-  String payload;
+  
   uint8_t type = incomingData[0];       // first message byte is the type of message 
 
   switch (type) {
-    
     case PAIRING:                            // the message is a pairing request 
-
-      memcpy(&pairingDataGateway, incomingData, sizeof(pairingDataGateway));
-
-      Serial.print("\nPairing request from: ");
-      printMacAddress(pairingDataGateway.mac);
-      Serial.println();
-      Serial.println(pairingDataGateway.deviceName);
-
-      oled_print("Pair request: ");
-      // oled_print(pairingDataGateway.mac[0]);
-
-      if (pairingDataGateway.msgType == PAIRING) { 
-
-        if(pairingDataGateway.pairingKey == systemConfig.PAIRING_KEY){
-
-          Serial.println("Correct PAIRING_KEY");
-
-          oled_print("send response");
-          sendLoraMessage((uint8_t *) &pairingDataGateway, sizeof(pairingDataGateway));
-          Serial.println("Sent pairing response...");
-
-          // If first time pairing, create a dir for this node
-          if(addPeerGateway(pairingDataGateway.mac, pairingDataGateway.deviceName)){
-            
-            Serial.println("First time pairing, create a dir for this node");
-
-            char deviceFolder[MAX_DEVICE_NAME_LEN + 1]; // 10 for the name + 1 for the null terminator
-            strncpy(deviceFolder, pairingDataGateway.deviceName, 10);
-            deviceFolder[MAX_DEVICE_NAME_LEN] = '\0'; // Ensure null-termination
-
-            char folderPath[MAX_DEVICE_NAME_LEN + 6]; // 1 for '/' + 4 for 'data' + 1 for '/' + 10 for the name + 1 for the null terminator
-            snprintf(folderPath, sizeof(folderPath), "/node/%s", deviceFolder);
-            Serial.println(folderPath);
-
-            if (SD.mkdir(folderPath)) {
-              Serial.println("Directory created successfully.");
-            } else {
-              Serial.println("Failed to create directory.");
-            }
-
-            Serial.println("End of dir creation.");
-          }
-
-        }
-        else{
-          Serial.println("Wrong PAIRING_KEY");
-        }
-      }  
-
+      handle_pairing(incomingData);
       break;
-
     case FILE_BODY:
-
-      memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
-      Serial.println("Received FILE_BODY.");
-
-      // If file path is not set
-      if(current_file_path == ""){
-        Serial.println("Reject file body, no path set.");
-        reject_message_gateway.msgType = REJ;
-        memcpy(&reject_message_gateway.mac, file_body_gateway.mac, sizeof(file_body_gateway.mac));
-        sendLoraMessage((uint8_t *) &reject_message_gateway, sizeof(reject_message_gateway));
-      }
-
-      Serial.println(current_file_path);
-      file = SD.open(current_file_path, FILE_APPEND);
-      if (!file) {
-        Serial.println("Failed to create file");
-        return;
-      }
-
-      // Write the file_body_gateway structure to the file
-      Serial.printf("Received %d bytes\n", file_body_gateway.len);
-      total_bytes_received += file_body_gateway.len;
-
-      bytes_written = file.write((const uint8_t*)&file_body_gateway.data, file_body_gateway.len);
-      total_bytes_written += bytes_written;
-      Serial.printf("Wrote %d bytes\n", bytes_written);
-      
-      file.close();
-
-      ackMessage_gateway.msgType = ACK;
-      memcpy(&ackMessage_gateway.mac, file_body_gateway.mac, sizeof(file_meta_gateway.mac));
-      sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
-
-      Serial.println("Data written to file successfully");
-
+      handle_file_body(incomingData);
       break;
-
-
     case FILE_META:
-
-      memcpy(&file_meta_gateway, incomingData, sizeof(file_meta_gateway));
-
-      // Reject new transmission, if already in transmission
-      if(current_file_path != ""){
-        Serial.println("Already in transfer mode, Reject New file transfer");
-        reject_message_gateway.msgType = REJ;
-        memcpy(&reject_message_gateway.mac, file_meta_gateway.mac, sizeof(file_meta_gateway.mac));
-        sendLoraMessage((uint8_t *) &reject_message_gateway, sizeof(reject_message_gateway));
-        return;
-      }
-
-      // Get File Name
-      char buffer[MAX_FILENAME_LEN + 1]; // 10 for the name + 1 for the null terminator
-      strncpy(buffer, file_meta_gateway.filename, MAX_FILENAME_LEN);
-      buffer[MAX_FILENAME_LEN] = '\0'; // Ensure null-termination
-      char filename[MAX_FILENAME_LEN + 2]; // 1 for '/' + 4 for 'data' + 1 for '/' + 10 for the name + 1 for the null terminator
-      snprintf(filename, sizeof(filename), "%s", buffer);
-
-      Serial.println("Recieved FILE_META");
-      Serial.println(filename);
-      Serial.printf("File size: %d bytes.\n",file_meta_gateway.filesize);
-
-      // Get Node Name
-      current_file_path = "/node/" + getDeviceNameByMac(file_meta_gateway.mac) + String(filename);
-      Serial.println(current_file_path);
-
-      // Create and open an empty file
-      file = SD.open(current_file_path, FILE_WRITE);
-      if (!file) {
-        Serial.println("Failed to create file");
-        return;
-      }
-      
-      Serial.println("File created successfully");
-
-      // Close the file
-      file.close();
-      Serial.println("File closed successfully");
-      
-      ackMessage_gateway.msgType = ACK;
-      memcpy(&ackMessage_gateway.mac, file_meta_gateway.mac, sizeof(ackMessage_gateway.mac));
-      sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
-
-      total_bytes_received = 0;
-
+      handle_file_meta(incomingData);
       break;
-
     case FILE_END:
-
-      /* Need to verify if node has the permission to end file transmission */
-      // Add if encounters collision, current one to many design assumes node
-      // would not reach this point before getting rejected
-      /* Need to verify if node has the permission to end file transmission */
-
-      memcpy(&file_end_gateway, incomingData, sizeof(file_end_gateway));
-      Serial.print("\nReceived FILE_END from:");
-      printMacAddress(file_end_gateway.mac); Serial.println();
-      Serial.print("Total bytes received: "); Serial.println(total_bytes_received);
-      current_file_path = "";
-
-      ackMessage_gateway.msgType = ACK;
-      memcpy(&ackMessage_gateway.mac, file_end_gateway.mac, sizeof(ackMessage_gateway.mac));
-      sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
-
+      handle_file_end(incomingData);
+      break;
+    case DATA_VM:
+      handle_vm_message(incomingData);
       break;
 
     default:
-    
       Serial.print("This message is not for me.");
-
   }
 }
 
@@ -212,6 +268,34 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
  *                                                                *
  ******************************************************************/
 
+// Room for improvement. lower the while loop check frequency
+int waitForPollDataAck() {
+  unsigned long startTime = millis();
+  while (millis() - startTime < ACK_TIMEOUT) {
+      if(poll_data_success){
+        poll_data_success = false;
+        return true;
+      }
+  }
+  return false;
+}
+
+// ***********************
+// * Poll Data
+// ***********************
+poll_data_message poll_data_struct(uint8_t *mac) {
+  poll_data_message msg;
+  msg.msgType = POLL_DATA;
+  memcpy(&msg.mac, mac, MAC_ADDR_LENGTH);
+  return msg;
+}
+
+void send_pool_data_message(uint8_t *mac){
+  poll_data_message msg = poll_data_struct(mac);
+  sendLoraMessage((uint8_t *) &msg, sizeof(msg));
+  waitForPollDataAck(); // check for ack before proceeding to next one
+}
+
 // ***********************
 // * Time Sync
 // ***********************
@@ -219,10 +303,27 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
 time_sync_message get_current_time_struct() {
   time_sync_message msg;
 
-  if(!rtc_mounted){
-    Serial.println("External RTC not mounted. Cannot get current time.");
-    // Return a message with an invalid type or handle this error as needed
-    msg.msgType = 0xFF; // Invalid type for error indication
+  if (!rtc_mounted) {
+    Serial.println("External RTC not mounted. Falling back to system time.");
+
+    // Attempt to get the system time
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo)) {
+      Serial.println("Failed to obtain system time.");
+      // Return a message with an invalid type or handle this error as needed
+      msg.msgType = 0xFF; // Invalid type for error indication
+      return msg;
+    }
+
+    msg.msgType = TIME_SYNC;
+    msg.pairingKey = systemConfig.PAIRING_KEY; // key for network
+    msg.year = timeinfo.tm_year + 1900;
+    msg.month = timeinfo.tm_mon + 1;
+    msg.day = timeinfo.tm_mday;
+    msg.hour = timeinfo.tm_hour;
+    msg.minute = timeinfo.tm_min;
+    msg.second = timeinfo.tm_sec;
+
     return msg;
   }
 
@@ -258,14 +359,16 @@ void send_time_sync_message() {
 
 // Control Callback
 void gateway_send_control(void *parameter){
+  /* May be I should set the ack array here to initialize? */
   while(true){
     unsigned long currentTime = millis();
 
     // Check if it's time to poll data
     if ((currentTime - lastPollTime) >= pollInterval) {
       lastPollTime = currentTime;
-      // Poll data from slaves
-      // Your polling code here
+      for(int i = 0; i < peerCount; i++){
+        send_pool_data_message(peers[i].mac);
+      }
     }
 
     // Check if the API triggered flag is set
@@ -275,13 +378,13 @@ void gateway_send_control(void *parameter){
       // Your Web API command handling code here
     }
 
-    // Check if it's time to perform time synchronization
+    // time synchronization
     if ((currentTime - lastTimeSyncTime) >= timeSyncInterval) {
       lastPollTime = currentTime;
       send_time_sync_message();
     }
 
-    // Check if it's time to perform configuration synchronization
+    // configuration verification
     if ((currentTime - lastConfigSyncTime) >= configSyncInterval) {
       lastConfigSyncTime = currentTime;
       // Perform configuration synchronization
@@ -292,7 +395,6 @@ void gateway_send_control(void *parameter){
     delay(100);
   }
 }
-
 
 /******************************************************************
  *                                                                *
@@ -307,6 +409,7 @@ void lora_gateway_init() {
   LoRa_rxMode();
 
   loadPeersFromSD();
+  memset(peer_ack, false, sizeof(peer_ack));
 
   // Ensure the "data" directory exists
   if (!SD.exists("/node")) {
