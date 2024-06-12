@@ -205,7 +205,6 @@ void ntp_sync() {
   Serial.println("Failed to synchronize with any NTP server.");
 }
 
-
 String get_current_time(bool getFilename) {
   struct tm timeinfo;
 
@@ -216,9 +215,8 @@ String get_current_time(bool getFilename) {
       snprintf(buffer, sizeof(buffer), "%04d/%02d/%02d %02d:%02d:%02d", 
                now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
     } else {
-      int roundedMinutes = (now.minute() / 15) * 15;
-      snprintf(buffer, sizeof(buffer), "%04d_%02d_%02d_%02d_%02d", 
-               now.year(), now.month(), now.day(), now.hour(), roundedMinutes);
+      snprintf(buffer, sizeof(buffer), "%04d_%02d_%02d_%02d_%02d_%02d", 
+               now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
     }
     return String(buffer);
   } else if (getLocalTime(&timeinfo)) {
@@ -228,10 +226,9 @@ String get_current_time(bool getFilename) {
                timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
                timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
     } else {
-      int roundedMinutes = (timeinfo.tm_min / 15) * 15;
-      snprintf(buffer, sizeof(buffer), "%04d_%02d_%02d_%02d_%02d", 
+      snprintf(buffer, sizeof(buffer), "%04d_%02d_%02d_%02d_%02d_%02d", 
                timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
-               timeinfo.tm_hour, roundedMinutes);
+               timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
     }
     return String(buffer);
   } else {
@@ -239,7 +236,6 @@ String get_current_time(bool getFilename) {
     return "error.";
   }
 }
-
 
 /******************************************************************
  *                                                                *
