@@ -10,11 +10,8 @@
  ******************************************************************/
 
 PairingStatus pairingStatus = NOT_PAIRED;
-
-//Create 2 struct_message 
-struct_message myData;  // data to send
-struct_message inData;  // data received
 struct_pairing pairingDataNode;
+uint8_t mac_master_paired[MAC_ADDR_LENGTH]; // identity for master node
 
 unsigned long currentMillis = millis();
 unsigned long previousMillis = 0;   // Stores last time temperature was published
@@ -37,34 +34,35 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
 
   switch (type) {
 
-  case PAIRING:    // we received pairing data from server
-    Serial.println("\nPAIRING message processing");
-    memcpy(&pairingDataNode, incomingData, sizeof(pairingDataNode));
-    Serial.println();
-    printMacAddress(pairingDataNode.mac);
-    Serial.println();
-    printMacAddress(MAC_ADDRESS_STA);
-    Serial.println();
-    if (compareMacAddress(pairingDataNode.mac, MAC_ADDRESS_STA)) {// Is this for me?
-      Serial.print("Pairing done for ");
+    case PAIRING:    // we received pairing data from server
+    
+      Serial.println("\nPAIRING message processing");
+      memcpy(&pairingDataNode, incomingData, sizeof(pairingDataNode));
+      Serial.println();
+      Serial.println("Master MAC:");
+      printMacAddress(pairingDataNode.mac_master);
+      memcpy(mac_master_paired, pairingDataNode.mac_master, sizeof(pairingDataNode.mac_master));
+      Serial.println();
+      Serial.print("Pairing done ");
       Serial.print(" in ");
       Serial.print(millis()-NodeStart);
       Serial.println("ms");
-      pairingStatus = PAIR_PAIRED;             // set the pairing status
-    }
-    else{
-      Serial.print("Pairing mac address is not for me");
-    }
-    break;
-  
-  case ACK:
-    ack_count++;
-    break;
+      pairingStatus = PAIR_PAIRED;
 
-  case REJ:
-    rej_count++;
-    break;
+      break;
+    
+    case POLL_DATA:
+      // SAA data is large send as file
+      // other data send as row
+      break;
+    
+    case ACK:
+      ack_count++;
+      break;
 
+    case REJ:
+      rej_count++;
+      break;
   }
 
 }
@@ -78,12 +76,12 @@ PairingStatus autoPairing(){
     pairingDataNode.msgType = PAIRING;
     strncpy(pairingDataNode.deviceName, systemConfig.DEVICE_NAME, sizeof(pairingDataNode.deviceName) - 1);
     pairingDataNode.deviceName[sizeof(pairingDataNode.deviceName) - 1] = '\0';
-    memcpy(pairingDataNode.mac, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
+    memcpy(pairingDataNode.mac_origin, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
     pairingDataNode.pairingKey = systemConfig.PAIRING_KEY;
-    printMacAddress(pairingDataNode.mac);
+    printMacAddress(pairingDataNode.mac_origin);
     Serial.println(pairingDataNode.deviceName);
     Serial.println();
-    // add peer and send request
+
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &pairingDataNode, sizeof(pairingDataNode));
     LoRa.endPacket();
