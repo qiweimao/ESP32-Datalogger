@@ -18,7 +18,6 @@ int ack_count = 0;// Flag to indicate data received
 int rej_count = 0;// Flag to indicate data received
 
 const int maxPacketSize = 256; // Define a maximum packet size
-String message = "";
 uint8_t mac_buffer[MAC_ADDR_LENGTH];
 uint8_t MAC_ADDRESS_STA[MAC_ADDR_LENGTH];
 
