@@ -101,6 +101,31 @@ void update_system_configuration(String key, String value) {
 
 DataCollectionConfig dataConfig;
 
+void printDataConfig() {
+  Serial.println("\n*** Data Collection Configuration ***");
+
+  // Print ADC configuration
+  for (int i = 0; i < ADC_CHANNEL_COUNT; i++) {
+    Serial.printf("ADC Channel %d: Enabled=%s, Interval=%d, SensorType=%d\n",
+                  i, dataConfig.adcEnabled[i] ? "true" : "false",
+                  dataConfig.adcInterval[i], dataConfig.adcSensorType[i]);
+  }
+
+  // Print UART configuration
+  for (int i = 0; i < UART_CHANNEL_COUNT; i++) {
+    Serial.printf("UART Channel %d: Enabled=%s, Interval=%d, SensorType=%d\n",
+                  i, dataConfig.uartEnabled[i] ? "true" : "false",
+                  dataConfig.uartInterval[i], dataConfig.uartSensorType[i]);
+  }
+
+  // Print I2C configuration
+  for (int i = 0; i < I2C_CHANNEL_COUNT; i++) {
+    Serial.printf("I2C Channel %d: Enabled=%s, Interval=%d, SensorType=%d\n",
+                  i, dataConfig.i2cEnabled[i] ? "true" : "false",
+                  dataConfig.i2cInterval[i], dataConfig.i2cSensorType[i]);
+  }
+}
+
 void loadDataConfigFromPreferences() {
   preferences.begin("configurations", false);
   if (preferences.isKey("dataconfig")) {
@@ -131,6 +156,8 @@ void loadDataConfigFromPreferences() {
     preferences.putBytes("dataconfig", &dataConfig, sizeof(dataConfig));
   }
   preferences.end();
+
+  printDataConfig();
 }
 
 void updateDataCollectionConfiguration(String type, int index, String key, String value) {
@@ -139,6 +166,8 @@ void updateDataCollectionConfiguration(String type, int index, String key, Strin
   if (type.equals("ADC") && index >= 0 && index < 16) {
     if (key.equals("enabled")) {
       dataConfig.adcEnabled[index] = (value.equals("true"));
+      Serial.println(value.equals("true"));
+      Serial.println("Updated adc to true");
     } else if (key.equals("interval")) {
       dataConfig.adcInterval[index] = value.toInt();
     } else if (key.equals("sensorType")) {
@@ -183,7 +212,13 @@ void updateDataCollectionConfiguration(String type, int index, String key, Strin
   }
 
   // Save updated configuration
-  preferences.putBytes("dataconfig", &dataConfig, sizeof(dataConfig));
+  preferences.begin("configurations", false);
+  if (preferences.isKey("dataconfig")) {
+    preferences.putBytes("dataconfig", &dataConfig, sizeof(dataConfig));
+  } else {
+    Serial.println("Data collection configuration not found. Update Failed.");
+  }
   preferences.end();
+  printDataConfig();
   Serial.println("Finished updating data collection configuration.");
 }
