@@ -182,14 +182,16 @@ void handle_file_meta(const uint8_t *incomingData){
   memcpy(&file_meta_gateway, incomingData, sizeof(file_meta_gateway));
 
   // Reject new transmission, if already in transmission
-  if(current_file_path != ""){
-    Serial.println("Already in transfer mode, Reject New file transfer");
-    reject_message reject_message_gateway;
-    reject_message_gateway.msgType = REJ;
-    memcpy(&reject_message_gateway.mac, file_meta_gateway.mac, sizeof(file_meta_gateway.mac));
-    sendLoraMessage((uint8_t *) &reject_message_gateway, sizeof(reject_message_gateway));
-    return;
-  }
+  // if(current_file_path != ""){
+  //   Serial.println("Already in transfer mode, Reject New file transfer");
+  //   Serial.println("The current file path is not cleared:");
+  //   Serial.println(current_file_path);
+  //   reject_message reject_message_gateway;
+  //   reject_message_gateway.msgType = REJ;
+  //   memcpy(&reject_message_gateway.mac, file_meta_gateway.mac, sizeof(file_meta_gateway.mac));
+  //   sendLoraMessage((uint8_t *) &reject_message_gateway, sizeof(reject_message_gateway));
+  //   return;
+  // }
 
   // Get File Name
   char buffer[MAX_FILENAME_LEN + 1]; // 10 for the name + 1 for the null terminator
