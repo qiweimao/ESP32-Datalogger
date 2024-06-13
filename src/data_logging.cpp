@@ -3,6 +3,7 @@
 #include "vibrating_wire.h"
 #include "data_logging.h"
 #include "configuration.h"
+#include "utils.h"
 
 // Sensor Libs
 #include <Adafruit_Sensor.h>
@@ -14,42 +15,51 @@ unsigned long lastLogTimeI2C[I2C_CHANNEL_COUNT] = {0};
 
 bool loggingPaused = false;
 
-String createFilename(String type, unsigned long timestamp) {
-  String filename = "/data/" + type + "/" + String(timestamp) + ".dat";
+String createFilename(String type, String timestamp) {
+  String filename = "/data/" + type + "/" + timestamp + ".dat";
   Serial.println(filename);
   return filename;
 }
 
-void logADCData(int channel, unsigned long timestamp) {
+void logADCData(int channel, String timestamp) {
   String filename = createFilename("ADC", timestamp);
   File dataFile = SD.open(filename, FILE_WRITE);
   if (dataFile) {
     // Simulate reading data from the ADC channel
-    String data = String(timestamp) + "," + String(channel) + ",ADC data";
+    String data = timestamp + "," + String(channel) + ",ADC data";
     dataFile.println(data);
     dataFile.close();
+  } else {
+    Serial.println("Failed to open file for writing");
   }
 }
 
-void logUARTData(int channel, unsigned long timestamp) {
+void logUARTData(int channel, String timestamp) {
   String filename = createFilename("UART", timestamp);
   File dataFile = SD.open(filename, FILE_WRITE);
   if (dataFile) {
     // Simulate reading data from the UART channel
-    String data = String(timestamp) + "," + String(channel) + ",UART data";
+    String data = timestamp + "," + String(channel) + ",UART data";
     dataFile.println(data);
     dataFile.close();
+  } else {
+    Serial.println("Failed to open file for writing");
   }
 }
 
-void logI2CData(int channel, unsigned long timestamp) {
+void logI2CData(int channel, String timestamp) {
   String filename = createFilename("I2C", timestamp);
   File dataFile = SD.open(filename, FILE_WRITE);
   if (dataFile) {
     // Simulate reading data from the I2C channel
-    String data = String(timestamp) + "," + String(channel) + ",I2C data";
+    float temp = 100;
+    float pressure = 200;
+
+    String data = timestamp + "," + String(temp) + "," + String(pressure);
     dataFile.println(data);
     dataFile.close();
+  } else {
+    Serial.println("Failed to open file for writing");
   }
 }
 
@@ -63,7 +73,7 @@ void logDataTask(void *parameter) {
     // Check and log ADC channels
     for (int i = 0; i < ADC_CHANNEL_COUNT; i++) {
       if (dataConfig.adcEnabled[i] && (currentTime - lastLogTimeADC[i] >= dataConfig.adcInterval[i])) {
-        logADCData(i, currentTime);
+        logADCData(i, get_current_time(true));
         lastLogTimeADC[i] = currentTime;
       }
     }
@@ -71,7 +81,7 @@ void logDataTask(void *parameter) {
     // Check and log UART channels
     for (int i = 0; i < UART_CHANNEL_COUNT; i++) {
       if (dataConfig.uartEnabled[i] && (currentTime - lastLogTimeUART[i] >= dataConfig.uartInterval[i])) {
-        logUARTData(i, currentTime);
+        logUARTData(i, get_current_time(true));
         lastLogTimeUART[i] = currentTime;
       }
     }
@@ -79,7 +89,7 @@ void logDataTask(void *parameter) {
     // Check and log I2C channels
     for (int i = 0; i < I2C_CHANNEL_COUNT; i++) {
       if (dataConfig.i2cEnabled[i] && (currentTime - lastLogTimeI2C[i] >= dataConfig.i2cInterval[i])) {
-        logI2CData(i, currentTime);
+        logI2CData(i, get_current_time(true));
         lastLogTimeI2C[i] = currentTime;
       }
     }
@@ -114,7 +124,7 @@ void log_data_init(){
     if (dataConfig.adcEnabled[i]) {
       Serial.println("ADC channel: is enabled");
       Serial.println(i);
-      logADCData(i, currentTime);
+      logADCData(i, get_current_time(true));
       lastLogTimeADC[i] = currentTime;
     }
   }
@@ -122,7 +132,7 @@ void log_data_init(){
   // Initial log for UART channels
   for (int i = 0; i < UART_CHANNEL_COUNT; i++) {
     if (dataConfig.uartEnabled[i]) {
-      logUARTData(i, currentTime);
+      logUARTData(i, get_current_time(true));
       lastLogTimeUART[i] = currentTime;
     }
   }
@@ -130,7 +140,7 @@ void log_data_init(){
   // Initial log for I2C channels
   for (int i = 0; i < I2C_CHANNEL_COUNT; i++) {
     if (dataConfig.i2cEnabled[i]) {
-      logI2CData(i, currentTime);
+      logI2CData(i, get_current_time(true));
       lastLogTimeI2C[i] = currentTime;
     }
   }
