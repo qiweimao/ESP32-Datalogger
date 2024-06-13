@@ -7,7 +7,7 @@
 unsigned long lastPollTime = 0;
 unsigned long lastTimeSyncTime = 0;
 unsigned long lastConfigSyncTime = 0;
-const unsigned long pollInterval = 300000; // 5 minute
+const unsigned long pollInterval = 60000; // 1 minute
 const unsigned long timeSyncInterval = 86400000; // 24 hours
 const unsigned long configSyncInterval = 86400000; // 24 hours
 
@@ -127,6 +127,8 @@ poll_data_message poll_data_struct(uint8_t *mac) {
 }
 
 void send_pool_data_message(uint8_t *mac){
+  Serial.println("Sending data poll message");
+  printMacAddress(mac);
   poll_data_message msg = poll_data_struct(mac);
   sendLoraMessage((uint8_t *) &msg, sizeof(msg));
   waitForPollDataAck(); // check for ack before proceeding to next one
