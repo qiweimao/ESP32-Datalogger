@@ -50,7 +50,7 @@ void load_system_configuration() {
 void update_system_configuration(String key, String value) {
   Serial.println("Updating system configuration...");
 
-  preferences.begin("credentials", false);
+  preferences.begin("configurations", false);
 
   // Load existing configuration
   if (preferences.isKey("sysconfig")) {
