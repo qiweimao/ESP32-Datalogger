@@ -4,6 +4,10 @@
 #include "data_logging.h"
 #include "configuration.h"
 
+// Sensor Libs
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
+
 unsigned long lastLogTimeADC[ADC_CHANNEL_COUNT] = {0};
 unsigned long lastLogTimeUART[UART_CHANNEL_COUNT] = {0};
 unsigned long lastLogTimeI2C[I2C_CHANNEL_COUNT] = {0};
