@@ -3,11 +3,6 @@
 #include "lora_file_transfer.h"
 #include "configuration.h"
 
-/******************************************************************
- *                                                                *
- *                            Slave                               *
- *                                                                *
- ******************************************************************/
 
 PairingStatus pairingStatus = NOT_PAIRED;
 struct_pairing pairingDataNode;
@@ -18,6 +13,39 @@ unsigned long previousMillis = 0;   // Stores last time temperature was publishe
 const long interval = 5000;        // Interval at which to publish sensor readings
 unsigned long NodeStart;                // used to measure Pairing time
 unsigned int readingId = 0;
+
+/******************************************************************
+ *                                                                *
+ *                       Receive Control                          *
+ *                                                                *
+ ******************************************************************/
+
+void send_files_to_gateway(String type) {
+  String folderPath = "/data/" + type;
+  File root = SD.open(folderPath);
+
+  if (!root) {
+    Serial.println("Failed to open directory: " + folderPath);
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file) {
+    String fileName = file.name();
+    if (!file.isDirectory() && fileName.endsWith(".dat")) {
+      String fullFilePath = folderPath + "/" + fileName;
+      if (sendFile(fullFilePath.c_str())) {
+        String newFileName = fullFilePath.substring(0, fullFilePath.lastIndexOf('.')) + ".p";
+        SD.rename(fullFilePath, newFileName);
+      }
+      file.close();
+      break; // Only send one file from each folder
+    }
+    file = root.openNextFile();
+  }
+  root.close();
+}
+
 
 void OnDataRecvNode(const uint8_t *incomingData, int len) { 
   uint8_t type = incomingData[0];
@@ -52,7 +80,9 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       break;
     
     case POLL_DATA:
-      // go through data file and identify files that have not yet sent
+      send_files_to_gateway("ADC");
+      send_files_to_gateway("UART");
+      send_files_to_gateway("I2C");
       break;
     
     case ACK:
@@ -112,16 +142,16 @@ PairingStatus autoPairing(){
 void pairingTask(void *pvParameters) {
   while(true){
     if (autoPairing() == PAIR_PAIRED) {
-      // Open the file in read mode
-      // delay(15000);
-      File file = SD.open("/collection_config");
-      if (!file) {
-        Serial.println("Failed to open file");
-        return;
-      }
-      size_t fileSize = file.size();
-      sendFile("/collection_config");
-      delay(1000000);
+      // // Open the file in read mode
+      // // delay(15000);
+      // File file = SD.open("/collection_config");
+      // if (!file) {
+      //   Serial.println("Failed to open file");
+      //   return;
+      // }
+      // size_t fileSize = file.size();
+      // sendFile("/collection_config");
+      // delay(1000000);
     }
     vTaskDelay(1 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
   }
