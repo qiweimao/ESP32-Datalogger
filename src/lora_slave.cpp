@@ -64,9 +64,8 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
 
     case PAIRING:    // we received pairing data from server
     
-      Serial.println("\nPAIRING message processing");
+      Serial.println("\nPAIRING ACK Received");
       memcpy(&pairingDataNode, incomingData, sizeof(pairingDataNode));
-      Serial.println();
       Serial.println("Master MAC:");
       printMacAddress(pairingDataNode.mac_master);
       memcpy(mac_master_paired, pairingDataNode.mac_master, sizeof(pairingDataNode.mac_master));
@@ -74,7 +73,7 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       Serial.print("Pairing done ");
       Serial.print(" in ");
       Serial.print(millis()-NodeStart);
-      Serial.println("ms");
+      Serial.println("ms\n");
       pairingStatus = PAIR_PAIRED;
 
       break;
@@ -92,6 +91,8 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
     case REJ:
       rej_count++;
       break;
+    default:
+      Serial.println("Unknown message type");
   }
 
 }
@@ -107,9 +108,9 @@ PairingStatus autoPairing(){
     pairingDataNode.deviceName[sizeof(pairingDataNode.deviceName) - 1] = '\0';
     memcpy(pairingDataNode.mac_origin, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
     pairingDataNode.pairingKey = systemConfig.PAIRING_KEY;
-    printMacAddress(pairingDataNode.mac_origin);
+
+    printMacAddress(pairingDataNode.mac_origin);Serial.println();
     Serial.println(pairingDataNode.deviceName);
-    Serial.println();
 
     LoRa.beginPacket();
     LoRa.write((uint8_t *) &pairingDataNode, sizeof(pairingDataNode));
@@ -163,8 +164,9 @@ void lora_slave_init() {
   pairingStatus = PAIR_REQUEST;
 
   LoRa.onReceive(onReceive);
-  LoRa.onTxDone(onTxDone);
-  LoRa_rxMode();
+  // LoRa.onTxDone(onTxDone);
+  // LoRa_rxMode();
+  LoRa.receive();
 
   xTaskCreate(taskReceive, "Data Handler", 10000, (void *)OnDataRecvNode, 1, NULL);
   xTaskCreate(pairingTask, "Pairing Task", 10000, NULL, 1, NULL);
