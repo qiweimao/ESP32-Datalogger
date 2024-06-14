@@ -132,6 +132,8 @@ void log_data_init(){
   // Initial log for UART channels
   for (int i = 0; i < UART_CHANNEL_COUNT; i++) {
     if (dataConfig.uartEnabled[i]) {
+      Serial.println("UART channel: is enabled");
+      Serial.println(i);
       logUARTData(i, get_current_time(true));
       lastLogTimeUART[i] = currentTime;
     }
@@ -140,6 +142,8 @@ void log_data_init(){
   // Initial log for I2C channels
   for (int i = 0; i < I2C_CHANNEL_COUNT; i++) {
     if (dataConfig.i2cEnabled[i]) {
+      Serial.println("I2C channel: is enabled");
+      Serial.println(i);
       logI2CData(i, get_current_time(true));
       lastLogTimeI2C[i] = currentTime;
     }

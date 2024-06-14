@@ -75,7 +75,6 @@ void sendLoraMessage(uint8_t* data, size_t size) {
     LoRa.beginPacket();
     LoRa.write(data, size);
     LoRa.endPacket();
-    LoRa.receive();
 }
 
 void onReceive(int packetSize) {
@@ -95,10 +94,12 @@ void taskReceive(void *parameter) {
   
   while (true) {
     if (dataReceived) {
+      Serial.printf("\ndataReceived = %d\n", dataReceived);
+      int packetSize = LoRa.parsePacket();
       dataReceived--; // Reset the flag for the next packet
       bufferIndex = 0; // Reset the buffer index
 
-      Serial.printf("\nBytes available for read: %d\n", LoRa.available());
+      Serial.printf("Bytes available for read: %d\n", LoRa.available());
       while (LoRa.available() && bufferIndex < 250) {
         buffer[bufferIndex++] = LoRa.read();
       }

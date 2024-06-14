@@ -225,6 +225,7 @@ void handle_file_meta(const uint8_t *incomingData){
   ackMessage_gateway.msgType = ACK;
   memcpy(&ackMessage_gateway.mac, file_meta_gateway.mac, sizeof(ackMessage_gateway.mac));
   sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
+  Serial.println("Sent Meta ACK message successfully");
 
   total_bytes_received = 0;
 }

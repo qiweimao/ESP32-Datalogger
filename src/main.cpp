@@ -36,7 +36,6 @@ void setup() {
   loadDataConfigFromPreferences();
 
   Serial.println("\n*** Connectivity ***");
-  lora_init();
   wifi_setting_reset();
   wifi_init();
   start_http_server();// start Async server with api-interfaces
@@ -45,8 +44,8 @@ void setup() {
   xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
 
   log_data_init();
-  
   Serial.println("\n------------------Boot Completed----------------\n");
+  lora_init();
 }
 
 void loop() {
