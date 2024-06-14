@@ -115,6 +115,6 @@ void taskReceive(void *parameter) {
       }
 
     }
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
+    vTaskDelay(50 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
   }
 }

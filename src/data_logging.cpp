@@ -94,7 +94,7 @@ void logDataTask(void *parameter) {
       }
     }
 
-    vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
+    vTaskDelay(10000 / portTICK_PERIOD_MS); // Delay for 1 second
   }
 }
 

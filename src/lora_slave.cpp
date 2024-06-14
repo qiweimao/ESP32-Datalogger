@@ -153,7 +153,7 @@ void pairingTask(void *pvParameters) {
       // sendFile("/collection_config");
       // delay(1000000);
     }
-    vTaskDelay(1 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
+    vTaskDelay(10000 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
   }
 }
 
