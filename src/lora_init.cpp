@@ -44,7 +44,7 @@ void lora_init(void){
 
   // Conditionally enable CRC
   if (enableCRC) {
-    LoRa.enableCrc();
+    // LoRa.enableCrc();
     Serial.println("CRC enabled.");
   } else {
     LoRa.disableCrc();
@@ -73,10 +73,12 @@ void LoRa_txMode(){
 }
 
 void sendLoraMessage(uint8_t* data, size_t size) {
+    Serial.println("LoRa send in send mode");
     LoRa.beginPacket();
     LoRa.write(data, size);
     LoRa.endPacket(true);
     LoRa.receive(); // set receive mode
+    Serial.println("LoRa back in receive mode");
 }
 
 void onReceive(int packetSize) {
