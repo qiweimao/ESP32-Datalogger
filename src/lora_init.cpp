@@ -100,7 +100,7 @@ void taskReceive(void *parameter) {
   while (true) {
     if (dataReceived) {
       Serial.printf("\ndataReceived = %d\n", dataReceived);
-      int packetSize = LoRa.parsePacket();
+      // int packetSize = LoRa.parsePacket();
       dataReceived--; // Reset the flag for the next packet
       bufferIndex = 0; // Reset the buffer index
 
