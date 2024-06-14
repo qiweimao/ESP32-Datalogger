@@ -127,10 +127,10 @@ poll_data_message poll_data_struct(uint8_t *mac) {
 }
 
 void send_pool_data_message(uint8_t *mac){
-  printMacAddress(mac);
   poll_data_message msg = poll_data_struct(mac);
   sendLoraMessage((uint8_t *) &msg, sizeof(msg));
-  Serial.println("Sent data poll message");
+  Serial.printf("Sent data poll message to:");
+  printMacAddress(mac);Serial.println();
   waitForPollDataAck(); // check for ack before proceeding to next one
 }
 
@@ -244,8 +244,7 @@ void gateway_send_control(void *parameter){
 void lora_gateway_init() {
 
   LoRa.onReceive(onReceive);
-  LoRa.onTxDone(onTxDone);
-  LoRa_rxMode();
+  LoRa.receive();
 
   loadPeersFromSD();
   memset(peer_ack, false, sizeof(peer_ack));
@@ -285,7 +284,6 @@ void lora_gateway_init() {
   );
   Serial.println("Added Data send handler");
 
-  Serial.println("Send 1 data poll message");
   send_pool_data_message(peers[0].mac);
 
   

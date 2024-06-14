@@ -65,6 +65,7 @@ void lora_init(void){
 
 void LoRa_rxMode(){
   LoRa.receive();                       // set receive mode
+  Serial.println("LoRa in receive mode");
 }
 
 void LoRa_txMode(){
@@ -74,7 +75,8 @@ void LoRa_txMode(){
 void sendLoraMessage(uint8_t* data, size_t size) {
     LoRa.beginPacket();
     LoRa.write(data, size);
-    LoRa.endPacket();
+    LoRa.endPacket(true);
+    LoRa.receive(); // set receive mode
 }
 
 void onReceive(int packetSize) {
@@ -82,6 +84,7 @@ void onReceive(int packetSize) {
 }
 
 void onTxDone() {
+  Serial.println("Go back to receive.");
   LoRa_rxMode();
 }
 
