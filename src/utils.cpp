@@ -170,12 +170,12 @@ void external_rtc_sync_ntp(){
 void ntp_sync() {
   const int maxAttempts = 5;  // Maximum number of attempts per server
   long gmtOffset_sec = systemConfig.utcOffset * 3600;
-  Serial.println(gmtOffset_sec);
+  // Serial.println(gmtOffset_sec);
 
   // Attempt synchronization with each NTP server in the list
   for (int i = 0; i < numNtpServers; i++) {
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServers[i]);
-    Serial.printf("Syncing with NTP server %s...\n", ntpServers[i]);
+    // Serial.printf("Syncing with NTP server %s...\n", ntpServers[i]);
 
     bool syncSuccess = false;
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
@@ -185,13 +185,13 @@ void ntp_sync() {
       if (sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED) {
         struct tm timeinfo;
         if (getLocalTime(&timeinfo)) {
-          Serial.println(&timeinfo, "NTP Time from internet: %A, %B %d %Y %H:%M:%S");
+          // Serial.println(&timeinfo, "NTP Time from internet: %A, %B %d %Y %H:%M:%S");
           external_rtc_sync_ntp();
           syncSuccess = true;
           break; // Exit the retry loop if synchronization is successful
         }
       } else {
-        Serial.printf("Attempt %d failed to synchronize with NTP server %s\n", attempt + 1, ntpServers[i]);
+        // Serial.printf("Attempt %d failed to synchronize with NTP server %s\n", attempt + 1, ntpServers[i]);
       }
     }
 
