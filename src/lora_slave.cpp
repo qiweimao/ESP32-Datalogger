@@ -14,6 +14,8 @@ const long interval = 5000;        // Interval at which to publish sensor readin
 unsigned long NodeStart;                // used to measure Pairing time
 unsigned int readingId = 0;
 
+volatile bool sendFileRequest = false;
+
 /******************************************************************
  *                                                                *
  *                       Receive Control                          *
@@ -44,6 +46,18 @@ void send_files_to_gateway(String type) {
     file = root.openNextFile();
   }
   root.close();
+}
+
+void sendFilesTask(void * parameter) {
+  while(1){
+    if(sendFileRequest){
+      send_files_to_gateway("ADC");
+      send_files_to_gateway("UART");
+      send_files_to_gateway("I2C");
+      sendFileRequest = false;
+    }
+    vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
+  }
 }
 
 
@@ -79,9 +93,7 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       break;
     
     case POLL_DATA:
-      send_files_to_gateway("ADC");
-      send_files_to_gateway("UART");
-      send_files_to_gateway("I2C");
+      sendFileRequest = true;
       break;
     
     case ACK:
@@ -170,5 +182,6 @@ void lora_slave_init() {
 
   xTaskCreate(taskReceive, "Data Handler", 10000, (void *)OnDataRecvNode, 1, NULL);
   xTaskCreate(pairingTask, "Pairing Task", 10000, NULL, 1, NULL);
+  xTaskCreate(sendFilesTask, "Send File Task", 10000, NULL, 1, NULL);
 
 }
