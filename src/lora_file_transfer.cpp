@@ -259,7 +259,7 @@ void handle_file_body(const uint8_t *incomingData){
   }
 
   // Write the file_body_gateway structure to the file
-  Serial.printf("Received %d bytes\n", file_body_gateway.len);
+  // Serial.printf("Received %d bytes\n", file_body_gateway.len);
   total_bytes_received += file_body_gateway.len;
 
   bytes_written = file.write((const uint8_t*)&file_body_gateway.data, file_body_gateway.len);

@@ -63,12 +63,12 @@ void sendFilesTask(void * parameter) {
 
 void OnDataRecvNode(const uint8_t *incomingData, int len) { 
   uint8_t type = incomingData[0];
-  Serial.printf("type = %d\n", type);
+  // Serial.printf("type = %d\n", type);
 
   // Check if message is for me
   uint8_t buffer[6];
   memcpy(buffer, incomingData + 1, 6);
-  printMacAddress(buffer);
+  // printMacAddress(buffer);
   if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
     Serial.println("This message is not for me.");
     return;
