@@ -98,7 +98,6 @@ void taskReceive(void *parameter) {
   int bufferIndex = 0; // Index to keep track of the buffer position
   
   while (true) {
-    Serial.println("Check datareceive");
     if (dataReceived) {
       Serial.printf("\ndataReceived = %d\n", dataReceived);
       // int packetSize = LoRa.parsePacket();
