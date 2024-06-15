@@ -98,6 +98,7 @@ void taskReceive(void *parameter) {
   int bufferIndex = 0; // Index to keep track of the buffer position
   
   while (true) {
+    Serial.println("Check datareceive");
     if (dataReceived) {
       Serial.printf("\ndataReceived = %d\n", dataReceived);
       // int packetSize = LoRa.parsePacket();
@@ -115,6 +116,6 @@ void taskReceive(void *parameter) {
       }
 
     }
-    vTaskDelay(50 / portTICK_PERIOD_MS); // Add a small delay to yield the CPU
+    delay(100);
   }
 }

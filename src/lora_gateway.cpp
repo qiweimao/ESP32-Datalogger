@@ -231,7 +231,7 @@ void gateway_send_control(void *parameter){
     }
 
     // Sleep for a short interval before next check (if needed)
-    delay(100);
+    delay(1000);
   }
 }
 
