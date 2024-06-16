@@ -7,13 +7,13 @@
 unsigned long lastPollTime = 0;
 unsigned long lastTimeSyncTime = 0;
 unsigned long lastConfigSyncTime = 0;
-const unsigned long pollInterval = 300000; // 5 minute
-const unsigned long timeSyncInterval = 86400000; // 24 hours
-const unsigned long configSyncInterval = 86400000; // 24 hours
+const unsigned long pollInterval = 60000; // 1 minute
+const unsigned long timeSyncInterval = 3600000;
+const unsigned long configSyncInterval = 3600000;
 
 bool apiTriggered = false;
 bool peer_ack[MAX_PEERS];
-bool poll_data_success = false;
+bool poll_success = false;
 
 /******************************************************************
  *                                                                *
@@ -90,7 +90,7 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       break;
     case FILE_END:
       if(!handle_file_end(incomingData)){
-        poll_data_success = true;
+        poll_success = true;
       }
       break;
     default:
@@ -104,15 +104,15 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
  *                                                                *
  ******************************************************************/
 
-// Room for improvement. lower the while loop check frequency
-int waitForPollDataAck() {
+
+int waitForPollAck() {
   unsigned long startTime = millis();
   while (millis() - startTime < ACK_TIMEOUT) {
-    if(poll_data_success){
-      poll_data_success = false;
+    if(poll_success){
+      poll_success = false;
       return true;
     }
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
+    vTaskDelay(20 / portTICK_PERIOD_MS); // Delay for 1 second
   }
   return false;
 }
@@ -120,6 +120,7 @@ int waitForPollDataAck() {
 // ***********************
 // * Poll Data
 // ***********************
+
 poll_data_message poll_data_struct(uint8_t *mac) {
   poll_data_message msg;
   msg.msgType = POLL_DATA;
@@ -127,12 +128,43 @@ poll_data_message poll_data_struct(uint8_t *mac) {
   return msg;
 }
 
-void send_pool_data_message(uint8_t *mac){
-  poll_data_message msg = poll_data_struct(mac);
-  sendLoraMessage((uint8_t *) &msg, sizeof(msg));
-  Serial.printf("Sent data poll message to:");
-  printMacAddress(mac);Serial.println();Serial.println();
-  waitForPollDataAck(); // check for ack before proceeding to next one
+void poll_data(uint8_t *mac){
+  
+  if (xSemaphoreTake(xMutex_DataPoll, portMAX_DELAY) == pdTRUE) {
+    poll_success = false;
+    poll_data_message msg = poll_data_struct(mac);
+    sendLoraMessage((uint8_t *) &msg, sizeof(msg));
+    Serial.printf("Sent data poll message to:");
+    printMacAddress(mac);Serial.println();Serial.println();
+    waitForPollAck(); // check for ack before proceeding to next one
+    xSemaphoreGive(xMutex_DataPoll);
+  }
+  
+}
+
+// ***********************
+// * Poll Config
+// ***********************
+
+poll_config_message poll_config_struct(uint8_t *mac) {
+  poll_config_message msg;
+  msg.msgType = POLL_CONFIG;
+  memcpy(&msg.mac, mac, MAC_ADDR_LENGTH);
+  return msg;
+}
+
+void poll_config(uint8_t *mac){
+  
+  if (xSemaphoreTake(xMutex_DataPoll, portMAX_DELAY) == pdTRUE) {
+    poll_success = false;
+    poll_config_message msg = poll_config_struct(mac);
+    sendLoraMessage((uint8_t *) &msg, sizeof(msg));
+    Serial.printf("Sent config poll message to:");
+    printMacAddress(mac);Serial.println();Serial.println();
+    waitForPollAck(); // check for ack before proceeding to next one
+    xSemaphoreGive(xMutex_DataPoll);
+  }
+
 }
 
 // ***********************
@@ -189,34 +221,33 @@ void send_time_sync_message() {
 
   uint8_t buffer[sizeof(time_sync_message)];
   memcpy(buffer, &msg, sizeof(time_sync_message));
-  sendLoraMessage(buffer, sizeof(time_sync_message));
+
+  // only execute if not in data transfer mode
+  if (xSemaphoreTake(xMutex_DataPoll, portMAX_DELAY) == pdTRUE) {
+    sendLoraMessage(buffer, sizeof(time_sync_message));
+    xSemaphoreGive(xMutex_DataPoll);
+  }
+
 }
 
 /******************************************************************
- *                         Control Loop                           *
+ *                         Control Tasks                          *
  ******************************************************************/
-void gateway_send_control(void *parameter){
+void gateway_scheduled_poll(void *parameter){
 
   while(true){
+
     unsigned long currentTime = millis();
 
     // Check if it's time to poll data
     if ((currentTime - lastPollTime) >= pollInterval) {
       lastPollTime = currentTime;
       for(int i = 0; i < peerCount; i++){
-        poll_data_success = false;
-        send_pool_data_message(peers[i].mac);
+        poll_data(peers[i].mac);
       }
     }
 
-    // Check if the API triggered flag is set
-    if (apiTriggered) {
-      apiTriggered = false;
-      // Handle Web API commands
-      // Your Web API command handling code here
-    }
-
-    // time synchronization
+    // time synchronization (broadcast)
     if ((currentTime - lastTimeSyncTime) >= timeSyncInterval) {
       lastPollTime = currentTime;
       send_time_sync_message();
@@ -225,8 +256,9 @@ void gateway_send_control(void *parameter){
     // configuration verification
     if ((currentTime - lastConfigSyncTime) >= configSyncInterval) {
       lastConfigSyncTime = currentTime;
-      // Perform configuration synchronization
-      // Your config sync code here
+      for(int i = 0; i < peerCount; i++){
+        poll_config(peers[i].mac);
+      }
     }
 
     // Sleep for a short interval before next check (if needed)
@@ -274,7 +306,7 @@ void lora_gateway_init() {
 
   // Create the task for the control loop
   xTaskCreate(
-    gateway_send_control,    // Task function
+    gateway_scheduled_poll,    // Task function
     "Control Task",     // Name of the task
     10000,              // Stack size in words
     NULL,               // Task input parameter
@@ -283,7 +315,7 @@ void lora_gateway_init() {
   );
   Serial.println("Added Data send handler");
 
-  send_pool_data_message(peers[0].mac);
+  poll_data(peers[0].mac);
 
   
 }

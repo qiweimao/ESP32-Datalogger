@@ -21,6 +21,8 @@ const int maxPacketSize = 256; // Define a maximum packet size
 uint8_t mac_buffer[MAC_ADDR_LENGTH];
 uint8_t MAC_ADDRESS_STA[MAC_ADDR_LENGTH];
 
+SemaphoreHandle_t xMutex_DataPoll = NULL; // mutex for LoRa hardware usage
+
 void lora_gateway_init();
 void lora_slave_init();
 
@@ -50,6 +52,8 @@ void lora_init(void){
     LoRa.disableCrc();
     Serial.println("CRC disabled.");
   }
+
+  xMutex_DataPoll = xSemaphoreCreateMutex();
   
   // Callback Initialization based on Mode
   if (systemConfig.LORA_MODE == LORA_SLAVE){
@@ -62,7 +66,6 @@ void lora_init(void){
   }
 
 }
-
 
 void sendLoraMessage(uint8_t* data, size_t size) {
     LoRa.beginPacket();
@@ -90,6 +93,7 @@ void taskReceive(void *parameter) {
       bufferIndex = 0; // Reset the buffer index
 
       // Serial.printf("Bytes available for read: %d\n", LoRa.available());
+      
       while (LoRa.available() && bufferIndex < 250) {
         buffer[bufferIndex++] = LoRa.read();
       }

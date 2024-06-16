@@ -15,6 +15,7 @@ unsigned long NodeStart;                // used to measure Pairing time
 unsigned int readingId = 0;
 
 volatile bool sendFileRequest = false;
+volatile bool sendConfigRequest = false;
 
 /******************************************************************
  *                                                                *
@@ -25,8 +26,7 @@ volatile bool sendFileRequest = false;
 // **************************************
 // * Send One File From Folder
 // **************************************
-void send_files_to_gateway(String type) {
-  String folderPath = "/data/" + type;
+void send_files_to_gateway(String folderPath) {
   File root = SD.open(folderPath);
 
   if (!root) {
@@ -51,17 +51,48 @@ void send_files_to_gateway(String type) {
   root.close();
 }
 
+void send_config_to_gateway() {
+  File root = SD.open("/");
+
+  if (!root) {
+    Serial.println("Failed to open directory: /");
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file) {
+    String fileName = file.name();
+    if (!file.isDirectory() && fileName.endsWith(".config")) {
+      String fullFilePath = "/" + fileName;
+      if (sendFile(fullFilePath.c_str())) {
+        Serial.println("Sent config file.");
+      }
+      file.close();
+    }
+    file = root.openNextFile();
+  }
+  root.close();
+}
+
 // **************************************
 // * Task Send File
 // **************************************
 void sendFilesTask(void * parameter) {
+
   while(1){
+
     if(sendFileRequest){
-      send_files_to_gateway("ADC");
-      send_files_to_gateway("UART");
-      send_files_to_gateway("I2C");
+      send_files_to_gateway("/data/ADC");
+      send_files_to_gateway("/data/UART");
+      send_files_to_gateway("/data/I2C");
       sendFileRequest = false;
     }
+
+    if(sendConfigRequest){
+      send_config_to_gateway();
+      sendConfigRequest = false;
+    }
+
     vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
@@ -153,6 +184,10 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
     
     case POLL_DATA:
       sendFileRequest = true; // a flag to indicate that gateway requested data
+      break;
+
+    case POLL_CONFIG:
+      sendConfigRequest = true; // a flag to indicate that gateway requested data
       break;
     
     case ACK:

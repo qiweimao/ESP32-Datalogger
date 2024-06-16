@@ -8,6 +8,34 @@ Preferences preferences;
 
 /******************************************************************
  *                                                                *
+ *                          Save to SD Card                       *
+ *                                                                *
+ ******************************************************************/
+
+void saveSystemConfigToSD() {
+  File file = SD.open("/systemConfig.config", FILE_WRITE);
+  if (!file) {
+    Serial.println("Failed to open systemConfig.config for writing");
+    return;
+  }
+  file.write((uint8_t*)&systemConfig, sizeof(systemConfig));
+  file.close();
+  Serial.println("System configuration saved to SD card.");
+}
+
+void saveDataConfigToSD() {
+  File file = SD.open("/dataConfig.config", FILE_WRITE);
+  if (!file) {
+    Serial.println("Failed to open dataConfig.config for writing");
+    return;
+  }
+  file.write((uint8_t*)&dataConfig, sizeof(dataConfig));
+  file.close();
+  Serial.println("Data collection configuration saved to SD card.");
+}
+
+/******************************************************************
+ *                                                                *
  *                        System Config                           *
  *                                                                *
  ******************************************************************/
@@ -45,6 +73,9 @@ void load_system_configuration() {
   Serial.printf("Boot as: %s\n", systemConfig.LORA_MODE ? "Gateway" : "Node");
   Serial.printf("PAIRING_KEY: %lu\n", systemConfig.PAIRING_KEY);
   Serial.printf("utcOffset: %d\n", systemConfig.utcOffset);
+
+  saveSystemConfigToSD();
+
 }
 
 void update_system_configuration(String key, String value) {
@@ -90,6 +121,7 @@ void update_system_configuration(String key, String value) {
   preferences.end();
 
   load_system_configuration(); // reload configuration
+  saveSystemConfigToSD();
 }
 
 
@@ -156,6 +188,8 @@ void loadDataConfigFromPreferences() {
     preferences.putBytes("dataconfig", &dataConfig, sizeof(dataConfig));
   }
   preferences.end();
+  
+  saveDataConfigToSD();
 
   printDataConfig();
 }
@@ -220,5 +254,8 @@ void updateDataCollectionConfiguration(String type, int index, String key, Strin
   }
   preferences.end();
   printDataConfig();
+
+  saveDataConfigToSD();
+  loadDataConfigFromPreferences(); // reload into struct after update
   Serial.println("Finished updating data collection configuration.");
 }

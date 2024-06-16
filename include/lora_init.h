@@ -72,6 +72,10 @@ typedef struct poll_data_message {
   uint8_t mac[MAC_ADDR_LENGTH];
 } poll_data_message;
 
+typedef struct poll_config_message {
+  uint8_t msgType;
+  uint8_t mac[MAC_ADDR_LENGTH];
+} poll_config_message;
 
 typedef struct adc_message {
   uint8_t msgType;
@@ -89,12 +93,14 @@ typedef struct struct_pairing { // this is a broadcast message
 } struct_pairing;
 
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
-enum MessageType {PAIRING, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA, FILE_META, FILE_BODY, FILE_END, ACK, REJ, TIMEOUT, TIME_SYNC, POLL_DATA};
+enum MessageType {PAIRING, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA, FILE_META, \
+                  FILE_BODY, FILE_END, ACK, REJ, TIMEOUT, TIME_SYNC, POLL_DATA, POLL_CONFIG};
 
 extern uint8_t mac_buffer[6];
 extern uint8_t MAC_ADDRESS_STA[6];
 extern int ack_count;
 extern int rej_count;
+extern SemaphoreHandle_t xMutex_DataPoll; // mutex for LoRa hardware usage
 
 void LoRa_rxMode();
 void LoRa_txMode();

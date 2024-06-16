@@ -7,6 +7,7 @@
 #define UART_CHANNEL_COUNT 2
 #define I2C_CHANNEL_COUNT 2
 
+// size of the SystemConfig struct is 92 bytes.
 struct SystemConfig {
   char WIFI_SSID[32];       // Adjust size as needed
   char WIFI_PASSWORD[32];   // Adjust size as needed
