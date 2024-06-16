@@ -284,9 +284,9 @@ int handle_file_end(const uint8_t *incomingData){
   /* Need to verify if node has the permission to end file transmission */
   file_end_message file_end_gateway;
   memcpy(&file_end_gateway, incomingData, sizeof(file_end_gateway));
-  Serial.print("\nReceived FILE_END from:");
+  Serial.print("Received FILE_END from:");
   printMacAddress(file_end_gateway.mac); Serial.println();
-  Serial.print("Total bytes received: "); Serial.println(total_bytes_received);
+  Serial.print("Total bytes received: "); Serial.println(total_bytes_received);Serial.println();
   current_file_path = "";
 
   ack_message ackMessage_gateway;

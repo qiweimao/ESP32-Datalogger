@@ -130,7 +130,7 @@ void send_pool_data_message(uint8_t *mac){
   poll_data_message msg = poll_data_struct(mac);
   sendLoraMessage((uint8_t *) &msg, sizeof(msg));
   Serial.printf("Sent data poll message to:");
-  printMacAddress(mac);Serial.println();
+  printMacAddress(mac);Serial.println();Serial.println();
   waitForPollDataAck(); // check for ack before proceeding to next one
 }
 
