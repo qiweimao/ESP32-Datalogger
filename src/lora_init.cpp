@@ -63,14 +63,6 @@ void lora_init(void){
 
 }
 
-void LoRa_rxMode(){
-  LoRa.receive();                       // set receive mode
-  Serial.println("LoRa in receive mode");
-}
-
-void LoRa_txMode(){
-  LoRa.idle();                          // set standby mode
-}
 
 void sendLoraMessage(uint8_t* data, size_t size) {
     LoRa.beginPacket();

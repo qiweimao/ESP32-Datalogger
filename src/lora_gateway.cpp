@@ -191,11 +191,9 @@ void send_time_sync_message() {
   sendLoraMessage(buffer, sizeof(time_sync_message));
 }
 
-// ***********************
-// * Control Loop
-// ***********************
-
-// Control Callback
+/******************************************************************
+ *                         Control Loop                           *
+ ******************************************************************/
 void gateway_send_control(void *parameter){
   /* May be I should set the ack array here to initialize? */
   while(true){

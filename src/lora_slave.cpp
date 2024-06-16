@@ -18,10 +18,13 @@ volatile bool sendFileRequest = false;
 
 /******************************************************************
  *                                                                *
- *                       Receive Control                          *
+ *                          Send Control                          *
  *                                                                *
  ******************************************************************/
 
+// **************************************
+// * Send One File From Folder
+// **************************************
 void send_files_to_gateway(String type) {
   String folderPath = "/data/" + type;
   File root = SD.open(folderPath);
@@ -48,6 +51,9 @@ void send_files_to_gateway(String type) {
   root.close();
 }
 
+// **************************************
+// * Task Send File
+// **************************************
 void sendFilesTask(void * parameter) {
   while(1){
     if(sendFileRequest){
@@ -60,10 +66,61 @@ void sendFilesTask(void * parameter) {
   }
 }
 
+// **************************************
+// * Pairing Task
+// **************************************
+void autoPairing(void * parameter){
+  while(true){
+
+    switch(pairingStatus) {
+
+      case PAIR_REQUEST:
+
+        Serial.println("\nBegin pairing Request");
+        pairingDataNode.msgType = PAIRING; // message type
+        strncpy(pairingDataNode.deviceName, systemConfig.DEVICE_NAME, sizeof(pairingDataNode.deviceName) - 1); // device name
+        pairingDataNode.deviceName[sizeof(pairingDataNode.deviceName) - 1] = '\0'; // device name null terminate
+        memcpy(pairingDataNode.mac_origin, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA)); // device mac address
+        pairingDataNode.pairingKey = systemConfig.PAIRING_KEY; // paring key for network
+
+        printMacAddress(pairingDataNode.mac_origin);Serial.println();
+        Serial.println(pairingDataNode.deviceName);
+
+        sendLoraMessage((uint8_t *) &pairingDataNode, sizeof(pairingDataNode));
+
+        previousMillis = millis();
+        pairingStatus = PAIR_REQUESTED;
+        Serial.println("Pairing request sent\n");
+
+        break;
+
+      case PAIR_REQUESTED:
+        // time out to allow receiving response from server
+        currentMillis = millis();
+        if(currentMillis - previousMillis > ACK_TIMEOUT) {
+          previousMillis = currentMillis;
+          // time out expired,  try next channel
+          pairingStatus = PAIR_REQUEST;
+          Serial.println("Request again...");
+        }
+        break;
+
+      case PAIR_PAIRED:
+        break;
+    }
+
+    vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
+
+  }
+} 
+
+/******************************************************************
+ *                                                                *
+ *                         Receive Control                        *
+ *                                                                *
+ ******************************************************************/
 
 void OnDataRecvNode(const uint8_t *incomingData, int len) { 
-  uint8_t type = incomingData[0];
-  // Serial.printf("type = %d\n", type);
 
   // Check if message is for me
   uint8_t buffer[6];
@@ -74,6 +131,8 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
     return;
   };
 
+  // Serial.printf("type = %d\n", type);
+  uint8_t type = incomingData[0];
   switch (type) {
 
     case PAIRING:    // we received pairing data from server
@@ -93,7 +152,7 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       break;
     
     case POLL_DATA:
-      sendFileRequest = true;
+      sendFileRequest = true; // a flag to indicate that gateway requested data
       break;
     
     case ACK:
@@ -103,85 +162,31 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
     case REJ:
       rej_count++;
       break;
+
     default:
       Serial.println("Unknown message type");
   }
 
 }
 
-PairingStatus autoPairing(){
-  switch(pairingStatus) {
 
-    case PAIR_REQUEST:
-    // set pairing data to send to the server
-    Serial.println("\nBegin pairing Request");
-    pairingDataNode.msgType = PAIRING;
-    strncpy(pairingDataNode.deviceName, systemConfig.DEVICE_NAME, sizeof(pairingDataNode.deviceName) - 1);
-    pairingDataNode.deviceName[sizeof(pairingDataNode.deviceName) - 1] = '\0';
-    memcpy(pairingDataNode.mac_origin, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA));
-    pairingDataNode.pairingKey = systemConfig.PAIRING_KEY;
-
-    printMacAddress(pairingDataNode.mac_origin);Serial.println();
-    Serial.println(pairingDataNode.deviceName);
-
-    LoRa.beginPacket();
-    LoRa.write((uint8_t *) &pairingDataNode, sizeof(pairingDataNode));
-    LoRa.endPacket();
-    LoRa.receive();
-    previousMillis = millis();
-    pairingStatus = PAIR_REQUESTED;
-    Serial.println("Pairing request sent\n");
-    break;
-
-    case PAIR_REQUESTED:
-    // time out to allow receiving response from server
-    currentMillis = millis();
-    if(currentMillis - previousMillis > ACK_TIMEOUT) {
-      previousMillis = currentMillis;
-      // time out expired,  try next channel
-      pairingStatus = PAIR_REQUEST;
-      Serial.println("Request again...");
-    }
-    break;
-
-    case PAIR_PAIRED:
-      // nothing to do here 
-      // Serial.println("Paired");
-    break;
-  }
-  return pairingStatus;
-}  
-
-void pairingTask(void *pvParameters) {
-  while(true){
-    if (autoPairing() == PAIR_PAIRED) {
-      // // Open the file in read mode
-      // // delay(15000);
-      // File file = SD.open("/collection_config");
-      // if (!file) {
-      //   Serial.println("Failed to open file");
-      //   return;
-      // }
-      // size_t fileSize = file.size();
-      // sendFile("/collection_config");
-      // delay(1000000);
-    }
-    delay(1000); // Add a small delay to yield the CPU
-  }
-}
+/******************************************************************
+ *                                                                *
+ *                              Init                              *
+ *                                                                *
+ ******************************************************************/
 
 void lora_slave_init() {
-  NodeStart = millis();
 
-  pairingStatus = PAIR_REQUEST;
 
-  LoRa.onReceive(onReceive);
-  // LoRa.onTxDone(onTxDone);
-  // LoRa_rxMode();
+  LoRa.onReceive(onReceive); // this just increment the data receive counter
   LoRa.receive();
 
-  xTaskCreate(taskReceive, "Data Handler", 10000, (void *)OnDataRecvNode, 1, NULL);
-  xTaskCreate(pairingTask, "Pairing Task", 10000, NULL, 1, NULL);
+  NodeStart = millis();
+  pairingStatus = PAIR_REQUEST;
+  
+  xTaskCreate(taskReceive, "Data Handler", 10000, (void *)OnDataRecvNode, 1, NULL); // register slave handler with receive task
+  xTaskCreate(autoPairing, "Pairing Task", 10000, NULL, 1, NULL);
   xTaskCreate(sendFilesTask, "Send File Task", 10000, NULL, 1, NULL);
 
 }
