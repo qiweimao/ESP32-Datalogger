@@ -90,12 +90,10 @@ bool sendChunk(file_body_message file_body) {
   int attempts = 0;
 
   while (attempts < MAX_ATTEMPS) {
-    Serial.println(file_body.msgType);
-    Serial.println(file_body.len);
-    Serial.println(sizeof(file_body));
+
     sendLoraMessage((uint8_t*)&file_body, sizeof(file_body));
     Serial.print("Sent FILE_BODY, chunk of size: ");
-    Serial.println(file_body.len);Serial.println();
+    Serial.println(file_body.len);
 
     int res = waitForAck();
     if (res == ACK) {
@@ -155,7 +153,6 @@ int waitForAck() {
   unsigned long startTime = millis();
   while (millis() - startTime < ACK_TIMEOUT) {
       if(ack_count){
-        Serial.println("ACK");
         ack_count--;
         return ACK;
       }
