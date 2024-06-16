@@ -62,7 +62,7 @@ void sendFilesTask(void * parameter) {
       send_files_to_gateway("I2C");
       sendFileRequest = false;
     }
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
+    vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }
 

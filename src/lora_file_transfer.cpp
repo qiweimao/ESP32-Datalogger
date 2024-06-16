@@ -34,7 +34,7 @@ bool sendFile(const char* filename) {
     if(!sendChunk(file_body)){
       return false;
     }
-    delay(500);  // Small delay to avoid congestion
+    vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
   }
 
   if(!sendEndOfTransfer()){
@@ -160,7 +160,7 @@ int waitForAck() {
         rej_count--;
         return REJ;
       }
-    delay(1000);
+        vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
   }
   return TIMEOUT;
 }

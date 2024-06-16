@@ -112,6 +112,7 @@ int waitForPollDataAck() {
       poll_data_success = false;
       return true;
     }
+    vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
   }
   return false;
 }
@@ -195,7 +196,7 @@ void send_time_sync_message() {
  *                         Control Loop                           *
  ******************************************************************/
 void gateway_send_control(void *parameter){
-  /* May be I should set the ack array here to initialize? */
+
   while(true){
     unsigned long currentTime = millis();
 
@@ -229,7 +230,7 @@ void gateway_send_control(void *parameter){
     }
 
     // Sleep for a short interval before next check (if needed)
-    delay(1000);
+    vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
   }
 }
 
