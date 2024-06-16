@@ -44,7 +44,7 @@ void lora_init(void){
 
   // Conditionally enable CRC
   if (enableCRC) {
-    // LoRa.enableCrc();
+    LoRa.enableCrc();
     Serial.println("CRC enabled.");
   } else {
     LoRa.disableCrc();
@@ -63,31 +63,16 @@ void lora_init(void){
 
 }
 
-void LoRa_rxMode(){
-  LoRa.receive();                       // set receive mode
-  Serial.println("LoRa in receive mode");
-}
-
-void LoRa_txMode(){
-  LoRa.idle();                          // set standby mode
-}
 
 void sendLoraMessage(uint8_t* data, size_t size) {
-    Serial.println("LoRa send in send mode");
     LoRa.beginPacket();
     LoRa.write(data, size);
     LoRa.endPacket(true);
     LoRa.receive(); // set receive mode
-    Serial.println("LoRa back in receive mode");
 }
 
 void onReceive(int packetSize) {
   dataReceived++;
-}
-
-void onTxDone() {
-  Serial.println("Go back to receive.");
-  LoRa_rxMode();
 }
 
 void taskReceive(void *parameter) {
@@ -99,12 +84,12 @@ void taskReceive(void *parameter) {
   
   while (true) {
     if (dataReceived) {
-      Serial.printf("\ndataReceived = %d\n", dataReceived);
+      // Serial.printf("\ndataReceived = %d\n", dataReceived);
       // int packetSize = LoRa.parsePacket();
       dataReceived--; // Reset the flag for the next packet
       bufferIndex = 0; // Reset the buffer index
 
-      Serial.printf("Bytes available for read: %d\n", LoRa.available());
+      // Serial.printf("Bytes available for read: %d\n", LoRa.available());
       while (LoRa.available() && bufferIndex < 250) {
         buffer[bufferIndex++] = LoRa.read();
       }
