@@ -179,7 +179,8 @@ void ntp_sync() {
 
     bool syncSuccess = false;
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
-      delay(2000); // Wait for the NTP time to be updated
+      
+      vTaskDelay(2000 / portTICK_PERIOD_MS); // Delay for 1 second
 
       // Check synchronization status
       if (sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED) {
@@ -197,9 +198,7 @@ void ntp_sync() {
 
     if (syncSuccess) {
       return; // Exit the function if synchronization is successful
-    } else {
-      Serial.printf("Failed to synchronize with NTP server %s after %d attempts\n", ntpServers[i], maxAttempts);
-    }
+    } 
   }
   // If synchronization fails with all servers
   Serial.println("Failed to synchronize with any NTP server.");
