@@ -76,6 +76,7 @@ void logDataTask(void *parameter) {
         logADCData(i, get_current_time(true));
         lastLogTimeADC[i] = currentTime;
       }
+      vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
     }
 
     // Check and log UART channels
@@ -84,6 +85,7 @@ void logDataTask(void *parameter) {
         logUARTData(i, get_current_time(true));
         lastLogTimeUART[i] = currentTime;
       }
+      vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
     }
 
     // Check and log I2C channels
@@ -92,9 +94,9 @@ void logDataTask(void *parameter) {
         logI2CData(i, get_current_time(true));
         lastLogTimeI2C[i] = currentTime;
       }
+      vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
     }
 
-    vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
   }
 }
 
