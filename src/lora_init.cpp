@@ -68,6 +68,8 @@ void lora_init(void){
 }
 
 void sendLoraMessage(uint8_t* data, size_t size) {
+    uint8_t type = data[0];       // first message byte is the type of message 
+    Serial.print("Lora Message type: "); Serial.println(type);
     LoRa.beginPacket();
     LoRa.write(data, size);
     LoRa.endPacket(true);
