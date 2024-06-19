@@ -82,9 +82,23 @@ void sendFilesTask(void * parameter) {
   while(1){
 
     if(sendFileRequest){
+            
+      unsigned long startTime = millis();  // Start time
+
+      Serial.println("Begin sending files");
       send_files_to_gateway("/data/ADC");
       send_files_to_gateway("/data/UART");
       send_files_to_gateway("/data/I2C");
+
+      unsigned long endTime = millis();  // End time
+      unsigned long elapsedTime = endTime - startTime;  // Calculate elapsed time
+
+      Serial.println("Finished sending files");
+      Serial.print("Time taken: ");
+      Serial.print(elapsedTime);
+      Serial.println(" ms");
+
+      Serial.println("Finished sending files");
       sendFileRequest = false;
     }
 
@@ -152,6 +166,7 @@ void autoPairing(void * parameter){
  ******************************************************************/
 
 void OnDataRecvNode(const uint8_t *incomingData, int len) { 
+  Serial.println("Entered slave onreceive");
 
   // Check if message is for me
   uint8_t buffer[6];
@@ -183,6 +198,7 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       break;
     
     case POLL_DATA:
+      Serial.println("\nPOLL_DATA Received");
       sendFileRequest = true; // a flag to indicate that gateway requested data
       break;
 
