@@ -36,6 +36,8 @@ void handle_pairing(const uint8_t *incomingData){
   oled_print("Pair request: ");
 
   // Check if has correct pairing key
+  Serial.print("Received pairing key: ");Serial.println(pairingDataGateway.pairingKey);
+  Serial.print("System pairing key: ");Serial.println(systemConfig.PAIRING_KEY);
   if(pairingDataGateway.pairingKey == systemConfig.PAIRING_KEY){
     Serial.println("Correct PAIRING_KEY");
     oled_print("send response");
@@ -47,6 +49,8 @@ void handle_pairing(const uint8_t *incomingData){
     Serial.println("Wrong PAIRING_KEY");
     return;
   }
+
+  Serial.println("Begin adding to peer list.");
 
   // If first time pairing, create a dir for this node
   if(addPeerGateway(pairingDataGateway.mac_origin, pairingDataGateway.deviceName)){
@@ -298,7 +302,7 @@ void lora_gateway_init() {
     "Data Receive Handler",
     10000,
     (void*)OnDataRecvGateway,
-    1,
+    3,
     NULL
   );
 

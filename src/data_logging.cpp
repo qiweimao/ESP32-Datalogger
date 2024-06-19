@@ -23,12 +23,15 @@ String createFilename(String type, String timestamp) {
 
 void logADCData(int channel, String timestamp) {
   String filename = createFilename("ADC", timestamp);
+  Serial.println("Opening " + filename);
   File dataFile = SD.open(filename, FILE_WRITE);
+  Serial.println("Opened " + filename);
   if (dataFile) {
     // Simulate reading data from the ADC channel
     String data = timestamp + "," + String(channel) + ",ADC data";
     dataFile.println(data);
     dataFile.close();
+    Serial.println("Closed " + filename);
   } else {
     Serial.println("Failed to open file for writing");
   }

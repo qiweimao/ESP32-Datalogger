@@ -37,6 +37,7 @@ bool addPeerGateway(const uint8_t peer_addr[MAC_ADDR_LENGTH], String DeviceName)
   DeviceName.toCharArray(peers[peerCount].deviceName, DEVICE_NAME_MAX_LENGTH);
   peerCount++;
   savePeersToSD();
+  Serial.println("Peer saved to SD card amd list.");
   return true;
 }
 
