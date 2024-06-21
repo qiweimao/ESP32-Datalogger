@@ -14,8 +14,8 @@ bool enableCRC = true; // Default CRC setting
 SPIClass loraSpi(HSPI);// Separate SPI bus for LoRa to avoid conflict with the SD Card
 
 volatile int dataReceived = 0;// Flag to indicate data received
-int ack_count = 0;// Flag to indicate data received
-int rej_count = 0;// Flag to indicate data received
+int ack_count = 0;// Flag to indicate ACK for data transfer received
+int rej_count = 0;// Flag to indicate REJ for data transfer received
 
 const int maxPacketSize = 256; // Define a maximum packet size
 uint8_t mac_buffer[MAC_ADDR_LENGTH];
