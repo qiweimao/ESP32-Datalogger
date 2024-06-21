@@ -119,9 +119,10 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       handle_file_meta(incomingData);
       break;
     case FILE_END:
-      if(!handle_file_end(incomingData)){
-        poll_success = true;
-      }
+      handle_file_end(incomingData);
+      break;
+    case POLL_COMPLETE:
+      poll_success = true;
       break;
     default:
       Serial.println("Unkown message type.");

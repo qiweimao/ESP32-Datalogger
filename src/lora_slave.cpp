@@ -91,6 +91,12 @@ void sendFilesTask(void * parameter) {
       send_files_to_gateway("/data/UART");
       send_files_to_gateway("/data/I2C");
 
+      // send end of sync signal
+      ack_message poll_complete_msg;
+      memcpy(&poll_complete_msg.mac, MAC_ADDRESS_STA, MAC_ADDR_LENGTH);
+      poll_complete_msg.msgType = POLL_COMPLETE;
+      sendLoraMessage((uint8_t *)&poll_complete_msg, sizeof(poll_complete_msg));
+
       unsigned long endTime = millis();  // End time
       unsigned long elapsedTime = endTime - startTime;  // Calculate elapsed time
 
