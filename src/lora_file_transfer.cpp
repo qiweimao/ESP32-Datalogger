@@ -17,7 +17,39 @@ file_end_message file_end;
 // * Wrapper Function for Sending File
 // **************************************
 
-bool sendFile(const char* filename) {
+String getMetaFilename(const char* filename) {
+  String filenameStr = String(filename);
+  int dotIndex = filenameStr.lastIndexOf('.');
+  if (dotIndex > 0) {
+    filenameStr = filenameStr.substring(0, dotIndex);
+  }
+  return filenameStr + ".meta";
+}
+
+// mode 0 is entire file transfer, mode 1 id for file synchronization
+bool sendFile(const char* filename, int mode) {
+
+  size_t lastSentPosition = 0;
+
+  if (mode == 1) {
+    // File Synchronization
+    String metaFilename = getMetaFilename(filename);
+    File metaFile = SD.open(metaFilename.c_str(), FILE_READ);
+    if (!metaFile) {
+      Serial.println("Meta file does not exist. Creating new meta file.");
+      metaFile = SD.open(metaFilename.c_str(), FILE_WRITE);
+      if (!metaFile) {
+        Serial.println("Failed to create meta file!");
+        return false;
+      }
+      metaFile.println(0); // Write initial position 0 to the meta file
+    } else {
+      // Read the last sent position from the .meta file
+      lastSentPosition = metaFile.parseInt();
+    }
+    metaFile.close();
+  }
+
   File file = SD.open(filename);
   if (!file) {
     Serial.println("Failed to open file!");
@@ -25,22 +57,62 @@ bool sendFile(const char* filename) {
   }
   size_t fileSize = file.size();
   if(!sendMetadata(filename, fileSize)){
+    file.close();
     return false;
   }
 
-  while ((file_body.len = file.read(file_body.data, CHUNK_SIZE)) > 0) {
-    file_body.msgType = FILE_BODY;
-    memcpy(file_body.mac, MAC_ADDRESS_STA, sizeof(file_meta.mac));
-    if(!sendChunk(file_body)){
+  switch (mode)
+  {
+  case 0:
+    // Entire file transfer
+    while ((file_body.len = file.read(file_body.data, CHUNK_SIZE)) > 0) {
+      file_body.msgType = FILE_BODY;
+      memcpy(file_body.mac, MAC_ADDRESS_STA, sizeof(file_meta.mac));
+      if(!sendChunk(file_body)){
+        return false;
+      }
+      vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
+    }
+
+    file.close();
+    break;
+  
+  case 1:
+    // File Synchronization
+    
+    file.seek(lastSentPosition);// Seek to the last sent position in the data file
+
+    // Continue reading and sending data from the last sent position
+    while ((file_body.len = file.read(file_body.data, CHUNK_SIZE)) > 0) {
+      file_body.msgType = FILE_BODY;
+      memcpy(file_body.mac, MAC_ADDRESS_STA, sizeof(file_meta.mac));
+      if(!sendChunk(file_body)){
+        return false;
+      }
+      vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 10 milliseconds
+    }
+
+    int currentPosition = file.position(); // Update the current position
+    file.close();
+
+    // Update the meta file with the last sent position
+    String metaFilename = getMetaFilename(filename);
+    File metaFile = SD.open(metaFilename.c_str(), FILE_WRITE);
+    if (!metaFile) {
+      Serial.println("Failed to open meta file for updating!");
       return false;
     }
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
+    metaFile.seek(0);
+    metaFile.println(currentPosition); // Write the current position to the meta file
+    metaFile.close();
+
+    break;
   }
 
   if(!sendEndOfTransfer()){
     return false;
   }
-  file.close();
+
   Serial.println("File Transfer: SUCCESS");
   return true;
 }
@@ -203,7 +275,7 @@ void handle_file_meta(const uint8_t *incomingData){
   Serial.println(current_file_path);
 
   // Create and open an empty file
-  File file = SD.open(current_file_path, FILE_WRITE);
+  File file = SD.open(current_file_path, FILE_APPEND);
   if (!file) {
     Serial.println("Failed to create file");
     return;

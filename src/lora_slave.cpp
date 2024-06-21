@@ -39,9 +39,9 @@ void send_files_to_gateway(String folderPath) {
     String fileName = file.name();
     if (!file.isDirectory() && fileName.endsWith(".dat")) {
       String fullFilePath = folderPath + "/" + fileName;
-      if (sendFile(fullFilePath.c_str())) {
-        String newFileName = fullFilePath.substring(0, fullFilePath.lastIndexOf('.')) + ".p";
-        SD.rename(fullFilePath, newFileName);
+      if (sendFile(fullFilePath.c_str(), 1)) {// append mode
+        // String newFileName = fullFilePath.substring(0, fullFilePath.lastIndexOf('.')) + ".p";
+        // SD.rename(fullFilePath, newFileName);
       }
       file.close();
       break; // Only send one file from each folder

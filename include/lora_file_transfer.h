@@ -3,7 +3,7 @@
 #define MAX_ATTEMPS 5
 
 // Sender Functions
-bool sendFile(const char* filename);
+bool sendFile(const char* filename, int mode = 0);
 bool sendMetadata(String filename, size_t fileSize);
 bool sendChunk(file_body_message file_body);
 bool sendEndOfTransfer();
