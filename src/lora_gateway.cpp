@@ -71,6 +71,32 @@ void handle_pairing(const uint8_t *incomingData){
       Serial.println("Failed to create directory.");
     }
 
+    // Create subdirectories for ADC, UART, and I2C
+    char subfolderADC[MAX_DEVICE_NAME_LEN + 11]; // 10 for device name + 1 for null terminator
+    char subfolderUART[MAX_DEVICE_NAME_LEN + 11];
+    char subfolderI2C[MAX_DEVICE_NAME_LEN + 11];
+    snprintf(subfolderADC, sizeof(subfolderADC), "%s/ADC", folderPath);
+    snprintf(subfolderUART, sizeof(subfolderUART), "%s/UART", folderPath);
+    snprintf(subfolderI2C, sizeof(subfolderI2C), "%s/I2C", folderPath);
+
+    if (SD.mkdir(subfolderADC)) {
+      Serial.println("ADC subdirectory created successfully.");
+    } else {
+      Serial.println("Failed to create ADC subdirectory.");
+    }
+
+    if (SD.mkdir(subfolderUART)) {
+      Serial.println("UART subdirectory created successfully.");
+    } else {
+      Serial.println("Failed to create UART subdirectory.");
+    }
+
+    if (SD.mkdir(subfolderI2C)) {
+      Serial.println("I2C subdirectory created successfully.");
+    } else {
+      Serial.println("Failed to create I2C subdirectory.");
+    }
+
     Serial.println("End of dir creation.");
   }
 }
@@ -243,6 +269,11 @@ void gateway_scheduled_poll(void *parameter){
 
     unsigned long currentTime = millis();
 
+    if(peerCount == 0){
+      vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
+      continue;
+    }
+
     // Check if it's time to poll data
     if ((currentTime - lastPollTime) >= pollInterval) {
       lastPollTime = currentTime;
@@ -253,7 +284,7 @@ void gateway_scheduled_poll(void *parameter){
 
     // time synchronization (broadcast)
     if ((currentTime - lastTimeSyncTime) >= timeSyncInterval) {
-      lastPollTime = currentTime;
+      lastTimeSyncTime = currentTime;
       send_time_sync_message();
     }
 
