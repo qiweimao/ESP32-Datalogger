@@ -288,12 +288,14 @@ void gateway_scheduled_poll(void *parameter){
       for(int i = 0; i < peerCount; i++){
         poll_data(peers[i].mac);
       }
+      Serial.println("Completed data synchronization.");
     }
 
     // time synchronization (broadcast)
     if ((currentTime - lastTimeSyncTime) >= timeSyncInterval) {
       lastTimeSyncTime = currentTime;
       send_time_sync_message();
+      Serial.println("Completed time synchronization.");
     }
 
     // configuration verification
@@ -302,6 +304,7 @@ void gateway_scheduled_poll(void *parameter){
       for(int i = 0; i < peerCount; i++){
         poll_config(peers[i].mac);
       }
+      Serial.println("Completed config synchronization.");
     }
 
     // Sleep for a short interval before next check (if needed)
@@ -358,7 +361,7 @@ void lora_gateway_init() {
   );
   Serial.println("Added Data send handler");
 
-  poll_data(peers[0].mac);
+  // poll_data(peers[0].mac);
 
   
 }
