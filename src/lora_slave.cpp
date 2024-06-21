@@ -2,6 +2,7 @@
 #include "lora_peer.h"
 #include "lora_file_transfer.h"
 #include "configuration.h"
+#include "utils.h"
 
 
 PairingStatus pairingStatus = NOT_PAIRED;
@@ -168,21 +169,21 @@ void autoPairing(void * parameter){
 void OnDataRecvNode(const uint8_t *incomingData, int len) { 
   Serial.println("Entered slave onreceive");
 
-  // Check if message is for me
+  // Check MAC address if message is for me
   uint8_t buffer[6];
   memcpy(buffer, incomingData + 1, 6);
-  // printMacAddress(buffer);
-  if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
-    Serial.println("This message is not for me.");
-    return;
-  };
 
   // Serial.printf("type = %d\n", type);
   uint8_t type = incomingData[0];
   switch (type) {
 
     case PAIRING:    // we received pairing data from server
-    
+
+      if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
+        Serial.println("This message is not for me.");
+        return;
+      };
+
       Serial.println("\nPAIRING ACK Received");
       memcpy(&pairingDataNode, incomingData, sizeof(pairingDataNode));
       Serial.println("Master MAC:");
@@ -198,24 +199,75 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       break;
     
     case POLL_DATA:
+      if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
+        Serial.println("This message is not for me.");
+        return;
+      };
       Serial.println("\nPOLL_DATA Received");
       sendFileRequest = true; // a flag to indicate that gateway requested data
       break;
 
     case POLL_CONFIG:
+      if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
+        Serial.println("This message is not for me.");
+        return;
+      };
       sendConfigRequest = true; // a flag to indicate that gateway requested data
       break;
     
     case ACK:
+      if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
+        Serial.println("This message is not for me.");
+        return;
+      };
       ack_count++;
       break;
 
     case REJ:
+      if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
+        Serial.println("This message is not for me.");
+        return;
+      };
       rej_count++;
       break;
+    
+    case TIME_SYNC: {
+
+      Serial.println("\nTime Sync Received");
+      time_sync_message msg;
+      memcpy(&msg, incomingData, sizeof(msg));
+
+      // Prepare a struct tm object to hold the received time
+      struct tm timeinfo;
+      timeinfo.tm_year = msg.year - 1900; // years since 1900
+      timeinfo.tm_mon = msg.month - 1;    // months since January (0-11)
+      timeinfo.tm_mday = msg.day;         // day of the month (1-31)
+      timeinfo.tm_hour = msg.hour;        // hours since midnight (0-23)
+      timeinfo.tm_min = msg.minute;       // minutes after the hour (0-59)
+      timeinfo.tm_sec = msg.second;       // seconds after the minute (0-61, allows for leap seconds)
+
+      // Convert struct tm to time_t
+      time_t epoch = mktime(&timeinfo);
+
+      // Update system time using settimeofday
+      struct timeval tv;
+      tv.tv_sec = epoch;
+      tv.tv_usec = 0;
+      if (settimeofday(&tv, nullptr) != 0) {
+        Serial.println("Failed to set system time.");
+      } else {
+        Serial.println("System time updated successfully.");
+      }
+      
+      // update RTC Time
+      external_rtc_sync_ntp();
+
+      break;
+    }
 
     default:
       Serial.println("Unknown message type");
+      break;
   }
 
 }

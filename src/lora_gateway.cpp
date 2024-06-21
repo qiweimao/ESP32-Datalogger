@@ -8,8 +8,8 @@ unsigned long lastPollTime = 0;
 unsigned long lastTimeSyncTime = 0;
 unsigned long lastConfigSyncTime = 0;
 const unsigned long pollInterval = 60000; // 1 minute
-const unsigned long timeSyncInterval = 3600000;
-const unsigned long configSyncInterval = 3600000;
+const unsigned long timeSyncInterval = 60000;
+const unsigned long configSyncInterval = 60000;
 
 bool apiTriggered = false;
 bool peer_ack[MAX_PEERS];
@@ -229,6 +229,14 @@ time_sync_message get_current_time_struct() {
   }
 
   DateTime now = rtc.now();
+
+  if (now.year() < 2000) {
+    Serial.println("RTC read error.");
+    // Handle RTC read failure, return appropriate error message
+    msg.msgType = 0xFF; // Invalid type for error indication
+    return msg;
+  }
+
   msg.msgType = TIME_SYNC; // Define TIME_SYNC
   msg.pairingKey = systemConfig.PAIRING_KEY; // key for network
   msg.year = now.year();
