@@ -122,6 +122,7 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       handle_file_end(incomingData);
       break;
     case POLL_COMPLETE:
+    Serial.println("REceived POLL_COMPLETE");
       poll_success = true;
       break;
     default:
@@ -298,6 +299,8 @@ void gateway_scheduled_poll(void *parameter){
       send_time_sync_message();
       Serial.println("Completed time synchronization.");
     }
+
+    vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
 
     // configuration verification
     if ((currentTime - lastConfigSyncTime) >= configSyncInterval) {
