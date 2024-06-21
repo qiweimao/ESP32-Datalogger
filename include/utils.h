@@ -43,6 +43,7 @@ void wifi_setting_reset();
 void wifi_init();
 String get_current_time(bool getFilename = false);
 void external_rtc_init();
+void external_rtc_sync_ntp();
 void ntp_sync();
 String get_public_ip();
 void spiffs_init();
