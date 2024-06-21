@@ -107,7 +107,7 @@ void sendFilesTask(void * parameter) {
       sendConfigRequest = false;
     }
 
-    vTaskDelay(10 / portTICK_PERIOD_MS);
+    vTaskDelay(1 / portTICK_PERIOD_MS);
   }
 }
 
@@ -154,7 +154,7 @@ void autoPairing(void * parameter){
         break;
     }
 
-    vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
+    vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
 
   }
 } 

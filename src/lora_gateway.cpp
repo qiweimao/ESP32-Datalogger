@@ -142,7 +142,7 @@ int waitForPollAck() {
       poll_success = false;
       return true;
     }
-    vTaskDelay(20 / portTICK_PERIOD_MS); // Delay for 1 second
+    vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
   }
   return false;
 }
@@ -270,7 +270,7 @@ void gateway_scheduled_poll(void *parameter){
     unsigned long currentTime = millis();
 
     if(peerCount == 0){
-      vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
+      vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
       continue;
     }
 
@@ -297,7 +297,7 @@ void gateway_scheduled_poll(void *parameter){
     }
 
     // Sleep for a short interval before next check (if needed)
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
+    vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
   }
 }
 

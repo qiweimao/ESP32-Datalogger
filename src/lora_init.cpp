@@ -108,6 +108,6 @@ void taskReceive(void *parameter) {
       }
 
     }
-    vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
+    vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
   }
 }

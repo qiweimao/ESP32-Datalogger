@@ -71,7 +71,7 @@ bool sendFile(const char* filename, int mode) {
       if(!sendChunk(file_body)){
         return false;
       }
-      vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
+      vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
     }
 
     file.close();
@@ -89,7 +89,7 @@ bool sendFile(const char* filename, int mode) {
       if(!sendChunk(file_body)){
         return false;
       }
-      vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 10 milliseconds
+      vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 10 milliseconds
     }
 
     int currentPosition = file.position(); // Update the current position
@@ -232,7 +232,7 @@ int waitForAck() {
         rej_count--;
         return REJ;
       }
-        vTaskDelay(10 / portTICK_PERIOD_MS); // Delay for 1 second
+        vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
   }
   return TIMEOUT;
 }
