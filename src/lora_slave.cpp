@@ -173,8 +173,9 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
   uint8_t buffer[6];
   memcpy(buffer, incomingData + 1, 6);
 
-  // Serial.printf("type = %d\n", type);
   uint8_t type = incomingData[0];
+  Serial.printf("type = %d\n", type);
+  
   switch (type) {
 
     case PAIRING:    // we received pairing data from server
