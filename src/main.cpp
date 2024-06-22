@@ -38,14 +38,13 @@ void setup() {
   Serial.println("\n*** Connectivity ***");
   wifi_setting_reset();
   wifi_init();
+  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   start_http_server();// start Async server with api-interfaces
   ftp_server_init();
-
-  xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
-
-  log_data_init();
-  Serial.println("\n------------------Boot Completed----------------\n");
   lora_init();
+  log_data_init();
+
+  Serial.println("\n------------------Boot Completed----------------\n");
 }
 
 void loop() {
