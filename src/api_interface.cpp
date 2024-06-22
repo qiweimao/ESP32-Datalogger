@@ -57,12 +57,7 @@ void start_http_server(){
   server.on("/pauseLogging", HTTP_GET, pauseLoggingHandler);
   server.on("/resumeLogging", HTTP_GET, resumeLoggingHandler);
 
-  // POST
-
   server.begin();  // Start server
-  Serial.printf("Server Started @ IP: %s\n", WiFi.localIP().toString().c_str());
-  Serial.printf("Public IP Address: %s\n", get_public_ip().c_str());
-  Serial.printf("ESP Board MAC Address: %s\n", WiFi.macAddress().c_str());
 }
 
 // Function to handle the system configuration update
