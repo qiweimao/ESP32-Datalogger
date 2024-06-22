@@ -36,7 +36,7 @@ void setup() {
   loadDataConfigFromPreferences();
 
   Serial.println("\n*** Connectivity ***");
-  wifi_setting_reset();
+  // wifi_setting_reset();
   wifi_init();
   xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   start_http_server();// start Async server with api-interfaces

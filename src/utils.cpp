@@ -21,17 +21,17 @@ void spiffs_init(){
  *                                                                *
  ******************************************************************/
 
-void wifi_setting_reset(){
-  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); //load the flash-saved configs
-  esp_wifi_init(&cfg); //initiate and allocate wifi resources (does not matter if connection fails)
-  delay(2000); //wait a bit
-  if(esp_wifi_restore()!=ESP_OK){
-    Serial.println("WiFi is not initialized by esp_wifi_init ");
-  }
-  else{
-    Serial.println("Clear WiFi Configurations - OK");
-  }
-}
+// void wifi_setting_reset(){
+//   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); //load the flash-saved configs
+//   esp_wifi_init(&cfg); //initiate and allocate wifi resources (does not matter if connection fails)
+//   delay(2000); //wait a bit
+//   if(esp_wifi_restore()!=ESP_OK){
+//     Serial.println("WiFi is not initialized by esp_wifi_init ");
+//   }
+//   else{
+//     Serial.println("Clear WiFi Configurations - OK");
+//   }
+// }
 
 // Function to connect to WiFi
 void wifi_init(){
@@ -77,22 +77,22 @@ void wifi_init(){
 
 }
 
-String get_public_ip() {
+// String get_public_ip() {
 
-  HTTPClient http;
-  http.begin("https://api.ipify.org");  // Make a GET request to api.ipify.org to get the public IP
-  int httpCode = http.GET();  // Send the request
+//   HTTPClient http;
+//   http.begin("https://api.ipify.org");  // Make a GET request to api.ipify.org to get the public IP
+//   int httpCode = http.GET();  // Send the request
 
-  if (httpCode == HTTP_CODE_OK) {  // Check for a successful response
-    String publicIP = http.getString();
-    return publicIP;
-  } else {
-    Serial.printf("HTTP request failed with error code %d\n", httpCode);
-    return "Error";
-  }
+//   if (httpCode == HTTP_CODE_OK) {  // Check for a successful response
+//     String publicIP = http.getString();
+//     return publicIP;
+//   } else {
+//     Serial.printf("HTTP request failed with error code %d\n", httpCode);
+//     return "Error";
+//   }
 
-  http.end();  // End the request
-}
+//   http.end();  // End the request
+// }
 
 /******************************************************************
  *                                                                *
