@@ -2,12 +2,11 @@
 
 #define MAX_ATTEMPS 5
 
+enum LoRaFileTransferMode { SEND, SYNC };
+
 // Sender Functions
-bool sendFile(const char* filename, int mode = 0);
-bool sendMetadata(String filename, size_t fileSize);
+bool sendFile(const char* filename, LoRaFileTransferMode mode = SEND);
 bool sendChunk(file_body_message file_body);
-bool sendEndOfTransfer();
-int waitForAck();
 
 // Receiver Functions
 void handle_file_meta(const uint8_t *incomingData);

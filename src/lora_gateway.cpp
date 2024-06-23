@@ -115,14 +115,11 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
     case FILE_BODY:
       handle_file_body(incomingData);
       break;
-    case FILE_META:
-      handle_file_meta(incomingData);
-      break;
     case FILE_END:
       handle_file_end(incomingData);
       break;
     case POLL_COMPLETE:
-    Serial.println("REceived POLL_COMPLETE");
+      Serial.println("Received POLL_COMPLETE");
       poll_success = true;
       break;
     default:
@@ -153,8 +150,8 @@ int waitForPollAck() {
 // * Poll Data
 // ***********************
 
-poll_data_message poll_data_struct(uint8_t *mac) {
-  poll_data_message msg;
+signal_message poll_data_struct(uint8_t *mac) {
+  signal_message msg;
   msg.msgType = POLL_DATA;
   memcpy(&msg.mac, mac, MAC_ADDR_LENGTH);
   return msg;
@@ -164,7 +161,7 @@ void poll_data(uint8_t *mac){
   
   if (xSemaphoreTake(xMutex_DataPoll, portMAX_DELAY) == pdTRUE) {
     poll_success = false;
-    poll_data_message msg = poll_data_struct(mac);
+    signal_message msg = poll_data_struct(mac);
     sendLoraMessage((uint8_t *) &msg, sizeof(msg));
     Serial.printf("Sent data poll message to:");
     printMacAddress(mac);Serial.println();Serial.println();
@@ -178,8 +175,8 @@ void poll_data(uint8_t *mac){
 // * Poll Config
 // ***********************
 
-poll_config_message poll_config_struct(uint8_t *mac) {
-  poll_config_message msg;
+signal_message poll_config_struct(uint8_t *mac) {
+  signal_message msg;
   msg.msgType = POLL_CONFIG;
   memcpy(&msg.mac, mac, MAC_ADDR_LENGTH);
   return msg;
@@ -189,7 +186,7 @@ void poll_config(uint8_t *mac){
   
   if (xSemaphoreTake(xMutex_DataPoll, portMAX_DELAY) == pdTRUE) {
     poll_success = false;
-    poll_config_message msg = poll_config_struct(mac);
+    signal_message msg = poll_config_struct(mac);
     sendLoraMessage((uint8_t *) &msg, sizeof(msg));
     Serial.printf("Sent config poll message to:");
     printMacAddress(mac);Serial.println();Serial.println();

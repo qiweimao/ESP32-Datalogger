@@ -10,51 +10,22 @@
 #define CHUNK_SIZE 200  // Size of each chunk
 #define ACK_TIMEOUT 5000  // Timeout for ACK in milliseconds
 #define MAX_DEVICE_NAME_LEN 10  
-#define MAX_FILENAME_LEN 40
+#define MAX_FILENAME_LEN 20
 
 /* File Transfer for Large Data  */
-typedef struct file_meta_message {
+typedef struct file_body_message {
   uint8_t msgType;
   uint8_t mac[MAC_ADDR_LENGTH];
   char filename[MAX_FILENAME_LEN];
   uint32_t filesize;
-} file_meta_message;
-
-typedef struct ack {
-  uint8_t msgType;
-  uint8_t mac[MAC_ADDR_LENGTH];
-} ack_message;
-
-typedef struct reject {
-  uint8_t msgType;
-  uint8_t mac[MAC_ADDR_LENGTH];
-} reject_message;
-
-typedef struct file_body_message {
-  uint8_t msgType;
-  uint8_t mac[MAC_ADDR_LENGTH];
-  uint8_t data[CHUNK_SIZE];
   uint8_t len;
+  uint8_t data[CHUNK_SIZE];
 } file_body_message;
 
-typedef struct file_end_message {
+typedef struct signal {
   uint8_t msgType;
   uint8_t mac[MAC_ADDR_LENGTH];
-} file_end_message;
-
-/* Small Messages */
-typedef struct vm {
-  float freq;
-  float temp;
-} vm;
-
-// three channel vm message
-typedef struct vm_message {
-  uint8_t msgType;
-  uint8_t mac[MAC_ADDR_LENGTH];
-  const char* time;
-  vm vm_data[3];
-} vm_message;
+} signal_message;
 
 typedef struct time_sync_message {
   uint8_t msgType;
@@ -66,23 +37,6 @@ typedef struct time_sync_message {
   uint8_t minute;
   uint8_t second;
 } time_sync_message;
-
-typedef struct poll_data_message {
-  uint8_t msgType;
-  uint8_t mac[MAC_ADDR_LENGTH];
-} poll_data_message;
-
-typedef struct poll_config_message {
-  uint8_t msgType;
-  uint8_t mac[MAC_ADDR_LENGTH];
-} poll_config_message;
-
-typedef struct adc_message {
-  uint8_t msgType;
-  uint8_t mac[MAC_ADDR_LENGTH];
-  const char* time;
-  float adc[16];
-} adc_message;
 
 typedef struct struct_pairing { // this is a broadcast message
   uint8_t msgType;

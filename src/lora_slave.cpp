@@ -40,7 +40,7 @@ void send_files_to_gateway(String folderPath) {
     String fileName = file.name();
     if (!file.isDirectory() && fileName.endsWith(".dat")) {
       String fullFilePath = folderPath + "/" + fileName;
-      if (sendFile(fullFilePath.c_str(), 1)) {// append mode
+      if (sendFile(fullFilePath.c_str(), SYNC)) {// append mode
         // String newFileName = fullFilePath.substring(0, fullFilePath.lastIndexOf('.')) + ".p";
         // SD.rename(fullFilePath, newFileName);
       }
@@ -92,7 +92,7 @@ void sendFilesTask(void * parameter) {
       send_files_to_gateway("/data/I2C");
 
       // send end of sync signal
-      ack_message poll_complete_msg;
+      signal_message poll_complete_msg;
       memcpy(&poll_complete_msg.mac, MAC_ADDRESS_STA, MAC_ADDR_LENGTH);
       poll_complete_msg.msgType = POLL_COMPLETE;
       sendLoraMessage((uint8_t *)&poll_complete_msg, sizeof(poll_complete_msg));
@@ -287,7 +287,6 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
  ******************************************************************/
 
 void lora_slave_init() {
-
 
   LoRa.onReceive(onReceive); // this just increment the data receive counter
   LoRa.receive();
