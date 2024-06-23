@@ -8,9 +8,6 @@
  *                             Sender                             *
  ******************************************************************/
 
-file_body_message file_body;
-signal_message file_end;
-
 // **************************************
 // * Check ACK
 // **************************************
@@ -73,11 +70,13 @@ bool sendFile(const char* filename, LoRaFileTransferMode mode) {
     return false;
   }
 
+  file_body_message file_body;
+
   // Pack Meta Data
   file_body.msgType = FILE_BODY;                                            // msgType
   memcpy(file_body.mac, MAC_ADDRESS_STA, sizeof(file_body.mac));            // MAC
-  memset(file_body.filename, 0, sizeof(file_body.filename));                // filename
-  strncpy(file_body.filename, filename, sizeof(file_body.filename) - 1);
+  memset(file_body.filename, 0, sizeof(file_body.filename));                // filename --> the full file path
+  strncpy(file_body.filename, &filename[5], sizeof(file_body.filename) - 1); //ignore "/data"
   file_body.filename[sizeof(file_body.filename) - 1] = '\0';
   size_t fileSize = file.size();
   file_body.filesize = fileSize;                                            // filesize
@@ -163,21 +162,19 @@ void handle_file_body(const uint8_t *incomingData){
   memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
   Serial.println("Received FILE_BODY.");
 
-  Serial.println(file_body_gateway.filename);
-  File file = SD.open(file_body_gateway.filename, FILE_APPEND);
+  String filepath = "/node/" + getDeviceNameByMac(file_body_gateway.mac)  + file_body_gateway.filename;
+  Serial.println(filepath);
+  File file = SD.open(filepath, FILE_APPEND);
   if (!file) {
     Serial.println("Failed to create file");
     return;
   }
 
   // Write the file_body_gateway structure to the file
-  // Serial.printf("Received %d bytes\n", file_body_gateway.len);
   total_bytes_received += file_body_gateway.len;
-
   bytes_written = file.write((const uint8_t*)&file_body_gateway.data, file_body_gateway.len);
   total_bytes_written += bytes_written;
   Serial.printf("Wrote %d bytes\n", bytes_written);
-  
   file.close();
   
   signal_message ackMessage_gateway;
@@ -187,28 +184,4 @@ void handle_file_body(const uint8_t *incomingData){
 
   Serial.println("Data written to file successfully");
 
-}
-
-// ***********************
-// * Handle File End
-// ***********************
-int handle_file_end(const uint8_t *incomingData){
-  /* Need to verify if node has the permission to end file transmission */
-  // Add if encounters collision, current one to many design assumes node
-  // would not reach this point before getting rejected
-  /* Need to verify if node has the permission to end file transmission */
-  signal_message file_end_gateway;
-  memcpy(&file_end_gateway, incomingData, sizeof(file_end_gateway));
-
-
-  Serial.print("Received FILE_END from:");
-  printMacAddress(file_end_gateway.mac); Serial.println();
-  Serial.print("Total bytes received: "); Serial.println(total_bytes_received);Serial.println();
-
-  signal_message ackMessage_gateway;
-  ackMessage_gateway.msgType = ACK;
-  memcpy(&ackMessage_gateway.mac, file_end_gateway.mac, sizeof(ackMessage_gateway.mac));
-  sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
-
-  return 0; // Indicate success
 }
