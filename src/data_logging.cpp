@@ -16,7 +16,7 @@ unsigned long lastLogTimeI2C[I2C_CHANNEL_COUNT] = {0};
 bool loggingPaused = false;
 
 String createFilename(String type, int channel) {
-  String filename = "/data/" + type + "/channel_" + String(channel) + ".dat";
+  String filename = "/data/" + type + "/" + String(channel) + ".dat";
   Serial.println(filename);
   return filename;
 }
