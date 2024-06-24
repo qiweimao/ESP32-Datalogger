@@ -13,7 +13,7 @@ Preferences preferences;
  ******************************************************************/
 
 void saveSystemConfigToSD() {
-  File file = SD.open("/systemConfig.config", FILE_WRITE);
+  File file = SD.open("/sys.conf", FILE_WRITE);
   if (!file) {
     Serial.println("Failed to open systemConfig.config for writing");
     return;
@@ -24,7 +24,7 @@ void saveSystemConfigToSD() {
 }
 
 void saveDataConfigToSD() {
-  File file = SD.open("/dataConfig.config", FILE_WRITE);
+  File file = SD.open("/data.conf", FILE_WRITE);
   if (!file) {
     Serial.println("Failed to open dataConfig.config for writing");
     return;
