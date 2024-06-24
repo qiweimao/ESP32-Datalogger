@@ -48,7 +48,7 @@ typedef struct struct_pairing { // this is a broadcast message
 
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
 enum MessageType {PAIRING, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA, FILE_META, \
-                  FILE_BODY, FILE_END, ACK, REJ, TIMEOUT, TIME_SYNC, 
+                  FILE_BODY, FILE_SYNC, ACK, REJ, TIMEOUT, TIME_SYNC, 
                   POLL_DATA, POLL_CONFIG, POLL_COMPLETE, APPEND};
 
 extern uint8_t mac_buffer[6];

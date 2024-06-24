@@ -73,7 +73,12 @@ bool sendFile(const char* filename, LoRaFileTransferMode mode) {
   file_body_message file_body;
 
   // Pack Meta Data
-  file_body.msgType = FILE_BODY;                                            // msgType
+  if (mode == SYNC) {
+    file_body.msgType = FILE_SYNC;                                            // msgType
+  }
+  else{
+    file_body.msgType = FILE_BODY;                                            // msgType
+  }
   memcpy(file_body.mac, MAC_ADDRESS_STA, sizeof(file_body.mac));            // MAC
   memset(file_body.filename, 0, sizeof(file_body.filename));                // filename --> the full file path
   strncpy(file_body.filename, filename, sizeof(file_body.filename) - 1);
@@ -160,6 +165,38 @@ void handle_file_body(const uint8_t *incomingData){
   String filepath = "/node/" + getDeviceNameByMac(file_body_gateway.mac)  + file_body_gateway.filename;
   Serial.println(filepath);
   File file = SD.open(filepath, FILE_APPEND);
+  if (!file) {
+    Serial.println("Failed to create file");
+    return;
+  }
+
+  // Write the file_body_gateway structure to the file
+  total_bytes_received += file_body_gateway.len;
+  bytes_written = file.write((const uint8_t*)&file_body_gateway.data, file_body_gateway.len);
+  total_bytes_written += bytes_written;
+  Serial.printf("Wrote %d bytes\n", bytes_written);
+  file.close();
+  
+  signal_message ackMessage_gateway;
+  ackMessage_gateway.msgType = ACK;
+  memcpy(&ackMessage_gateway.mac, file_body_gateway.mac, sizeof(file_body_gateway.mac));
+  sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
+
+  Serial.println("Data written to file successfully");
+
+}
+// ***********************
+// * Handle File Sync
+// ***********************
+void handle_file_sync(const uint8_t *incomingData){
+
+  file_body_message file_body_gateway;
+  memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
+  Serial.println("Received FILE_BODY.");
+
+  String filepath = "/node/" + getDeviceNameByMac(file_body_gateway.mac)  + file_body_gateway.filename;
+  Serial.println(filepath);
+  File file = SD.open(filepath, FILE_WRITE);
   if (!file) {
     Serial.println("Failed to create file");
     return;
