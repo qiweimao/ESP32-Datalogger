@@ -110,7 +110,15 @@ void sendFilesTask(void * parameter) {
     }
 
     if(sendConfigRequest){
+      
       send_config_to_gateway();
+
+      // send end of sync signal
+      signal_message poll_complete_msg;
+      memcpy(&poll_complete_msg.mac, MAC_ADDRESS_STA, MAC_ADDR_LENGTH);
+      poll_complete_msg.msgType = POLL_COMPLETE;
+      sendLoraMessage((uint8_t *)&poll_complete_msg, sizeof(poll_complete_msg));
+
       sendConfigRequest = false;
     }
 

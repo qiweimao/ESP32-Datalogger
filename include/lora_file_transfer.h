@@ -1,6 +1,6 @@
 #include "lora_init.h"
 
-#define MAX_ATTEMPS 5
+#define MAX_ATTEMPS 1 // only attempt at gateway's request
 
 enum LoRaFileTransferMode { SEND, SYNC };
 
