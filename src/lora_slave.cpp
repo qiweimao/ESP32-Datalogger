@@ -63,7 +63,7 @@ void send_config_to_gateway() {
   File file = root.openNextFile();
   while (file) {
     String fileName = file.name();
-    if (!file.isDirectory() && fileName.endsWith(".config")) {
+    if (!file.isDirectory() && fileName.endsWith(".conf")) {
       String fullFilePath = "/" + fileName;
       if (sendFile(fullFilePath.c_str())) {
         Serial.println("Sent config file.");
