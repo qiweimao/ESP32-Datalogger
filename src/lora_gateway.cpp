@@ -71,13 +71,23 @@ void handle_pairing(const uint8_t *incomingData){
       Serial.println("Failed to create directory.");
     }
 
+    // create data folder
+    char datafolderPath[MAX_DEVICE_NAME_LEN + 11]; // 10 for device name + 1 for null terminator
+    snprintf(datafolderPath, sizeof(datafolderPath), "/node/%s/data", deviceFolder);
+    if (SD.mkdir(datafolderPath)) {
+      Serial.println("Directory /data created successfully.");
+    } else {
+      Serial.println("Failed to create /data directory.");
+    }
+
+
     // Create subdirectories for ADC, UART, and I2C
-    char subfolderADC[MAX_DEVICE_NAME_LEN + 11]; // 10 for device name + 1 for null terminator
-    char subfolderUART[MAX_DEVICE_NAME_LEN + 11];
-    char subfolderI2C[MAX_DEVICE_NAME_LEN + 11];
-    snprintf(subfolderADC, sizeof(subfolderADC), "%s/ADC", folderPath);
-    snprintf(subfolderUART, sizeof(subfolderUART), "%s/UART", folderPath);
-    snprintf(subfolderI2C, sizeof(subfolderI2C), "%s/I2C", folderPath);
+    char subfolderADC[MAX_DEVICE_NAME_LEN + 20]; // 10 for device name + 1 for null terminator
+    char subfolderUART[MAX_DEVICE_NAME_LEN + 20];
+    char subfolderI2C[MAX_DEVICE_NAME_LEN + 20];
+    snprintf(subfolderADC, sizeof(subfolderADC), "%s/data/ADC", folderPath);
+    snprintf(subfolderUART, sizeof(subfolderUART), "%s/data/UART", folderPath);
+    snprintf(subfolderI2C, sizeof(subfolderI2C), "%s/data/I2C", folderPath);
 
     if (SD.mkdir(subfolderADC)) {
       Serial.println("ADC subdirectory created successfully.");

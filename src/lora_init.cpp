@@ -1,6 +1,8 @@
 #include "configuration.h"
 #include "lora_init.h"
 #include "lora_peer.h"
+#include "lora_gateway.h"
+#include "lora_slave.h"
 
 //Define the pins used by the transceiver module
 #define LORA_RST 27
@@ -16,15 +18,9 @@ SPIClass loraSpi(HSPI);// Separate SPI bus for LoRa to avoid conflict with the S
 volatile int dataReceived = 0;// Flag to indicate data received
 int ack_count = 0;// Flag to indicate ACK for data transfer received
 int rej_count = 0;// Flag to indicate REJ for data transfer received
-
-const int maxPacketSize = 256; // Define a maximum packet size
-uint8_t mac_buffer[MAC_ADDR_LENGTH];
 uint8_t MAC_ADDRESS_STA[MAC_ADDR_LENGTH];
 
 SemaphoreHandle_t xMutex_DataPoll = NULL; // mutex for LoRa hardware usage
-
-void lora_gateway_init();
-void lora_slave_init();
 
 // Define the type for the callback function
 typedef void (*DataRecvCallback)(const uint8_t *incomingData, int len);

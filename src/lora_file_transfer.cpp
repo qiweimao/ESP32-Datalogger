@@ -76,7 +76,7 @@ bool sendFile(const char* filename, LoRaFileTransferMode mode) {
   file_body.msgType = FILE_BODY;                                            // msgType
   memcpy(file_body.mac, MAC_ADDRESS_STA, sizeof(file_body.mac));            // MAC
   memset(file_body.filename, 0, sizeof(file_body.filename));                // filename --> the full file path
-  strncpy(file_body.filename, &filename[5], sizeof(file_body.filename) - 1); //ignore "/data"
+  strncpy(file_body.filename, filename, sizeof(file_body.filename) - 1);
   file_body.filename[sizeof(file_body.filename) - 1] = '\0';
   size_t fileSize = file.size();
   file_body.filesize = fileSize;                                            // filesize
@@ -152,11 +152,6 @@ size_t bytes_written;
 // * Handle File Body
 // ***********************
 void handle_file_body(const uint8_t *incomingData){
-
-  /* Need to verify if node has the permission to end file transmission */
-  // Add if encounters collision, current one to many design assumes node
-  // would not reach this point before getting rejected
-  /* Need to verify if node has the permission to end file transmission */
 
   file_body_message file_body_gateway;
   memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
