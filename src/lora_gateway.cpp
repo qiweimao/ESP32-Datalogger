@@ -125,8 +125,8 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
     case FILE_BODY:
       handle_file_body(incomingData);
       break;
-    case FILE_SYNC:
-      handle_file_sync(incomingData);
+    case FILE_ENTIRE:
+      handle_file_entire(incomingData);
       break;
     case POLL_COMPLETE:
       Serial.println("Received POLL_COMPLETE");

@@ -74,10 +74,10 @@ bool sendFile(const char* filename, LoRaFileTransferMode mode) {
 
   // Pack Meta Data
   if (mode == SYNC) {
-    file_body.msgType = FILE_SYNC;                                            // msgType
+    file_body.msgType = FILE_BODY;                                            // msgType
   }
   else{
-    file_body.msgType = FILE_BODY;                                            // msgType
+    file_body.msgType = FILE_ENTIRE;                                            // msgType
   }
   memcpy(file_body.mac, MAC_ADDRESS_STA, sizeof(file_body.mac));            // MAC
   memset(file_body.filename, 0, sizeof(file_body.filename));                // filename --> the full file path
@@ -188,7 +188,7 @@ void handle_file_body(const uint8_t *incomingData){
 // ***********************
 // * Handle File Sync
 // ***********************
-void handle_file_sync(const uint8_t *incomingData){
+void handle_file_entire(const uint8_t *incomingData){
 
   file_body_message file_body_gateway;
   memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
