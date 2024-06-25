@@ -165,6 +165,10 @@ void loadDataConfigFromPreferences() {
   } else {
     Serial.println("Data collection configuration not found. Using default values.");
 
+    int adc_channel_count = ADC_CHANNEL_COUNT;
+    int uart_channel_count = UART_CHANNEL_COUNT;
+    int i2c_channel_count = I2C_CHANNEL_COUNT;
+
     // Initialize with default values
     for (int i = 0; i < ADC_CHANNEL_COUNT; i++) {
       dataConfig.adcSensorType[i] = Unknown;

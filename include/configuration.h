@@ -28,6 +28,10 @@ enum SensorType : uint8_t {
 
 struct DataCollectionConfig {
 
+  int adc_channel_count = ADC_CHANNEL_COUNT;
+  int uart_channel_count = UART_CHANNEL_COUNT;
+  int i2c_channel_count = I2C_CHANNEL_COUNT;
+
   SensorType adcSensorType[ADC_CHANNEL_COUNT];  // 16 * 1 byte = 16 bytes
   bool adcEnabled[ADC_CHANNEL_COUNT];           // 16 * 1 byte = 16 bytes
   uint16_t adcInterval[ADC_CHANNEL_COUNT];      // 16 * 2 bytes = 32 bytes

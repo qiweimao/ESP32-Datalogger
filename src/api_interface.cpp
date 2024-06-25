@@ -206,7 +206,7 @@ void getCollectionConfig(AsyncWebServerRequest *request) {
 
   // Adding ADC configurations
   JsonArray adcArray = doc["ADC"].to<JsonArray>();
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i < dataConfig.adc_channel_count; i++) {
     JsonObject adcObj = adcArray.add<JsonObject>();
     adcObj["enabled"] = dataConfig.adcEnabled[i];
     adcObj["interval"] = dataConfig.adcInterval[i];
@@ -214,7 +214,7 @@ void getCollectionConfig(AsyncWebServerRequest *request) {
 
   // Adding UART configurations
   JsonArray uartArray = doc["UART"].to<JsonArray>();
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < dataConfig.uart_channel_count; i++) {
     JsonObject uartObj = uartArray.add<JsonObject>();
     uartObj["sensorType"] = dataConfig.uartSensorType[i];
     uartObj["enabled"] = dataConfig.uartEnabled[i];
@@ -223,7 +223,7 @@ void getCollectionConfig(AsyncWebServerRequest *request) {
 
   // Adding I2C configurations
   JsonArray i2cArray = doc["I2C"].to<JsonArray>();
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < dataConfig.i2c_channel_count; i++) {
     JsonObject i2cObj = i2cArray.add<JsonObject>();
     i2cObj["sensorType"] = dataConfig.i2cSensorType[i];
     i2cObj["enabled"] = dataConfig.i2cEnabled[i];
