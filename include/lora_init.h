@@ -11,6 +11,8 @@
 #define ACK_TIMEOUT 5000  // Timeout for ACK in milliseconds
 #define MAX_DEVICE_NAME_LEN 10  
 #define MAX_FILENAME_LEN 20
+#define MAX_JSON_LEN_1 20
+#define MAX_JSON_LEN_2 10
 
 /* File Transfer for Large Data  */
 typedef struct file_body_message {
@@ -26,6 +28,22 @@ typedef struct signal {
   uint8_t msgType;
   uint8_t mac[MAC_ADDR_LENGTH];
 } signal_message;
+
+typedef struct sysconfig_message {
+  uint8_t msgType;
+  uint8_t mac[MAC_ADDR_LENGTH];
+  char key[MAX_JSON_LEN_1];
+  char value[MAX_JSON_LEN_1];
+} sysconfig_message;
+
+typedef struct collectionconfig_message {
+  uint8_t msgType;
+  uint8_t mac[MAC_ADDR_LENGTH];
+  char type[MAX_JSON_LEN_2];
+  char index[MAX_JSON_LEN_2];
+  char key[MAX_JSON_LEN_2];
+  char value[MAX_JSON_LEN_2];
+} collectionconfig_message;
 
 typedef struct time_sync_message {
   uint8_t msgType;
@@ -49,7 +67,7 @@ typedef struct struct_pairing { // this is a broadcast message
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
 enum MessageType {PAIRING, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA, FILE_META, \
                   FILE_BODY, FILE_ENTIRE, ACK, REJ, TIMEOUT, TIME_SYNC, 
-                  POLL_DATA, POLL_CONFIG, POLL_COMPLETE, APPEND};
+                  POLL_DATA, POLL_CONFIG, POLL_COMPLETE, APPEND, DATA_CONFIG, SYS_CONFIG};
 
 extern uint8_t mac_buffer[6];
 extern uint8_t MAC_ADDRESS_STA[6];
