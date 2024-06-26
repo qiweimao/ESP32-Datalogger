@@ -2,6 +2,8 @@
 #include "utils.h"
 #include "AsyncJson.h"
 #include "configuration.h"
+#include "fileserver.h"
+#include "lora_peer.h"
 
 extern SemaphoreHandle_t logMutex;
 extern bool loggingPaused;
@@ -15,11 +17,8 @@ void serveFavicon(AsyncWebServerRequest *request);
 void serveManifest(AsyncWebServerRequest *request);
 
 // API
-AsyncCallbackJsonWebHandler *updateSysConfig();
-// AsyncCallbackJsonWebHandler *sendSysConfig();
-AsyncCallbackJsonWebHandler *updateCollectionConfig();
-// AsyncCallbackJsonWebHandler *sendCollectionConfig();
 
+// GET
 void serveGateWayMetaData(AsyncWebServerRequest *request);
 void serveVoltageHistory(AsyncWebServerRequest *request);
 void getSysConfig(AsyncWebServerRequest *request);
@@ -27,11 +26,17 @@ void getCollectionConfig(AsyncWebServerRequest *request);
 void getNodeSysConfig(AsyncWebServerRequest *request);
 void getNodeCollectionConfig(AsyncWebServerRequest *request);
 
+// POST
+AsyncCallbackJsonWebHandler *updateSysConfig();
+AsyncCallbackJsonWebHandler *updateCollectionConfig();
+
 void start_http_server(){
   Serial.println("\n*** Starting Server ***");
   ElegantOTA.begin(&server);
 
-  // GET
+// **************************************
+// * GET
+// **************************************
   server.on("/", HTTP_GET, serveIndexPage);
   server.on("/main.d3e2b80d.js", HTTP_GET, serveJS);
   server.on("/main.6a3097a0.css", HTTP_GET, serveCSS);
@@ -43,8 +48,13 @@ void start_http_server(){
 
   // Self Configuration
   server.on("/api/system-configuration", HTTP_GET, getSysConfig);
-  server.addHandler(updateSysConfig());
   server.on("/api/collection-configuration", HTTP_GET, getCollectionConfig);
+
+
+// **************************************
+// * POST
+// **************************************
+  server.addHandler(updateSysConfig());
   server.addHandler(updateCollectionConfig());
 
   // Node Configuration
@@ -56,6 +66,8 @@ void start_http_server(){
   server.on("/reboot", HTTP_GET, serveRebootLogger);// Serve the text file
   server.on("/pauseLogging", HTTP_GET, pauseLoggingHandler);
   server.on("/resumeLogging", HTTP_GET, resumeLoggingHandler);
+
+  fileserver_init();
 
   server.begin();  // Start server
 }
@@ -189,49 +201,166 @@ void serveVoltageHistory(AsyncWebServerRequest *request){
 }
 
 void getSysConfig(AsyncWebServerRequest *request){
-  JsonDocument doc;
-  JsonObject obj1 = doc.add<JsonObject>();
-  obj1["WIFI_SSID"] = systemConfig.WIFI_SSID;
-  obj1["WIFI_PASSWORD"] = systemConfig.WIFI_PASSWORD;
-  obj1["DEVICE_NAME"] = systemConfig.DEVICE_NAME;
-  obj1["LORA_MODE"] = systemConfig.LORA_MODE;
-  obj1["utcOffset"] = systemConfig.utcOffset;
-  obj1["PAIRING_KEY"] = systemConfig.PAIRING_KEY;
-  serveJson(request, doc, 200, false);
+  // Check if the "device" query parameter is present
+  if (request->hasParam("device")) {
+    // Get the value of the "device" query parameter
+    String deviceName = request->getParam("device")->value();
+    
+    // Retrieve the configuration for the specified device
+    if (deviceName == "gateway") {
+      // Example for gateway configuration
+      JsonDocument doc;
+      JsonObject obj1 = doc.to<JsonObject>();
+      obj1["WIFI_SSID"] = systemConfig.WIFI_SSID;
+      obj1["WIFI_PASSWORD"] = systemConfig.WIFI_PASSWORD;
+      obj1["DEVICE_NAME"] = systemConfig.DEVICE_NAME;
+      obj1["LORA_MODE"] = systemConfig.LORA_MODE;
+      obj1["utcOffset"] = systemConfig.utcOffset;
+      obj1["PAIRING_KEY"] = systemConfig.PAIRING_KEY;
+      serveJson(request, doc, 200, false);
+    }
+    else if(isDeviceNameValid(deviceName)){
+      SystemConfig nodeConfig;
+      String filepath = "/node/" + deviceName + "/sys.conf";
+      File file = SD.open(filepath, FILE_READ);
+      if (file) {
+        file.read((uint8_t*) &nodeConfig, sizeof(nodeConfig));
+        file.close();
+
+        // Example for gateway configuration
+        JsonDocument doc;
+        JsonObject obj1 = doc.to<JsonObject>();
+        obj1["WIFI_SSID"] = nodeConfig.WIFI_SSID;
+        obj1["WIFI_PASSWORD"] = nodeConfig.WIFI_PASSWORD;
+        obj1["DEVICE_NAME"] = nodeConfig.DEVICE_NAME;
+        obj1["LORA_MODE"] = nodeConfig.LORA_MODE;
+        obj1["utcOffset"] = nodeConfig.utcOffset;
+        obj1["PAIRING_KEY"] = nodeConfig.PAIRING_KEY;
+        serveJson(request, doc, 200, false);
+
+      }
+      else{
+        request->send(400, "application/json", "{\"error\":\"Configuration File not found.\"}");
+      }
+    } 
+    else {
+      // Handle case where the query parameter is missing
+      request->send(400, "application/json", "{\"error\":\"Invalid Device Name\"}");
+    }
+  }
+  else{
+      request->send(400, "application/json", "{\"error\":\"Device query parameter is missing\"}");
+  }
 }
 
 void getCollectionConfig(AsyncWebServerRequest *request) {
-  JsonDocument doc;
-  Serial.println("Received request for data collection configuring, ");
 
-  // Adding ADC configurations
-  JsonArray adcArray = doc["ADC"].to<JsonArray>();
-  for (int i = 0; i < dataConfig.adc_channel_count; i++) {
-    JsonObject adcObj = adcArray.add<JsonObject>();
-    adcObj["enabled"] = dataConfig.adcEnabled[i];
-    adcObj["interval"] = dataConfig.adcInterval[i];
+  if (request->hasParam("device")) {
+    String deviceName = request->getParam("device")->value();
+    
+    if (deviceName == "gateway") {
+      // Example for gateway configuration
+      JsonDocument doc;
+      Serial.println("Received request for data collection configuring, ");
+
+      JsonArray channels = doc["channelConfig"].to<JsonArray>();
+      JsonObject metaobj = channels.add<JsonObject>();
+      metaobj["ADC_CHANNEL_COUNT"] = dataConfig.adc_channel_count;
+      metaobj["UART_CHANNEL_COUNT"] = dataConfig.uart_channel_count;
+      metaobj["I2C_CHANNEL_COUNT"] = dataConfig.i2c_channel_count;
+
+      // Adding ADC configurations
+      JsonArray adcArray = doc["ADC"].to<JsonArray>();
+      for (int i = 0; i < dataConfig.adc_channel_count; i++) {
+        JsonObject adcObj = adcArray.add<JsonObject>();
+        adcObj["enabled"] = dataConfig.adcEnabled[i];
+        adcObj["interval"] = dataConfig.adcInterval[i];
+      }
+
+      // Adding UART configurations
+      JsonArray uartArray = doc["UART"].to<JsonArray>();
+      for (int i = 0; i < dataConfig.uart_channel_count; i++) {
+        JsonObject uartObj = uartArray.add<JsonObject>();
+        uartObj["sensorType"] = dataConfig.uartSensorType[i];
+        uartObj["enabled"] = dataConfig.uartEnabled[i];
+        uartObj["interval"] = dataConfig.uartInterval[i];
+      }
+
+      // Adding I2C configurations
+      JsonArray i2cArray = doc["I2C"].to<JsonArray>();
+      for (int i = 0; i < dataConfig.i2c_channel_count; i++) {
+        JsonObject i2cObj = i2cArray.add<JsonObject>();
+        i2cObj["sensorType"] = dataConfig.i2cSensorType[i];
+        i2cObj["enabled"] = dataConfig.i2cEnabled[i];
+        i2cObj["interval"] = dataConfig.i2cInterval[i];
+      }
+
+      // Serve the JSON document
+      serveJson(request, doc, 200, false);
+    }
+    else if(isDeviceNameValid(deviceName)){
+      DataCollectionConfig nodeConfig;
+      String filepath = "/node/" + deviceName + "/data.conf";
+      File file = SD.open(filepath, FILE_READ);
+      if (file) {
+        file.read((uint8_t*) &nodeConfig, sizeof(nodeConfig));
+        file.close();
+
+        // Example for gateway configuration
+        JsonDocument doc;
+        Serial.println("Received request for data collection configuring, ");
+
+        JsonArray channels = doc["channelConfig"].to<JsonArray>();
+        JsonObject metaobj = channels.add<JsonObject>();
+        metaobj["ADC_CHANNEL_COUNT"] = nodeConfig.adc_channel_count;
+        metaobj["UART_CHANNEL_COUNT"] = nodeConfig.uart_channel_count;
+        metaobj["I2C_CHANNEL_COUNT"] = nodeConfig.i2c_channel_count;
+
+        // Adding ADC configurations
+        JsonArray adcArray = doc["ADC"].to<JsonArray>();
+        for (int i = 0; i < nodeConfig.adc_channel_count; i++) {
+          JsonObject adcObj = adcArray.add<JsonObject>();
+          adcObj["enabled"] = nodeConfig.adcEnabled[i];
+          adcObj["interval"] = nodeConfig.adcInterval[i];
+        }
+
+        // Adding UART configurations
+        JsonArray uartArray = doc["UART"].to<JsonArray>();
+        for (int i = 0; i < nodeConfig.uart_channel_count; i++) {
+          JsonObject uartObj = uartArray.add<JsonObject>();
+          uartObj["sensorType"] = nodeConfig.uartSensorType[i];
+          uartObj["enabled"] = nodeConfig.uartEnabled[i];
+          uartObj["interval"] = nodeConfig.uartInterval[i];
+        }
+
+        // Adding I2C configurations
+        JsonArray i2cArray = doc["I2C"].to<JsonArray>();
+        for (int i = 0; i < nodeConfig.i2c_channel_count; i++) {
+          JsonObject i2cObj = i2cArray.add<JsonObject>();
+          i2cObj["sensorType"] = nodeConfig.i2cSensorType[i];
+          i2cObj["enabled"] = nodeConfig.i2cEnabled[i];
+          i2cObj["interval"] = nodeConfig.i2cInterval[i];
+        }
+
+        // Serve the JSON document
+        serveJson(request, doc, 200, false);
+      }
+      else{
+        request->send(400, "application/json", "{\"error\":\"Configuration File not found.\"}");
+      }
+    }
+    else {
+      // Handle case where the query parameter is missing
+      request->send(400, "application/json", "{\"error\":\"Invalid Device Name\"}");
+    }
+  } 
+  else{
+      request->send(400, "application/json", "{\"error\":\"Device query parameter is missing\"}");
   }
 
-  // Adding UART configurations
-  JsonArray uartArray = doc["UART"].to<JsonArray>();
-  for (int i = 0; i < dataConfig.uart_channel_count; i++) {
-    JsonObject uartObj = uartArray.add<JsonObject>();
-    uartObj["sensorType"] = dataConfig.uartSensorType[i];
-    uartObj["enabled"] = dataConfig.uartEnabled[i];
-    uartObj["interval"] = dataConfig.uartInterval[i];
-  }
 
-  // Adding I2C configurations
-  JsonArray i2cArray = doc["I2C"].to<JsonArray>();
-  for (int i = 0; i < dataConfig.i2c_channel_count; i++) {
-    JsonObject i2cObj = i2cArray.add<JsonObject>();
-    i2cObj["sensorType"] = dataConfig.i2cSensorType[i];
-    i2cObj["enabled"] = dataConfig.i2cEnabled[i];
-    i2cObj["interval"] = dataConfig.i2cInterval[i];
-  }
 
-  // Serve the JSON document
-  serveJson(request, doc, 200, false);
+
 }
 
 void serveRebootLogger(AsyncWebServerRequest *request) {
