@@ -150,3 +150,14 @@ String getDeviceNameByMac(const uint8_t peer_addr[MAC_ADDR_LENGTH]) {
   }
   return String(""); // Return empty string if not found
 }
+
+// Function to get MAC address by device name
+bool getMacByDeviceName(const String& deviceName, uint8_t* mac) {
+  for (size_t i = 0; i < peerCount; i++) {
+    if (deviceName.equals(peers[i].deviceName)) {
+      memcpy(mac, peers[i].mac, MAC_ADDR_LENGTH); // Copy MAC address to the provided buffer
+      return true; // Return true if device name is found
+    }
+  }
+  return false; // Return false if device name is not found
+}
