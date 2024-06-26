@@ -14,9 +14,5 @@ void start_http_server();
 void serveFile(AsyncWebServerRequest *request, const char* filePath, const char* contentType, int responseCode, bool isGzip);
 void serveJson(AsyncWebServerRequest *request, JsonDocument doc, int responseCode, bool isGzip);
 
-// Logger Control Handler
-void serveRebootLogger(AsyncWebServerRequest *request);
-void pauseLoggingHandler(AsyncWebServerRequest *request);
-void resumeLoggingHandler(AsyncWebServerRequest *request);
 
 #endif
