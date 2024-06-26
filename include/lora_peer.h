@@ -24,5 +24,6 @@ bool compareMacAddress(const uint8_t mac1[MAC_ADDR_LENGTH], const uint8_t mac2[M
 void savePeersToSD();
 void loadPeersFromSD();
 String getDeviceNameByMac(const uint8_t peer_addr[MAC_ADDR_LENGTH]);
+bool isDeviceNameValid(String deviceName);
 
 #endif

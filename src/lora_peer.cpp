@@ -80,6 +80,16 @@ bool checkPeerGateway(const uint8_t peer_addr[MAC_ADDR_LENGTH]) {
   return false;
 }
 
+// Function to check if a peer gateway exists
+bool isDeviceNameValid(String deviceName) {
+  for (size_t i = 0; i < peerCount; i++) {
+    if(deviceName.equals(peers[i].deviceName)){
+      return true;
+    }
+  }
+  return false;
+}
+
 // Function to save peers to SD card
 void savePeersToSD() {
   File file = SD.open(filename, FILE_WRITE);
