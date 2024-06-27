@@ -25,7 +25,7 @@ volatile bool sendConfigRequest = false;
  ******************************************************************/
 
 // **************************************
-// * Send One File From Folder
+// * Send All .dat File From Folder
 // **************************************
 void send_files_to_gateway(String folderPath) {
   File root = SD.open(folderPath);
@@ -45,7 +45,7 @@ void send_files_to_gateway(String folderPath) {
         // SD.rename(fullFilePath, newFileName);
       }
       file.close();
-      break; // Only send one file from each folder
+      // break; // Only send one file from each folder
     }
     file = root.openNextFile();
   }
