@@ -281,6 +281,29 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       break;
     }
 
+    case DATA_CONFIG:{
+      collectionconfig_message msg;
+      memcpy(&msg, incomingData, sizeof(msg));
+
+      String type = msg.type;
+      int index = ((String)msg.index).toInt();
+      String key = msg.key;
+      String value = msg.value;
+      updateDataCollectionConfiguration(type, index, key, value);
+
+      break;
+    }
+
+    case SYS_CONFIG:{
+      sysconfig_message msg;
+      memcpy(&msg, incomingData, sizeof(msg));
+      String key = msg.key;
+      String value = msg.value;
+      update_system_configuration(key, value);
+
+      break;
+    }
+
     default:
       Serial.println("Unknown message type");
       break;
