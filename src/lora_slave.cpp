@@ -223,6 +223,7 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       break;
 
     case POLL_CONFIG:
+      Serial.println("\nPOLL_CONFIG Received");
       if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
         Serial.println("This message is not for me.");
         return;
