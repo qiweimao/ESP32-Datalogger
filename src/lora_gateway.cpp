@@ -11,8 +11,6 @@ const unsigned long pollInterval = 60000; // 1 minute
 const unsigned long timeSyncInterval = 60000;
 const unsigned long configSyncInterval = 60000;
 
-bool apiTriggered = false;
-bool peer_ack[MAX_PEERS];
 bool poll_success = false;
 
 /******************************************************************
@@ -175,7 +173,13 @@ void poll_data(uint8_t *mac){
     sendLoraMessage((uint8_t *) &msg, sizeof(msg));
     Serial.printf("Sent data poll message to:");
     printMacAddress(mac);Serial.println();Serial.println();
-    waitForPollAck(); // check for ack before proceeding to next one
+    if(waitForPollAck()){ // check for ack before proceeding to next one
+      // update last comms time
+      // update status
+      // select peer based on mac address
+      // update lora signal strength -- in handlers
+
+    } 
     xSemaphoreGive(xMutex_DataPoll);
   }
   
@@ -201,6 +205,7 @@ void poll_config(uint8_t *mac){
     Serial.printf("Sent config poll message to:");
     printMacAddress(mac);Serial.println();Serial.println();
     waitForPollAck(); // check for ack before proceeding to next one
+
     xSemaphoreGive(xMutex_DataPoll);
   }
 
@@ -335,7 +340,6 @@ void lora_gateway_init() {
   LoRa.receive();
 
   loadPeersFromSD();
-  memset(peer_ack, false, sizeof(peer_ack));
 
   // Ensure the "data" directory exists
   if (!SD.exists("/node")) {
