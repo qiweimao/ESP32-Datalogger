@@ -90,11 +90,12 @@ bool sendFile(const char* filename, LoRaFileTransferMode mode) {
   file.seek(lastSentPosition);// Seek to the last sent position in the data file
   while ((file_body.len = file.read(file_body.data, CHUNK_SIZE)) > 0) {
     if(!sendChunk(file_body)){
-      return false;
+      break;
     }
+
+    lastSentPosition = file.position(); // Update the current position
     vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
   }
-  int currentPosition = file.position(); // Update the current position
   file.close();
 
   if (mode == SEND) { return true;}
@@ -107,7 +108,7 @@ bool sendFile(const char* filename, LoRaFileTransferMode mode) {
     return false;
   }
   metaFile.seek(0);
-  metaFile.println(currentPosition); // Write the current position to the meta file
+  metaFile.println(lastSentPosition); // Write the current position to the meta file
   metaFile.close();
 
   Serial.println("File Transfer: SUCCESS");
@@ -160,10 +161,10 @@ void handle_file_body(const uint8_t *incomingData){
 
   file_body_message file_body_gateway;
   memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
-  Serial.println("Received FILE_BODY.");
+  Serial.print("Received FILE_BODY for: ");
 
   String filepath = "/node/" + getDeviceNameByMac(file_body_gateway.mac)  + file_body_gateway.filename;
-  Serial.println(filepath);
+  Serial.print(filepath);
   File file = SD.open(filepath, FILE_APPEND);
   if (!file) {
     Serial.println("Failed to create file");
@@ -174,7 +175,7 @@ void handle_file_body(const uint8_t *incomingData){
   total_bytes_received += file_body_gateway.len;
   bytes_written = file.write((const uint8_t*)&file_body_gateway.data, file_body_gateway.len);
   total_bytes_written += bytes_written;
-  Serial.printf("Wrote %d bytes\n", bytes_written);
+  Serial.printf(" Wrote %d bytes. ", bytes_written);
   file.close();
   
   signal_message ackMessage_gateway;
@@ -192,10 +193,10 @@ void handle_file_entire(const uint8_t *incomingData){
 
   file_body_message file_body_gateway;
   memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
-  Serial.println("Received FILE_BODY.");
+  Serial.print("Received FILE_BODY for: ");
 
   String filepath = "/node/" + getDeviceNameByMac(file_body_gateway.mac)  + file_body_gateway.filename;
-  Serial.println(filepath);
+  Serial.print(filepath);
   File file = SD.open(filepath, FILE_WRITE);
   if (!file) {
     Serial.println("Failed to create file");
@@ -206,7 +207,7 @@ void handle_file_entire(const uint8_t *incomingData){
   total_bytes_received += file_body_gateway.len;
   bytes_written = file.write((const uint8_t*)&file_body_gateway.data, file_body_gateway.len);
   total_bytes_written += bytes_written;
-  Serial.printf("Wrote %d bytes\n", bytes_written);
+  Serial.printf(" Wrote %d bytes. ", bytes_written);
   file.close();
   
   signal_message ackMessage_gateway;
