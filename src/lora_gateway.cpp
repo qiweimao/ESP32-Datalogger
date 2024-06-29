@@ -12,6 +12,7 @@ const unsigned long timeSyncInterval = 60000;
 const unsigned long configSyncInterval = 60000;
 
 bool poll_success = false;
+int rssi = 0;
 
 /******************************************************************
  *                                                                *
@@ -128,6 +129,7 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       break;
     case POLL_COMPLETE:
       Serial.println("Received POLL_COMPLETE");
+      rssi = LoRa.packetRssi();
       poll_success = true;
       break;
     default:
@@ -165,8 +167,10 @@ signal_message poll_data_struct(uint8_t *mac) {
   return msg;
 }
 
-void poll_data(uint8_t *mac){
+void poll_data(int index){
   
+  uint8_t * mac = peers[index].mac;
+
   if (xSemaphoreTake(xMutex_DataPoll, portMAX_DELAY) == pdTRUE) {
     poll_success = false;
     signal_message msg = poll_data_struct(mac);
@@ -174,11 +178,11 @@ void poll_data(uint8_t *mac){
     Serial.printf("Sent data poll message to:");
     printMacAddress(mac);Serial.println();Serial.println();
     if(waitForPollAck()){ // check for ack before proceeding to next one
-      // update last comms time
-      // update status
-      // select peer based on mac address
-      // update lora signal strength -- in handlers
-
+      struct tm timeinfo;
+      getLocalTime(&timeinfo);
+      peers[index].lastCommTime = timeinfo;
+      peers[index].status = ONLINE;
+      peers[index].SignalStrength = rssi;
     } 
     xSemaphoreGive(xMutex_DataPoll);
   }
@@ -196,7 +200,9 @@ signal_message poll_config_struct(uint8_t *mac) {
   return msg;
 }
 
-void poll_config(uint8_t *mac){
+void poll_config(int index){
+
+  uint8_t * mac = peers[index].mac;
   
   if (xSemaphoreTake(xMutex_DataPoll, portMAX_DELAY) == pdTRUE) {
     poll_success = false;
@@ -204,8 +210,15 @@ void poll_config(uint8_t *mac){
     sendLoraMessage((uint8_t *) &msg, sizeof(msg));
     Serial.printf("Sent config poll message to:");
     printMacAddress(mac);Serial.println();Serial.println();
-    waitForPollAck(); // check for ack before proceeding to next one
 
+    if(waitForPollAck()){ // check for ack before proceeding to next one
+      struct tm timeinfo;
+      getLocalTime(&timeinfo);
+      peers[index].lastCommTime = timeinfo;
+      peers[index].status = ONLINE;
+      peers[index].SignalStrength = rssi;
+    } 
+    
     xSemaphoreGive(xMutex_DataPoll);
   }
 
@@ -300,7 +313,7 @@ void gateway_scheduled_poll(void *parameter){
     if ((currentTime - lastPollTime) >= pollInterval) {
       lastPollTime = currentTime;
       for(int i = 0; i < peerCount; i++){
-        poll_data(peers[i].mac);
+        poll_data(i);
       }
       Serial.println("Completed data synchronization.");
     }
@@ -318,7 +331,7 @@ void gateway_scheduled_poll(void *parameter){
     if ((currentTime - lastConfigSyncTime) >= configSyncInterval) {
       lastConfigSyncTime = currentTime;
       for(int i = 0; i < peerCount; i++){
-        poll_config(peers[i].mac);
+        poll_config(i);
       }
       Serial.println("Completed config synchronization.");
     }

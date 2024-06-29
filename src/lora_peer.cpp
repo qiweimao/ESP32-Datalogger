@@ -79,6 +79,22 @@ bool checkPeerGateway(const uint8_t peer_addr[MAC_ADDR_LENGTH]) {
   }
   return false;
 }
+// Function to check if a peer gateway exists
+int getIndexByMac(const uint8_t peer_addr[MAC_ADDR_LENGTH]) {
+  for (size_t i = 0; i < peerCount; i++) {
+    bool match = true;
+    for (size_t j = 0; j < MAC_ADDR_LENGTH; j++) {
+      if (peers[i].mac[j] != peer_addr[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) {
+      return i;
+    }
+  }
+  return -1;
+}
 
 // Function to check if a peer gateway exists
 bool isDeviceNameValid(String deviceName) {

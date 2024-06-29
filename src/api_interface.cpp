@@ -23,6 +23,7 @@ void getCollectionConfig(AsyncWebServerRequest *request);
 void getNodeSysConfig(AsyncWebServerRequest *request);
 void getNodeCollectionConfig(AsyncWebServerRequest *request);
 void serveRebootLogger(AsyncWebServerRequest *request);
+void getLoRaNetworkStatus(AsyncWebServerRequest *request);
 
 // POST
 AsyncCallbackJsonWebHandler *updateSysConfig();
@@ -45,6 +46,7 @@ void start_http_server(){
   server.on("/api/voltage-history", HTTP_GET, serveVoltageHistory);
   server.on("/api/system-configuration", HTTP_GET, getSysConfig);
   server.on("/api/collection-configuration", HTTP_GET, getCollectionConfig);
+  server.on("/api/lora-network-status", HTTP_GET, getLoRaNetworkStatus);
   server.on("/reboot", HTTP_GET, serveRebootLogger);// Serve the text file
 
 // **************************************
@@ -289,6 +291,38 @@ void serveRebootLogger(AsyncWebServerRequest *request) {
   delay(100);
   ESP.restart();
 }
+
+// ***********************************
+// * LoRa Network Status
+// ***********************************
+
+void getLoRaNetworkStatus(AsyncWebServerRequest *request) {
+
+  JsonDocument doc;
+
+  JsonArray lora_peers = doc.to<JsonArray>();
+
+  for(int i = 0; i < peerCount; i++){
+    JsonObject obj = lora_peers.add<JsonObject>();
+
+    char buffer[30];
+    struct tm timeinfo =peers[i].lastCommTime;
+    snprintf(buffer, sizeof(buffer), "%04d/%02d/%02d %02d:%02d:%02d", 
+              timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
+              timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+
+    obj["name"] = peers[i].deviceName;
+    obj["lastCommsTime"] = buffer;
+    obj["status"] = peers[i].status;
+    obj["rssi"] = peers[i].SignalStrength;
+  }
+
+  // Serve the JSON document
+  serveJson(request, doc, 200, false);
+
+}
+
+
 
 /******************************************************************
  *                                                                *

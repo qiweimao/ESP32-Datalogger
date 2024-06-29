@@ -32,5 +32,6 @@ void loadPeersFromSD();
 String getDeviceNameByMac(const uint8_t peer_addr[MAC_ADDR_LENGTH]);
 bool isDeviceNameValid(String deviceName);
 bool getMacByDeviceName(const String& deviceName, uint8_t* mac);
+int getIndexByMac(const uint8_t peer_addr[MAC_ADDR_LENGTH]);
 
 #endif
