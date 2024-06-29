@@ -65,7 +65,7 @@ void lora_init(void){
 
 void sendLoraMessage(uint8_t* data, size_t size) {
     uint8_t type = data[0];       // first message byte is the type of message 
-    Serial.print("Lora Message type: "); Serial.println(type);
+    // Serial.print("Lora Message type: "); Serial.println(type);
     LoRa.beginPacket();
     LoRa.write(data, size);
     LoRa.endPacket(true);
@@ -85,18 +85,13 @@ void taskReceive(void *parameter) {
   
   while (true) {
     if (dataReceived) {
-      Serial.printf("\ndataReceived = %d", dataReceived);
       // int packetSize = LoRa.parsePacket();
       dataReceived--; // Reset the flag for the next packet
       bufferIndex = 0; // Reset the buffer index
-
-      // Serial.printf("Bytes available for read: %d\n", LoRa.available());
       
-      Serial.println("Start reading LoRa buffer");
       while (LoRa.available() && bufferIndex < 250) {
         buffer[bufferIndex++] = LoRa.read();
       }
-      Serial.println("Processed LoRa buffer");
 
       // Call the callback function with the example data
       if (callback) {
