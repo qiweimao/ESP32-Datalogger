@@ -31,6 +31,9 @@
 #include "SPI.h"
 #include "api_interface.h"
 #include "ArduinoJson.h"
+#include "AsyncJson.h"
+#include "lora_peer.h"
+
 
 
 //################  VERSION  ###########################################
@@ -56,12 +59,12 @@ void LogOut();
 void Select_File_For_Function(String title, String function);
 void UploadFileSelect();
 void handleFileUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final);
-void fileListJson(AsyncWebServerRequest *request);
+AsyncCallbackJsonWebHandler *fileListJson();
 void File_Rename();
 void Dir(AsyncWebServerRequest * request);
 void Page_Not_Found();
 void Display_System_Info();
-void Directory();
+bool Directory();
 void SelectInput(String Heading, String Command, String Arg_name);
 String ConvBinUnits(int bytes, int resolution);
 String getContentType(String filenametype);
@@ -164,15 +167,12 @@ void fileserver_init() {
 
   // TO add new pages add a handler here, make  sure the HTML Header has a menu item for it, create a page for it using a function. Copy this one, rename it.
   // ##################### NEW PAGE HANDLER ##########################
-  server.on("/file_json", HTTP_GET, [](AsyncWebServerRequest * request) {
-    fileListJson(request); // Build webpage ready for display
-  });
+  // server.on("/file_json", HTTP_GET, [](AsyncWebServerRequest * request) {
+  //   fileListJson(request); // Build webpage ready for display
+  // });
 
-  server.begin();  // Start the server
-  if (!StartupErrors)
-    Serial.println("System started successfully...");
-  else
-    Serial.println("There were problems starting all services...");
+  server.addHandler(fileListJson());
+
   Directory();     // Update the file list
 }
 
@@ -210,7 +210,7 @@ void Dir(AsyncWebServerRequest * request) {
   request->send(200, "text/html", webpage);
 }
 //#############################################################################################
-void Directory() {
+bool Directory() {
   numfiles  = 0; // Reset number of FS files counter
   File root = SD.open("/");
   if (root) {
@@ -225,20 +225,78 @@ void Directory() {
     }
     root.close();
   }
+  else{
+    return false;
+  }
+  return true;
 }
 //#############################################################################################
-void fileListJson(AsyncWebServerRequest *request) {
-  JsonDocument doc;
-  // JsonArray FileArray = doc["File"].to<JsonArray>();
+bool Directory(String folderPath) {
+  numfiles  = 0; // Reset number of FS files counter
+  File root = SD.open(folderPath);
+  if (root) {
+    root.rewindDirectory();
+    File file = root.openNextFile();
+    while (file) { // Now get all the filenames, file types and sizes
+      Filenames[numfiles].filename = (String(file.name()).startsWith("/") ? String(file.name()).substring(1) : file.name());
+      Filenames[numfiles].ftype    = (file.isDirectory() ? "Dir" : "File");
+      Filenames[numfiles].fsize    = ConvBinUnits(file.size(), 1);
+      file = root.openNextFile();
+      numfiles++;
+    }
+    root.close();
 
-  for (int i = 0; i < numfiles; i++) {
-    JsonObject fileObj = doc.add<JsonObject>();
-    fileObj["filename"] = Filenames[i].filename;
-    fileObj["type"] = Filenames[i].ftype;
-    fileObj["size"] = Filenames[i].fsize;
+    return true;
   }
-  serveJson(request, doc, 200, false);
+  else{
+    return false;
+  }
+}
+//#############################################################################################
+AsyncCallbackJsonWebHandler *fileListJson() {
+  return new AsyncCallbackJsonWebHandler("/api/file-list", [](AsyncWebServerRequest *request, JsonVariant &json) {
 
+    if (!request->hasParam("device")){
+      request->send(400, "application/json", "{\"error\":\"Device query parameter \"device\" is missing\"}");
+    }
+
+    if (!request->hasParam("type")){
+      request->send(400, "application/json", "{\"error\":\"Device query parameter \"type\" is missing\"}");
+    }
+
+    String deviceName = request->getParam("device")->value();
+    String type = request->getParam("type")->value();
+
+    Serial.println(deviceName);
+    Serial.println(type);
+    String folderpath;
+
+    if (deviceName == "gateway") {
+      folderpath = "/data/" + type;
+    }
+    else if (isDeviceNameValid(deviceName)){
+      folderpath = "/node/" + deviceName + "/data/" + type;
+    }
+    else{
+      request->send(400, "application/json", "{\"error\":\"Invalid remote station name\"}");
+    }
+
+    Serial.println(folderpath);
+    if (!Directory(folderpath)){ // failed to open directory
+      request->send(400, "application/json", "{\"error\":\"Failed to open directory\"}");
+    }
+
+    JsonObject jsonObj = json.as<JsonObject>();
+
+    JsonDocument doc;
+    for (int i = 0; i < numfiles; i++) {
+      JsonObject fileObj = doc.add<JsonObject>();
+      fileObj["filename"] = Filenames[i].filename;
+      fileObj["type"] = Filenames[i].ftype;
+      fileObj["size"] = Filenames[i].fsize;
+    }
+    serveJson(request, doc, 200, false);
+  });
 }
 //#############################################################################################
 void UploadFileSelect() {
