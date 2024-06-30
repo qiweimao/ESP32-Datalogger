@@ -254,26 +254,37 @@ void getCollectionConfig(AsyncWebServerRequest *request) {
   JsonArray adcArray = doc["ADC"].to<JsonArray>();
   for (int i = 0; i < config.adc_channel_count; i++) {
     JsonObject adcObj = adcArray.add<JsonObject>();
+    adcObj["channel"] = i;
+    adcObj["sensor"] = config.adcSensorType[i];
     adcObj["enabled"] = config.adcEnabled[i];
     adcObj["interval"] = config.adcInterval[i];
+    adcObj["value"] = config.adcValue[i];
+    adcObj["time"] = convertTMtoString(config.adcTime[i]);
+
   }
 
   // Adding UART configurations
   JsonArray uartArray = doc["UART"].to<JsonArray>();
   for (int i = 0; i < config.uart_channel_count; i++) {
     JsonObject uartObj = uartArray.add<JsonObject>();
-    uartObj["sensorType"] = config.uartSensorType[i];
+    uartObj["channel"] = i;
+    uartObj["sensor"] = config.uartSensorType[i];
     uartObj["enabled"] = config.uartEnabled[i];
     uartObj["interval"] = config.uartInterval[i];
+    uartObj["value"] = config.uartValue[i];
+    uartObj["time"] = convertTMtoString(config.uartTime[i]);
   }
 
   // Adding I2C configurations
   JsonArray i2cArray = doc["I2C"].to<JsonArray>();
   for (int i = 0; i < config.i2c_channel_count; i++) {
     JsonObject i2cObj = i2cArray.add<JsonObject>();
-    i2cObj["sensorType"] = config.i2cSensorType[i];
+    i2cObj["channel"] = i;
+    i2cObj["sensor"] = config.i2cSensorType[i];
     i2cObj["enabled"] = config.i2cEnabled[i];
     i2cObj["interval"] = config.i2cInterval[i];
+    i2cObj["value"] = config.i2cValue[i];
+    i2cObj["time"] = convertTMtoString(config.i2cTime[i]);
   }
 
   // Serve the JSON document
