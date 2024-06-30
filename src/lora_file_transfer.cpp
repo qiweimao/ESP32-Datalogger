@@ -41,7 +41,8 @@ String getMetaFilename(const char* filename) {
   return filenameStr + ".meta";
 }
 
-// mode 0 is entire file transfer, mode 1 id for file synchronization
+// mode SEND: entire file transfer
+// mode SYNC: file synchronization
 bool sendFile(const char* filename, LoRaFileTransferMode mode) {
 
   size_t lastSentPosition = 0;
@@ -93,6 +94,10 @@ bool sendFile(const char* filename, LoRaFileTransferMode mode) {
       break;
     }
 
+    // change the msgType back to SYNC to append to first chunk later
+    if (mode == SEND) {
+      file_body.msgType = FILE_BODY;
+    }
     lastSentPosition = file.position(); // Update the current position
     vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
   }
