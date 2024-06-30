@@ -47,6 +47,13 @@ void logADCData(int channel, String timestamp) {
   } else {
     Serial.println("Failed to open file for writing");
   }
+
+  // update latest data in dataconfig
+  struct tm timeinfo;
+  getLocalTime(&timeinfo);
+  dataConfig.adcValue[channel] = random();
+  dataConfig.adcTime[channel] = timeinfo;
+
 }
 
 void logUARTData(int channel, String timestamp) {
@@ -73,6 +80,13 @@ void logUARTData(int channel, String timestamp) {
   } else {
     Serial.println("Failed to open file for writing");
   }
+
+  // update latest data in dataconfig
+  struct tm timeinfo;
+  getLocalTime(&timeinfo);
+  dataConfig.uartValue[channel] = random();
+  dataConfig.uartTime[channel] = timeinfo;
+
 }
 
 void logI2CData(int channel, String timestamp) {
@@ -101,6 +115,13 @@ void logI2CData(int channel, String timestamp) {
   } else {
     Serial.println("Failed to open file for writing");
   }
+
+  // update latest data in dataconfig
+  struct tm timeinfo;
+  getLocalTime(&timeinfo);
+  dataConfig.i2cValue[channel] = random();
+  dataConfig.i2cTime[channel] = timeinfo;
+
 }
 
 void logDataTask(void *parameter) {
