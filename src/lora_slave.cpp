@@ -40,7 +40,7 @@ void send_files_to_gateway(String folderPath) {
     String fileName = file.name();
     if (!file.isDirectory() && fileName.endsWith(".dat")) {
       String fullFilePath = folderPath + "/" + fileName;
-      if (sendFile(fullFilePath.c_str(), SYNC)) {// append mode
+      if (sendLoRaFile(fullFilePath.c_str(), SYNC)) {// append mode
         // String newFileName = fullFilePath.substring(0, fullFilePath.lastIndexOf('.')) + ".p";
         // SD.rename(fullFilePath, newFileName);
       }
@@ -53,26 +53,16 @@ void send_files_to_gateway(String folderPath) {
 }
 
 void send_config_to_gateway() {
-  File root = SD.open("/");
 
-  if (!root) {
-    Serial.println("Failed to open directory: /");
-    return;
+  Serial.println("=== data configuration ===");
+  if(sendLoRaData((uint8_t *) &dataConfig, sizeof(dataConfig), "/data.conf")){
+    Serial.println("Sent data collection configuration to gateway.");
+  }
+  Serial.println("=== sys configuration ===");
+  if(sendLoRaData((uint8_t *) &systemConfig, sizeof(systemConfig), "/sys.conf")){
+    Serial.println("Sent sys collection configuration to gateway.");
   }
 
-  File file = root.openNextFile();
-  while (file) {
-    String fileName = file.name();
-    if (!file.isDirectory() && fileName.endsWith(".conf")) {
-      String fullFilePath = "/" + fileName;
-      if (sendFile(fullFilePath.c_str(), SEND)) {
-        Serial.println("Sent config file.");
-      }
-      file.close();
-    }
-    file = root.openNextFile();
-  }
-  root.close();
 }
 
 // **************************************
@@ -86,9 +76,11 @@ void sendFilesTask(void * parameter) {
             
       unsigned long startTime = millis();  // Start time
 
-      Serial.println("Begin sending files");
+      Serial.println("=== ADC ===");
       send_files_to_gateway("/data/ADC");
+      Serial.println("=== UART ===");
       send_files_to_gateway("/data/UART");
+      Serial.println("=== I2C ===");
       send_files_to_gateway("/data/I2C");
 
       // send end of sync signal
@@ -181,14 +173,12 @@ void autoPairing(void * parameter){
  ******************************************************************/
 
 void OnDataRecvNode(const uint8_t *incomingData, int len) { 
-  Serial.println("Entered slave onreceive");
 
   // Check MAC address if message is for me
   uint8_t buffer[6];
   memcpy(buffer, incomingData + 1, 6);
 
   uint8_t type = incomingData[0];
-  Serial.printf("type = %d\n", type);
   
   switch (type) {
 
@@ -218,7 +208,7 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
         Serial.println("This message is not for me.");
         return;
       };
-      Serial.println("\nPOLL_DATA Received");
+      Serial.println("POLL_DATA Received");
       sendFileRequest = true; // a flag to indicate that gateway requested data
       break;
 
@@ -249,7 +239,7 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
     
     case TIME_SYNC: {
 
-      Serial.println("\nTime Sync Received");
+      Serial.print("\nTime Sync Received. ");
       time_sync_message msg;
       memcpy(&msg, incomingData, sizeof(msg));
 
