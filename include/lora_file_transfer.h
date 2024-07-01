@@ -5,7 +5,8 @@
 enum LoRaFileTransferMode { SEND, SYNC };
 
 // Sender Functions
-bool sendFile(const char* filename, LoRaFileTransferMode mode = SEND);
+bool sendLoRaFile(const char* filename, LoRaFileTransferMode mode = SEND);
+bool sendLoRaData(uint8_t *data, size_t size, const char *filename);
 bool sendChunk(file_body_message file_body);
 
 // Receiver Functions

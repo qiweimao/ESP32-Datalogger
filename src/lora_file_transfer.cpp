@@ -28,7 +28,49 @@ int waitForAck() {
 }
 
 // **************************************
-// * Wrapper Function for Sending File
+// * Send Data From RAM
+// **************************************
+// mode SEND: entire file transfer
+// mode SYNC: file synchronization
+bool sendLoRaData(uint8_t *data, size_t size, const char *filename) {
+  
+    file_body_message file_body;
+    file_body.msgType = FILE_ENTIRE; // msgType
+
+    memcpy(file_body.mac, MAC_ADDRESS_STA, sizeof(file_body.mac));          // MAC
+    memset(file_body.filename, 0, sizeof(file_body.filename));              // filename --> the full file path
+    strncpy(file_body.filename, filename, sizeof(file_body.filename) - 1);
+    file_body.filename[sizeof(file_body.filename) - 1] = '\0';
+    file_body.filesize = size; // filesize
+
+    size_t offset = 0;
+
+    // Pack File Body
+    while (offset < size) {
+
+      // Determine the length of data to copy
+      file_body.len = (size - offset) < CHUNK_SIZE ? (size - offset) : CHUNK_SIZE;
+
+      // Copy the data chunk into file_body.data
+      memcpy(file_body.data, data + offset, file_body.len);
+
+      // Send the data chunk
+      if (!sendChunk(file_body)) {
+          Serial.println("File Transfer: FAILED");
+          return false;
+      }
+
+      // Update offset and msgType for the next chunk
+      offset += file_body.len;
+      file_body.msgType = FILE_BODY;
+    }
+
+    Serial.println("File Transfer: SUCCESS");
+    return true;
+}
+
+// **************************************
+// * Send File on SD Card
 // **************************************
 
 // Get Current Position from Meta File
@@ -43,7 +85,9 @@ String getMetaFilename(const char* filename) {
 
 // mode SEND: entire file transfer
 // mode SYNC: file synchronization
-bool sendFile(const char* filename, LoRaFileTransferMode mode) {
+bool sendLoRaFile(const char* filename, LoRaFileTransferMode mode) {
+
+  Serial.printf("sendLoRaFile %s ", filename);
 
   size_t lastSentPosition = 0;
   if (mode == SYNC) {
@@ -63,6 +107,7 @@ bool sendFile(const char* filename, LoRaFileTransferMode mode) {
       lastSentPosition = metaFile.parseInt();
     }
     metaFile.close();
+    Serial.println("Meta file loaded.");
   }
 
   File file = SD.open(filename);
@@ -129,12 +174,11 @@ bool sendChunk(file_body_message file_body) {
   while (attempts < MAX_ATTEMPS) {
 
     sendLoraMessage((uint8_t*)&file_body, sizeof(file_body));
-    Serial.print("Sent FILE_BODY, chunk of size: ");
-    Serial.println(file_body.len);
+    Serial.print("Sent FILE_BODY, chunk of size: "); Serial.println(file_body.len);
 
     int res = waitForAck();
     if (res == ACK) {
-      Serial.println("Received ACK");
+      // Serial.println("Received ACK");
       return true;
     } else {
       if (res == REJ){
