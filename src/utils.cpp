@@ -157,7 +157,7 @@ void external_rtc_sync_ntp(){
   if (getLocalTime(&timeinfo)) {
     DateTime ntpTime = tmToDateTime(timeinfo);
     rtc.adjust(ntpTime);
-    Serial.println("\nDS1307 RTC synchronized with NTP time.");
+    Serial.println("DS1307 RTC synchronized with NTP time.");
     DateTime now = rtc.now();
     Serial.print("RTC time: ");
     Serial.println(get_current_time(false));    return; // Exit the function if synchronization is successful
@@ -238,9 +238,9 @@ String get_current_time(bool getFilename) {
 
 String convertTMtoString(struct tm timeinfo){
   char buffer[30];
-  snprintf(buffer, sizeof(buffer), "%04d/%02d/%02d %02d:%02d:%02d", 
+  snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02d%+03d:00", 
             timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
-            timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+            timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, systemConfig.utcOffset);
   return String(buffer);
 }
 
