@@ -256,12 +256,19 @@ bool Directory(String folderPath) {
 AsyncCallbackJsonWebHandler *fileListJson() {
   return new AsyncCallbackJsonWebHandler("/api/file-list", [](AsyncWebServerRequest *request, JsonVariant &json) {
 
+    Serial.println("Received file list request");
+
     if (!request->hasParam("device")){
+      Serial.println("no device specified");
       request->send(400, "application/json", "{\"error\":\"Device query parameter \"device\" is missing\"}");
+      return;
     }
+    Serial.println("Checked device parameters");
 
     if (!request->hasParam("type")){
+      Serial.println("no type specified");
       request->send(400, "application/json", "{\"error\":\"Device query parameter \"type\" is missing\"}");
+      return;
     }
 
     String deviceName = request->getParam("device")->value();
@@ -279,11 +286,13 @@ AsyncCallbackJsonWebHandler *fileListJson() {
     }
     else{
       request->send(400, "application/json", "{\"error\":\"Invalid remote station name\"}");
+      return;
     }
 
     Serial.println(folderpath);
     if (!Directory(folderpath)){ // failed to open directory
       request->send(400, "application/json", "{\"error\":\"Failed to open directory\"}");
+      return;
     }
 
     JsonObject jsonObj = json.as<JsonObject>();
