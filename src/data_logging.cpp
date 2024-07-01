@@ -17,13 +17,13 @@ bool loggingPaused = false;
 
 String createFilename(String type, int channel) {
   String filename = "/data/" + type + "/" + String(channel) + ".dat";
-  Serial.println(filename);
+  Serial.print(filename);
   return filename;
 }
 
 void logADCData(int channel, String timestamp) {
   String filename = createFilename("ADC", channel);
-  Serial.println("Opening " + filename);
+  Serial.print(" Opened.");
   if (!SD.exists(filename)) {
     File dataFile = SD.open(filename, FILE_WRITE);
     if (dataFile) {
@@ -42,8 +42,8 @@ void logADCData(int channel, String timestamp) {
     unsigned long endTime = millis(); // End timing
     Serial.print("Time taken for append operation: ");
     Serial.print(endTime - startTime);
-    Serial.println(" ms");
-    Serial.println("Closed " + filename);
+    Serial.print(" ms.");
+    Serial.println(" Closed ");
   } else {
     Serial.println("Failed to open file for writing");
   }
@@ -51,7 +51,7 @@ void logADCData(int channel, String timestamp) {
   // update latest data in dataconfig
   struct tm timeinfo;
   getLocalTime(&timeinfo);
-  dataConfig.adcValue[channel] = random();
+  dataConfig.adcValue[channel] = random(0, 10000);
   dataConfig.adcTime[channel] = timeinfo;
 
 }
@@ -84,7 +84,7 @@ void logUARTData(int channel, String timestamp) {
   // update latest data in dataconfig
   struct tm timeinfo;
   getLocalTime(&timeinfo);
-  dataConfig.uartValue[channel] = random();
+  dataConfig.uartValue[channel] = random(0, 10000);
   dataConfig.uartTime[channel] = timeinfo;
 
 }
@@ -119,7 +119,7 @@ void logI2CData(int channel, String timestamp) {
   // update latest data in dataconfig
   struct tm timeinfo;
   getLocalTime(&timeinfo);
-  dataConfig.i2cValue[channel] = random();
+  dataConfig.i2cValue[channel] = random(0, 10000);
   dataConfig.i2cTime[channel] = timeinfo;
 
 }
