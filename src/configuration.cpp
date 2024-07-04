@@ -137,25 +137,12 @@ void printDataConfig() {
   Serial.println("\n*** Data Collection Configuration ***");
 
   // Print ADC configuration
-  for (int i = 0; i < ADC_CHANNEL_COUNT; i++) {
-    Serial.printf("ADC Channel %d: Enabled=%s, Interval=%d, SensorType=%d\n",
-                  i, dataConfig.adcEnabled[i] ? "true" : "false",
-                  dataConfig.adcInterval[i], dataConfig.adcSensorType[i]);
+  for (int i = 0; i < CHANNEL_COUNT; i++) {
+    Serial.printf("Sensor %d Pin %d: Enabled=%s, Interval=%d, SensorType=%d\n",
+                  i, dataConfig.Pin[i],dataConfig.Enabled[i] ? "true" : "false",
+                  dataConfig.Interval[i], dataConfig.Type[i]);
   }
 
-  // Print UART configuration
-  for (int i = 0; i < UART_CHANNEL_COUNT; i++) {
-    Serial.printf("UART Channel %d: Enabled=%s, Interval=%d, SensorType=%d\n",
-                  i, dataConfig.uartEnabled[i] ? "true" : "false",
-                  dataConfig.uartInterval[i], dataConfig.uartSensorType[i]);
-  }
-
-  // Print I2C configuration
-  for (int i = 0; i < I2C_CHANNEL_COUNT; i++) {
-    Serial.printf("I2C Channel %d: Enabled=%s, Interval=%d, SensorType=%d\n",
-                  i, dataConfig.i2cEnabled[i] ? "true" : "false",
-                  dataConfig.i2cInterval[i], dataConfig.i2cSensorType[i]);
-  }
 }
 
 void loadDataConfigFromPreferences() {
@@ -165,27 +152,14 @@ void loadDataConfigFromPreferences() {
   } else {
     Serial.println("Data collection configuration not found. Using default values.");
 
-    int adc_channel_count = ADC_CHANNEL_COUNT;
-    int uart_channel_count = UART_CHANNEL_COUNT;
-    int i2c_channel_count = I2C_CHANNEL_COUNT;
+    int channel_count = CHANNEL_COUNT;
 
     // Initialize with default values
-    for (int i = 0; i < ADC_CHANNEL_COUNT; i++) {
-      dataConfig.adcSensorType[i] = Unknown;
-      dataConfig.adcEnabled[i] = false;
-      dataConfig.adcInterval[i] = 60;
-    }
-
-    for (int i = 0; i < UART_CHANNEL_COUNT; i++) {
-      dataConfig.uartSensorType[i] = VibratingWire;
-      dataConfig.uartEnabled[i] = false;
-      dataConfig.uartInterval[i] = 60;
-    }
-
-    for (int i = 0; i < I2C_CHANNEL_COUNT; i++) {
-      dataConfig.i2cSensorType[i] = Barometric;
-      dataConfig.i2cEnabled[i] = false;
-      dataConfig.i2cInterval[i] = 60;
+    for (int i = 0; i < CHANNEL_COUNT; i++) {
+      dataConfig.Pin[i] = 0;
+      dataConfig.Type[i] = Unknown;
+      dataConfig.Enabled[i] = false;
+      dataConfig.Interval[i] = 60;
     }
 
     // Save default configuration to preferences
@@ -198,55 +172,32 @@ void loadDataConfigFromPreferences() {
   printDataConfig();
 }
 
-void updateDataCollectionConfiguration(String type, int index, String key, String value) {
+void updateDataCollectionConfiguration(int index, String key, String value) {
   Serial.println("Updating data collection configuration...");
 
-  if (type.equals("ADC") && index >= 0 && index < 16) {
-    if (key.equals("enabled")) {
-      dataConfig.adcEnabled[index] = (value.equals("true"));
-      Serial.println(value.equals("true"));
-      Serial.println("Updated adc to true");
-    } else if (key.equals("interval")) {
-      dataConfig.adcInterval[index] = value.toInt();
-    } else if (key.equals("sensorType")) {
-      if (value.equals("Unknown")) {
-        dataConfig.adcSensorType[index] = Unknown;
-      } else if (value.equals("VibratingWire")) {
-        dataConfig.adcSensorType[index] = VibratingWire;
-      } else if (value.equals("Barometric")) {
-        dataConfig.adcSensorType[index] = Barometric;
-      }
-    }
-  } else if (type.equals("UART") && index >= 0 && index < 2) {
-    if (key.equals("enabled")) {
-      dataConfig.uartEnabled[index] = (value.equals("true"));
-    } else if (key.equals("interval")) {
-      dataConfig.uartInterval[index] = value.toInt();
-    } else if (key.equals("sensorType")) {
-      if (value.equals("Unknown")) {
-        dataConfig.uartSensorType[index] = Unknown;
-      } else if (value.equals("VibratingWire")) {
-        dataConfig.uartSensorType[index] = VibratingWire;
-      } else if (value.equals("Barometric")) {
-        dataConfig.uartSensorType[index] = Barometric;
-      }
-    }
-  } else if (type.equals("I2C") && index >= 0 && index < 5) {
-    if (key.equals("enabled")) {
-      dataConfig.i2cEnabled[index] = (value.equals("true"));
-    } else if (key.equals("interval")) {
-      dataConfig.i2cInterval[index] = value.toInt();
-    } else if (key.equals("sensorType")) {
-      if (value.equals("Unknown")) {
-        dataConfig.i2cSensorType[index] = Unknown;
-      } else if (value.equals("VibratingWire")) {
-        dataConfig.i2cSensorType[index] = VibratingWire;
-      } else if (value.equals("Barometric")) {
-        dataConfig.i2cSensorType[index] = Barometric;
-      }
-    }
-  } else {
+  if (!( index >= 0 && index < 16)){
     Serial.println("Invalid type or index");
+  }
+
+  if (key.equals("enabled")) {
+    dataConfig.Enabled[index] = (value.equals("true"));
+    Serial.println(value.equals("true"));
+    Serial.println("Updated adc to true");
+  }
+  else if (key.equals("interval")) {
+    dataConfig.Interval[index] = value.toInt();
+  }
+  else if (key.equals("Pin")) {
+    dataConfig.Pin[index] = value.toInt();
+  }
+  else if (key.equals("Type")) {
+    if (value.equals("Unknown")) {
+      dataConfig.Type[index] = Unknown;
+    } else if (value.equals("VibratingWire")) {
+      dataConfig.Type[index] = VibratingWire;
+    } else if (value.equals("Barometric")) {
+      dataConfig.Type[index] = Barometric;
+    }
   }
 
   // Save updated configuration
