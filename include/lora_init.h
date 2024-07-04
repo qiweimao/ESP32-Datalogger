@@ -39,7 +39,6 @@ typedef struct sysconfig_message {
 typedef struct collectionconfig_message {
   uint8_t msgType;
   uint8_t mac[MAC_ADDR_LENGTH];
-  char type[MAX_JSON_LEN_2];
   char index[MAX_JSON_LEN_2];
   char key[MAX_JSON_LEN_2];
   char value[MAX_JSON_LEN_2];
