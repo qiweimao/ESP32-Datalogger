@@ -76,12 +76,8 @@ void sendFilesTask(void * parameter) {
             
       unsigned long startTime = millis();  // Start time
 
-      Serial.println("=== ADC ===");
-      send_files_to_gateway("/data/ADC");
-      Serial.println("=== UART ===");
-      send_files_to_gateway("/data/UART");
-      Serial.println("=== I2C ===");
-      send_files_to_gateway("/data/I2C");
+      Serial.println("=== send files in folder /data ===");
+      send_files_to_gateway("/data");
 
       // send end of sync signal
       signal_message poll_complete_msg;
@@ -275,11 +271,10 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       collectionconfig_message msg;
       memcpy(&msg, incomingData, sizeof(msg));
 
-      String type = msg.type;
       int index = ((String)msg.index).toInt();
       String key = msg.key;
       String value = msg.value;
-      updateDataCollectionConfiguration(type, index, key, value);
+      updateDataCollectionConfiguration(index, key, value);
 
       break;
     }

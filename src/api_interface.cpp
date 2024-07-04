@@ -244,47 +244,17 @@ void getCollectionConfig(AsyncWebServerRequest *request) {
 
   JsonDocument doc;
 
-  JsonArray channels = doc["channelConfig"].to<JsonArray>();
-  JsonObject metaobj = channels.add<JsonObject>();
-  metaobj["ADC_CHANNEL_COUNT"] = config.adc_channel_count;
-  metaobj["UART_CHANNEL_COUNT"] = config.uart_channel_count;
-  metaobj["I2C_CHANNEL_COUNT"] = config.i2c_channel_count;
-
   // Adding ADC configurations
-  JsonArray adcArray = doc["ADC"].to<JsonArray>();
-  for (int i = 0; i < config.adc_channel_count; i++) {
+  JsonArray adcArray = doc.to<JsonArray>();
+  for (int i = 0; i < config.channel_count; i++) {
     JsonObject adcObj = adcArray.add<JsonObject>();
     adcObj["channel"] = i;
-    adcObj["sensor"] = config.adcSensorType[i];
-    adcObj["enabled"] = config.adcEnabled[i];
-    adcObj["interval"] = config.adcInterval[i];
-    adcObj["value"] = config.adcValue[i];
-    adcObj["time"] = convertTMtoString(config.adcTime[i]);
-
-  }
-
-  // Adding UART configurations
-  JsonArray uartArray = doc["UART"].to<JsonArray>();
-  for (int i = 0; i < config.uart_channel_count; i++) {
-    JsonObject uartObj = uartArray.add<JsonObject>();
-    uartObj["channel"] = i;
-    uartObj["sensor"] = config.uartSensorType[i];
-    uartObj["enabled"] = config.uartEnabled[i];
-    uartObj["interval"] = config.uartInterval[i];
-    uartObj["value"] = config.uartValue[i];
-    uartObj["time"] = convertTMtoString(config.uartTime[i]);
-  }
-
-  // Adding I2C configurations
-  JsonArray i2cArray = doc["I2C"].to<JsonArray>();
-  for (int i = 0; i < config.i2c_channel_count; i++) {
-    JsonObject i2cObj = i2cArray.add<JsonObject>();
-    i2cObj["channel"] = i;
-    i2cObj["sensor"] = config.i2cSensorType[i];
-    i2cObj["enabled"] = config.i2cEnabled[i];
-    i2cObj["interval"] = config.i2cInterval[i];
-    i2cObj["value"] = config.i2cValue[i];
-    i2cObj["time"] = convertTMtoString(config.i2cTime[i]);
+    adcObj["pin"] = config.Pin[i];
+    adcObj["sensor"] = config.Type[i];
+    adcObj["enabled"] = config.Enabled[i];
+    adcObj["interval"] = config.Interval[i];
+    adcObj["value"] = config.Value[i];
+    adcObj["time"] = convertTMtoString(config.Time[i]);
   }
 
   // Serve the JSON document
@@ -311,10 +281,10 @@ void getLoRaNetworkStatus(AsyncWebServerRequest *request) {
 
   JsonDocument doc;
 
-  JsonArray lora_peers = doc.to<JsonArray>();
+  Serial.println("Received request for lora status");
 
   for(int i = 0; i < peerCount; i++){
-    JsonObject obj = lora_peers.add<JsonObject>();
+    JsonObject obj = doc.add<JsonObject>();
 
     char buffer[30];
     struct tm timeinfo =peers[i].lastCommTime;
@@ -327,10 +297,11 @@ void getLoRaNetworkStatus(AsyncWebServerRequest *request) {
     obj["status"] = peers[i].status;
     obj["rssi"] = peers[i].SignalStrength;
   }
+  
 
   // Serve the JSON document
   serveJson(request, doc, 200, false);
-
+  return;
 }
 
 
@@ -350,17 +321,16 @@ AsyncCallbackJsonWebHandler* updateCollectionConfig() {
 
     if (!request->hasParam("device")){
       request->send(400, "application/json", "{\"error\":\"Device query parameter is missing\"}");
+      return;
     }
 
     String deviceName = request->getParam("device")->value();
     Serial.printf("Device: %s\n", deviceName.c_str());
 
-    String type = json["type"].as<String>();
     int index = json["index"].as<int>();
     String key = json["key"].as<String>();
     String value = json["value"].as<String>();
     
-    Serial.printf("Type: %s\n", type.c_str());
     Serial.printf("Index: %d\n", index);
     Serial.printf("Key: %s\n", key.c_str());
     Serial.printf("Value: %s\n", value.c_str());
@@ -369,7 +339,7 @@ AsyncCallbackJsonWebHandler* updateCollectionConfig() {
     if (deviceName == "gateway") {
 
       // Error checking inside the function below
-      updateDataCollectionConfiguration(type, index, key, value);
+      updateDataCollectionConfiguration(index, key, value);
       request->send(200); // Send an empty response with HTTP status code 200
 
     }
@@ -380,8 +350,6 @@ AsyncCallbackJsonWebHandler* updateCollectionConfig() {
       getMacByDeviceName(deviceName, msg.mac);                            // MAC
 
 
-      strncpy(msg.type, type.c_str(), MAX_JSON_LEN_2 - 1);                    // type
-      msg.key[MAX_JSON_LEN_2 - 1] = '\0'; // Null-terminate the string
       strncpy(msg.index, String(index).c_str(), MAX_JSON_LEN_2 - 1);                    // index
       msg.key[MAX_JSON_LEN_2 - 1] = '\0'; // Null-terminate the string
 
