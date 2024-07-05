@@ -387,29 +387,32 @@ AsyncCallbackJsonWebHandler* updateSysConfig() {
     // Iterate through the key-value pairs in the JSON object
     String key, value;
     for (JsonPair kv : jsonObj) {
+
       key = kv.key().c_str();
       value = kv.value().as<String>();
-    }
 
-    if (deviceName == "gateway") {
-      // Call the update function with the extracted key and value
-      update_system_configuration(key, value);
+      if (deviceName == "gateway") {
+        // Call the update function with the extracted key and value
+        update_system_configuration(key, value);
+      }
+      else if(isDeviceNameValid(deviceName)){
+        // Implementation to send the configuration update to remote stations
+        sysconfig_message msg;
+        msg.msgType = SYS_CONFIG;                                          // msgType
+        getMacByDeviceName(deviceName, msg.mac);                            // MAC
+        strncpy(msg.key, key.c_str(), MAX_JSON_LEN_1 - 1);                    // key
+        msg.key[MAX_JSON_LEN_1 - 1] = '\0'; // Null-terminate the string
+        strncpy(msg.value, value.c_str(), MAX_JSON_LEN_1 - 1);                //value
+        msg.value[MAX_JSON_LEN_1 - 1] = '\0'; // Null-terminate the string
+        sendLoraMessage((uint8_t *) &msg, sizeof(msg));
+      }
+      else{
+        // Handle other device types or invalid device
+        request->send(400, "application/json", "{\"error\":\"Invalid device parameter\"}");
+      }
     }
-    else if(isDeviceNameValid(deviceName)){
-      // Implementation to send the configuration update to remote stations
-      sysconfig_message msg;
-      msg.msgType = SYS_CONFIG;                                          // msgType
-      getMacByDeviceName(deviceName, msg.mac);                            // MAC
-      strncpy(msg.key, key.c_str(), MAX_JSON_LEN_1 - 1);                    // key
-      msg.key[MAX_JSON_LEN_1 - 1] = '\0'; // Null-terminate the string
-      strncpy(msg.value, value.c_str(), MAX_JSON_LEN_1 - 1);                //value
-      msg.value[MAX_JSON_LEN_1 - 1] = '\0'; // Null-terminate the string
-      sendLoraMessage((uint8_t *) &msg, sizeof(msg));
-      request->send(200); // Send an empty response with HTTP status code 200
-    }
-    else{
-      // Handle other device types or invalid device
-      request->send(400, "application/json", "{\"error\":\"Invalid device parameter\"}");
-    }
+    
+    request->send(200); // Send an empty response with HTTP status code 200
+
   });
 }
