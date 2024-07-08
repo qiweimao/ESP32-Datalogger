@@ -254,7 +254,7 @@ bool Directory(String folderPath) {
 }
 //#############################################################################################
 AsyncCallbackJsonWebHandler *fileListJson() {
-  return new AsyncCallbackJsonWebHandler("/api/file-list", [](AsyncWebServerRequest *request, JsonVariant &json) {
+  return new AsyncCallbackJsonWebHandler("/api/files", [](AsyncWebServerRequest *request, JsonVariant &json) {
 
     Serial.println("Received file list request");
 
@@ -265,24 +265,16 @@ AsyncCallbackJsonWebHandler *fileListJson() {
     }
     Serial.println("Checked device parameters");
 
-    if (!request->hasParam("type")){
-      Serial.println("no type specified");
-      request->send(400, "application/json", "{\"error\":\"Device query parameter \"type\" is missing\"}");
-      return;
-    }
-
     String deviceName = request->getParam("device")->value();
-    String type = request->getParam("type")->value();
 
     Serial.println(deviceName);
-    Serial.println(type);
     String folderpath;
 
     if (deviceName == "gateway") {
-      folderpath = "/data/" + type;
+      folderpath = "/data";
     }
     else if (isDeviceNameValid(deviceName)){
-      folderpath = "/node/" + deviceName + "/data/" + type;
+      folderpath = "/node/" + deviceName + "/data";
     }
     else{
       request->send(400, "application/json", "{\"error\":\"Invalid remote station name\"}");
