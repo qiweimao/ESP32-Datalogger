@@ -1,5 +1,6 @@
 
-/* Data Collection Configuration */
+#ifndef CONFIGURATION_H
+#define CONFIGURATION_H
 
 #include <Arduino.h>  // Include this header for fixed-width integer types
 
@@ -15,7 +16,7 @@ struct SystemConfig {
   uint32_t PAIRING_KEY;
 };
 
-enum SensorType : uint8_t {
+enum SensorType : int {
   Unknown,
   VibratingWire,
   Barometric,
@@ -33,12 +34,12 @@ enum SensorType : uint8_t {
 struct DataCollectionConfig {
 
   int channel_count = CHANNEL_COUNT; // read this byte to process config
-  SensorType Type[CHANNEL_COUNT];
-  int Pin[CHANNEL_COUNT];
-  bool Enabled[CHANNEL_COUNT];
-  uint16_t Interval[CHANNEL_COUNT];
-  float Value[CHANNEL_COUNT];
-  struct tm Time[CHANNEL_COUNT];
+  SensorType type[CHANNEL_COUNT];
+  int pin[CHANNEL_COUNT];
+  bool enabled[CHANNEL_COUNT];
+  uint16_t interval[CHANNEL_COUNT];
+  float value[CHANNEL_COUNT];
+  struct tm time[CHANNEL_COUNT];
 
 };
 
@@ -49,4 +50,6 @@ extern DataCollectionConfig dataConfig;
 void load_system_configuration();
 void update_system_configuration(String key, String value);
 void loadDataConfigFromPreferences();
-void updateDataCollectionConfiguration(int index, String key, String value);
+void updateDataCollectionConfiguration(int channel, String key, int value);
+
+#endif

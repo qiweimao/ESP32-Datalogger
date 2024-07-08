@@ -138,9 +138,9 @@ void printDataConfig() {
 
   // Print ADC configuration
   for (int i = 0; i < CHANNEL_COUNT; i++) {
-    Serial.printf("Sensor %d Pin %d: Enabled=%s, Interval=%d, SensorType=%d\n",
-                  i, dataConfig.Pin[i],dataConfig.Enabled[i] ? "true" : "false",
-                  dataConfig.Interval[i], dataConfig.Type[i]);
+    Serial.printf("Sensor %d pin %d: Enabled=%s, interval=%d, SensorType=%d\n",
+                  i, dataConfig.pin[i],dataConfig.enabled[i] ? "true" : "false",
+                  dataConfig.interval[i], dataConfig.type[i]);
   }
 
 }
@@ -156,10 +156,10 @@ void loadDataConfigFromPreferences() {
 
     // Initialize with default values
     for (int i = 0; i < CHANNEL_COUNT; i++) {
-      dataConfig.Pin[i] = 0;
-      dataConfig.Type[i] = Unknown;
-      dataConfig.Enabled[i] = false;
-      dataConfig.Interval[i] = 60;
+      dataConfig.pin[i] = 0;
+      dataConfig.type[i] = Unknown;
+      dataConfig.enabled[i] = false;
+      dataConfig.interval[i] = 60;
     }
 
     // Save default configuration to preferences
@@ -172,32 +172,27 @@ void loadDataConfigFromPreferences() {
   printDataConfig();
 }
 
-void updateDataCollectionConfiguration(int index, String key, String value) {
+void updateDataCollectionConfiguration(int channel, String key, int value) {
   Serial.println("Updating data collection configuration...");
 
-  if (!( index >= 0 && index < 16)){
-    Serial.println("Invalid type or index");
+  if (!( channel >= 0 && channel < 16)){
+    Serial.println("Invalid channel.");
   }
 
   if (key.equals("enabled")) {
-    dataConfig.Enabled[index] = (value.equals("true"));
-    Serial.println(value.equals("true"));
-    Serial.println("Updated adc to true");
+    dataConfig.enabled[channel] = value;
   }
   else if (key.equals("interval")) {
-    dataConfig.Interval[index] = value.toInt();
+    dataConfig.interval[channel] = value;
   }
-  else if (key.equals("Pin")) {
-    dataConfig.Pin[index] = value.toInt();
+  else if (key.equals("pin")) {
+    dataConfig.pin[channel] = value;
   }
-  else if (key.equals("Type")) {
-    if (value.equals("Unknown")) {
-      dataConfig.Type[index] = Unknown;
-    } else if (value.equals("VibratingWire")) {
-      dataConfig.Type[index] = VibratingWire;
-    } else if (value.equals("Barometric")) {
-      dataConfig.Type[index] = Barometric;
-    }
+  else if (key.equals("sensor")) {
+    dataConfig.type[channel] = (SensorType) value;
+  }
+  else{
+    Serial.println("Invalid key.");
   }
 
   // Save updated configuration

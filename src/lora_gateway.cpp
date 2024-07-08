@@ -207,6 +207,23 @@ void poll_config(int index){
   }
 
 }
+void poll_config(uint8_t * mac){
+  
+  if (xSemaphoreTake(xMutex_DataPoll, portMAX_DELAY) == pdTRUE) {
+    poll_success = false;
+    signal_message msg = poll_config_struct(mac);
+    sendLoraMessage((uint8_t *) &msg, sizeof(msg));
+    Serial.printf("Sent config poll message to:");
+    printMacAddress(mac);Serial.println();Serial.println();
+
+    // if(waitForPollAck()){ // check for ack before proceeding to next one
+    // Serial.println("Retrieved config poll message at request of API: ");printMacAddress(mac);Serial.println();
+    // } 
+    
+    xSemaphoreGive(xMutex_DataPoll);
+  }
+
+}
 
 // ***********************
 // * Time Sync

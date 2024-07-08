@@ -4,6 +4,7 @@
 #include "utils.h"
 #include <LoRa.h>
 #include "lora_peer.h"
+#include "configuration.h"
 
 #define LORA_SLAVE 0
 #define LORA_GATEWAY 1
@@ -36,13 +37,15 @@ typedef struct sysconfig_message {
   char value[MAX_JSON_LEN_1];
 } sysconfig_message;
 
-typedef struct collectionconfig_message {
+typedef struct collection_config_message {
   uint8_t msgType;
   uint8_t mac[MAC_ADDR_LENGTH];
-  char index[MAX_JSON_LEN_2];
-  char key[MAX_JSON_LEN_2];
-  char value[MAX_JSON_LEN_2];
-} collectionconfig_message;
+  int channel;
+  int pin;
+  SensorType sensor;
+  bool enabled;
+  uint16_t interval;
+} collection_config_message;
 
 typedef struct time_sync_message {
   uint8_t msgType;

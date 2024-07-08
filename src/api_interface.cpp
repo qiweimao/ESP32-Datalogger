@@ -5,6 +5,7 @@
 #include "fileserver.h"
 #include "lora_peer.h"
 #include "lora_init.h"
+#include "lora_gateway.h"
 
 AsyncWebServer server(80);
 
@@ -168,7 +169,7 @@ void serveVoltageHistory(AsyncWebServerRequest *request){
 // **************************
 
 void getSysConfig(AsyncWebServerRequest *request){
-
+  Serial.println("Received request for System Configuration.");
   SystemConfig config;
 
   if (!request->hasParam("device")) {  // Check if parameter device is received
@@ -176,11 +177,13 @@ void getSysConfig(AsyncWebServerRequest *request){
   }
 
   String deviceName = request->getParam("device")->value();
+  Serial.print("DeviceName ="); Serial.println(deviceName);
   if (deviceName == "gateway") {
     config = systemConfig; // load from systemConfig
   }
   else if(isDeviceNameValid(deviceName)){
     String filepath = "/node/" + deviceName + "/sys.conf";
+    Serial.print("Substation config file path ="); Serial.println(filepath);
     File file = SD.open(filepath, FILE_READ);
     if (file) {
       file.read((uint8_t*) &config, sizeof(config)); // load from SD card
@@ -249,12 +252,12 @@ void getCollectionConfig(AsyncWebServerRequest *request) {
   for (int i = 0; i < config.channel_count; i++) {
     JsonObject adcObj = adcArray.add<JsonObject>();
     adcObj["channel"] = i;
-    adcObj["pin"] = config.Pin[i];
-    adcObj["sensor"] = config.Type[i];
-    adcObj["enabled"] = config.Enabled[i];
-    adcObj["interval"] = config.Interval[i];
-    adcObj["value"] = config.Value[i];
-    adcObj["time"] = convertTMtoString(config.Time[i]);
+    adcObj["pin"] = config.pin[i];
+    adcObj["sensor"] = config.type[i];
+    adcObj["enabled"] = config.enabled[i];
+    adcObj["interval"] = config.interval[i];
+    adcObj["value"] = config.value[i];
+    adcObj["time"] = convertTMtoString(config.time[i]);
   }
 
   // Serve the JSON document
@@ -327,42 +330,48 @@ AsyncCallbackJsonWebHandler* updateCollectionConfig() {
     String deviceName = request->getParam("device")->value();
     Serial.printf("Device: %s\n", deviceName.c_str());
 
-    int index = json["index"].as<int>();
-    String key = json["key"].as<String>();
-    String value = json["value"].as<String>();
+    int channel = json["channel"].as<int>();
+    int pin = json["pin"].as<int>();
+    int sensor= json["sensor"].as<int>();
+    bool enabled = json["enabled"].as<int>();
+    uint16_t interval = json["interval"].as<uint16_t>();
     
-    Serial.printf("Index: %d\n", index);
-    Serial.printf("Key: %s\n", key.c_str());
-    Serial.printf("Value: %s\n", value.c_str());
+    Serial.printf("channel: %d\n", channel);
+    Serial.printf("pin: %d\n", pin);
+    Serial.printf("sensor: %d\n", sensor);
+    Serial.printf("enabled: %d\n", enabled);
+    Serial.printf("interval: %d\n", interval);
 
     // Handle different device types
     if (deviceName == "gateway") {
 
       // Error checking inside the function below
-      updateDataCollectionConfiguration(index, key, value);
+      updateDataCollectionConfiguration(channel, "pin", pin);
+      updateDataCollectionConfiguration(channel, "sensor", sensor);
+      updateDataCollectionConfiguration(channel, "enabled", enabled);
+      updateDataCollectionConfiguration(channel, "interval", interval);
       request->send(200); // Send an empty response with HTTP status code 200
 
     }
     else if(isDeviceNameValid(deviceName)){
       // Implementation to send the configuration update to remote stations
-      collectionconfig_message msg;
+      collection_config_message msg;
       msg.msgType = DATA_CONFIG;                                          // msgType
       getMacByDeviceName(deviceName, msg.mac);                            // MAC
-
-
-      strncpy(msg.index, String(index).c_str(), MAX_JSON_LEN_2 - 1);                    // index
-      msg.key[MAX_JSON_LEN_2 - 1] = '\0'; // Null-terminate the string
-
-      strncpy(msg.key, key.c_str(), MAX_JSON_LEN_2 - 1);                    // key
-      msg.key[MAX_JSON_LEN_2 - 1] = '\0'; // Null-terminate the string
-      strncpy(msg.value, value.c_str(), MAX_JSON_LEN_2 - 1);                //value
-      msg.value[MAX_JSON_LEN_2 - 1] = '\0'; // Null-terminate the string
+      msg.channel = channel;
+      msg.pin = pin;
+      msg.sensor = (SensorType)sensor;
+      msg.enabled = enabled;
+      msg.interval = interval;
       sendLoraMessage((uint8_t *) &msg, sizeof(msg));
       request->send(200); // Send an empty response with HTTP status code 200
+      poll_config(msg.mac);
+      return;
     }
     else {
       // Handle other device types or invalid device
       request->send(400, "application/json", "{\"error\":\"Invalid device parameter\"}");
+      return;
     }
   });
 }

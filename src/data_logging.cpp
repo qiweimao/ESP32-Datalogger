@@ -49,8 +49,8 @@ void logDataFunction(int channel, String timestamp) {
   // update latest data in dataconfig
   struct tm timeinfo;
   getLocalTime(&timeinfo);
-  dataConfig.Value[channel] = random(0, 10000);
-  dataConfig.Time[channel] = timeinfo;
+  dataConfig.value[channel] = random(0, 10000);
+  dataConfig.time[channel] = timeinfo;
 
 }
 
@@ -59,7 +59,7 @@ void logDataTask(void *parameter) {
     unsigned long currentTime = millis() / 60000; // Convert milliseconds to minutes
 
     for (int i = 0; i < CHANNEL_COUNT; i++) {
-      if (dataConfig.Enabled[i] && (currentTime - lastLogTimeADC[i] >= dataConfig.Interval[i])) {
+      if (dataConfig.enabled[i] && (currentTime - lastLogTimeADC[i] >= dataConfig.interval[i])) {
         logDataFunction(i, get_current_time(true));
         lastLogTimeADC[i] = currentTime;
       }
@@ -79,7 +79,7 @@ void log_data_init() {
   unsigned long currentTime = millis() / 60000; // Convert milliseconds to minutes
 
   for (int i = 0; i < CHANNEL_COUNT; i++) {
-    if (dataConfig.Enabled[i]) {
+    if (dataConfig.enabled[i]) {
       Serial.println("ADC channel: is enabled");
       Serial.println(i);
       logDataFunction(i, get_current_time(true));

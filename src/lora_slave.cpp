@@ -99,6 +99,7 @@ void sendFilesTask(void * parameter) {
 
     if(sendConfigRequest){
       
+      Serial.println("=== Send config structs ===");
       send_config_to_gateway();
 
       // send end of sync signal
@@ -268,13 +269,13 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
     }
 
     case DATA_CONFIG:{
-      collectionconfig_message msg;
+      collection_config_message msg;
       memcpy(&msg, incomingData, sizeof(msg));
 
-      int index = ((String)msg.index).toInt();
-      String key = msg.key;
-      String value = msg.value;
-      updateDataCollectionConfiguration(index, key, value);
+      updateDataCollectionConfiguration(msg.channel, "pin", msg.pin);
+      updateDataCollectionConfiguration(msg.channel, "sensor", msg.sensor);
+      updateDataCollectionConfiguration(msg.channel, "enabled", msg.enabled);
+      updateDataCollectionConfiguration(msg.channel, "interval", msg.interval);
 
       break;
     }
