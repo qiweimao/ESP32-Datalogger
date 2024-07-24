@@ -53,8 +53,6 @@ void oled_print(const char* text);
 void oled_print(uint8_t value);
 void oled_print(const char* text, size_t size);
 
-void lora_init(void);
-
 /* SD Card */
 void sd_init();
 uint32_t generateRandomNumber();

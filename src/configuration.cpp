@@ -2,7 +2,8 @@
 #include <SD.h>
 #include <ArduinoJson.h>
 #include "configuration.h"
-#include "lora_init.h"
+#include "LoRaLite.h"
+#include "utils.h"
 
 Preferences preferences;
 

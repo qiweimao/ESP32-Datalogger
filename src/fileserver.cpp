@@ -32,7 +32,7 @@
 #include "api_interface.h"
 #include "ArduinoJson.h"
 #include "AsyncJson.h"
-#include "lora_peer.h"
+#include "LoRaLite.h"
 
 
 

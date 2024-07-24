@@ -2,7 +2,6 @@
 #include <SD.h>
 #include "lora_init.h"
 #include "lora_file_transfer.h"
-#include "utils.h"
 
 /******************************************************************
  *                             Sender                             *

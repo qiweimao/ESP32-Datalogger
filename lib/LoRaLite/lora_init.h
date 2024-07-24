@@ -1,10 +1,8 @@
 #ifndef LORA_INIT_H
 #define LORA_INIT_H
 
-#include "utils.h"
 #include <LoRa.h>
 #include "lora_peer.h"
-#include "configuration.h"
 
 #define LORA_SLAVE 0
 #define LORA_GATEWAY 1
@@ -14,6 +12,40 @@
 #define MAX_FILENAME_LEN 20
 #define MAX_JSON_LEN_1 20
 #define MAX_JSON_LEN_2 10
+
+#define MAX_HANDLERS 10
+#define MAX_SCHEDULES 10
+
+
+typedef void (*DataRecvCallback)(const uint8_t *incomingData, int len);
+typedef void (*LoRaMessageHandlerFunc)(const uint8_t *incomingData);
+typedef void (*LoRaPollFunc)(int peer_index); // poll file or dir
+
+typedef struct {
+    uint8_t messageType;
+    LoRaMessageHandlerFunc slave;
+    LoRaMessageHandlerFunc gateway;
+} LoRaMessageHandler;
+
+typedef struct {
+    LoRaPollFunc func;
+    int isBroadcast;
+    unsigned long lastPoll;
+    unsigned long interval;
+} LoRaPollSchedule;
+
+typedef struct {
+    int lora_mode;
+    uint32_t pairingKey;
+    LoRaMessageHandler messageHandlers[MAX_HANDLERS];
+    LoRaPollSchedule schedules[MAX_SCHEDULES];
+    int handlerCount;
+    int scheduleCount;
+} LoRaConfig;
+
+int addHandler(LoRaConfig *config, uint8_t messageType, LoRaMessageHandlerFunc handlerFunc_slave, LoRaMessageHandlerFunc handlerFunc_gateway);
+int addSchedule(LoRaConfig *config, LoRaPollFunc func, unsigned long interval, int isBroadcast);
+LoRaMessageHandlerFunc findHandler(LoRaConfig *config, uint8_t messageType, int isSlave);
 
 /* File Transfer for Large Data  */
 typedef struct file_body_message {
@@ -28,6 +60,8 @@ typedef struct file_body_message {
 typedef struct signal {
   uint8_t msgType;
   uint8_t mac[MAC_ADDR_LENGTH];
+  char path[MAX_FILENAME_LEN]; // can be folder or full path to a file
+  char extension[MAX_FILENAME_LEN];
 } signal_message;
 
 typedef struct sysconfig_message {
@@ -42,7 +76,7 @@ typedef struct collection_config_message {
   uint8_t mac[MAC_ADDR_LENGTH];
   int channel;
   int pin;
-  SensorType sensor;
+  int sensor;
   bool enabled;
   uint16_t interval;
 } collection_config_message;
@@ -67,25 +101,26 @@ typedef struct struct_pairing { // this is a broadcast message
 } struct_pairing;
 
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
-enum MessageType {PAIRING, DATA_VM, DATA_ADC, DATA_I2C, DATA_SAA, FILE_META, \
-                  FILE_BODY, FILE_ENTIRE, ACK, REJ, TIMEOUT, TIME_SYNC, 
-                  POLL_DATA, POLL_CONFIG, POLL_COMPLETE, APPEND, DATA_CONFIG, SYS_CONFIG};
+enum MessageType {PAIRING, FILE_META, \
+                  FILE_BODY, FILE_ENTIRE, ACK, REJ, TIMEOUT, 
+                  POLL_DATA, POLL_CONFIG, POLL_COMPLETE, APPEND, DATA_CONFIG, SYS_CONFIG,
+                  USER_DEFINED_START = 100  // Reserve range for user-defined types
+};
 
 extern uint8_t mac_buffer[6];
 extern uint8_t MAC_ADDRESS_STA[6];
 extern int ack_count;
 extern int rej_count;
 extern SemaphoreHandle_t xMutex_DataPoll; // mutex for LoRa hardware usage
+extern LoRaConfig lora_config;
 
-void LoRa_rxMode();
-void LoRa_txMode();
-void LoRa_sendMessage(String message);
 void onReceive(int packetSize);
-void onTxDone();
-boolean runEvery(unsigned long interval);
-void loopFunction(void *parameter);
-void handleReceivedData(void *parameter);
 void taskReceive(void *parameter);
 void sendLoraMessage(uint8_t* data, size_t size);
+void handle_pairing(const uint8_t *incomingData);
+void lora_init(LoRaConfig *config);
+
+#include "lora_user_settings.h"
+
 
 #endif

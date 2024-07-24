@@ -3,9 +3,7 @@
 #include "AsyncJson.h"
 #include "configuration.h"
 #include "fileserver.h"
-#include "lora_peer.h"
-#include "lora_init.h"
-#include "lora_gateway.h"
+#include "LoRaLite.h"
 
 AsyncWebServer server(80);
 

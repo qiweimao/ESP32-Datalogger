@@ -2,7 +2,7 @@
 #include "utils.h"
 #include "api_interface.h"
 #include "vibrating_wire.h"
-#include "lora_init.h"
+#include "lora_network.h"
 #include "configuration.h"
 
 
@@ -41,7 +41,7 @@ void setup() {
   xTaskCreate(taskInitiNTP, "InitNTPTask", 4096, NULL, 1, NULL);
   start_http_server();// start Async server with api-interfaces
   ftp_server_init();
-  lora_init();
+  lora_initialize();
   log_data_init();
 
   Serial.println("\n------------------Boot Completed----------------\n");

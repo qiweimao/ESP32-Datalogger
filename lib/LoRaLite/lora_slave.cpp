@@ -1,22 +1,24 @@
 #include "lora_slave.h"
 #include "lora_peer.h"
+#include "lora_init.h"
 #include "lora_file_transfer.h"
-#include "configuration.h"
-#include "utils.h"
-
+#include "SD.h"
 
 PairingStatus pairingStatus = NOT_PAIRED;
 struct_pairing pairingDataNode;
+signal_message signal_msg;
 uint8_t mac_master_paired[MAC_ADDR_LENGTH]; // identity for master node
 
 unsigned long currentMillis = millis();
 unsigned long previousMillis = 0;   // Stores last time temperature was published
-const long interval = 5000;        // Interval at which to publish sensor readings
 unsigned long NodeStart;                // used to measure Pairing time
-unsigned int readingId = 0;
 
-volatile bool sendFileRequest = false;
-volatile bool sendConfigRequest = false;
+volatile bool syncFolderRequest = false;
+volatile bool fileRequest = false;
+
+String sync_folder_path = "";
+String sync_extension = "";
+String file_path = "";
 
 /******************************************************************
  *                                                                *
@@ -27,7 +29,7 @@ volatile bool sendConfigRequest = false;
 // **************************************
 // * Send All .dat File From Folder
 // **************************************
-void send_files_to_gateway(String folderPath) {
+void sync_folder(String folderPath, String extension) {
   File root = SD.open(folderPath);
 
   if (!root) {
@@ -38,29 +40,22 @@ void send_files_to_gateway(String folderPath) {
   File file = root.openNextFile();
   while (file) {
     String fileName = file.name();
-    if (!file.isDirectory() && fileName.endsWith(".dat")) {
+    if (!file.isDirectory() && fileName.endsWith(extension)) {
       String fullFilePath = folderPath + "/" + fileName;
       if (sendLoRaFile(fullFilePath.c_str(), SYNC)) {// append mode
-        // String newFileName = fullFilePath.substring(0, fullFilePath.lastIndexOf('.')) + ".p";
-        // SD.rename(fullFilePath, newFileName);
       }
       file.close();
-      // break; // Only send one file from each folder
     }
     file = root.openNextFile();
   }
   root.close();
 }
 
-void send_config_to_gateway() {
+void send_file(String path) {
 
   Serial.println("=== data configuration ===");
-  if(sendLoRaData((uint8_t *) &dataConfig, sizeof(dataConfig), "/data.conf")){
+  if(sendLoRaFile(path.c_str(), SEND)) {
     Serial.println("Sent data collection configuration to gateway.");
-  }
-  Serial.println("=== sys configuration ===");
-  if(sendLoRaData((uint8_t *) &systemConfig, sizeof(systemConfig), "/sys.conf")){
-    Serial.println("Sent sys collection configuration to gateway.");
   }
 
 }
@@ -72,12 +67,12 @@ void sendFilesTask(void * parameter) {
 
   while(1){
 
-    if(sendFileRequest){
+    if(syncFolderRequest){
             
       unsigned long startTime = millis();  // Start time
 
       Serial.println("=== send files in folder /data ===");
-      send_files_to_gateway("/data");
+      sync_folder(sync_folder_path, sync_extension);
 
       // send end of sync signal
       signal_message poll_complete_msg;
@@ -94,13 +89,13 @@ void sendFilesTask(void * parameter) {
       Serial.println(" ms");
 
       Serial.println("Finished sending files");
-      sendFileRequest = false;
+      syncFolderRequest = false;
     }
 
-    if(sendConfigRequest){
+    if(fileRequest){
       
       Serial.println("=== Send config structs ===");
-      send_config_to_gateway();
+      send_file(file_path);
 
       // send end of sync signal
       signal_message poll_complete_msg;
@@ -108,7 +103,7 @@ void sendFilesTask(void * parameter) {
       poll_complete_msg.msgType = POLL_COMPLETE;
       sendLoraMessage((uint8_t *)&poll_complete_msg, sizeof(poll_complete_msg));
 
-      sendConfigRequest = false;
+      fileRequest = false;
     }
 
     vTaskDelay(1 / portTICK_PERIOD_MS);
@@ -127,10 +122,8 @@ void autoPairing(void * parameter){
 
         Serial.println("\nBegin pairing Request");
         pairingDataNode.msgType = PAIRING; // message type
-        strncpy(pairingDataNode.deviceName, systemConfig.DEVICE_NAME, sizeof(pairingDataNode.deviceName) - 1); // device name
-        pairingDataNode.deviceName[sizeof(pairingDataNode.deviceName) - 1] = '\0'; // device name null terminate
         memcpy(pairingDataNode.mac_origin, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA)); // device mac address
-        pairingDataNode.pairingKey = systemConfig.PAIRING_KEY; // paring key for network
+        pairingDataNode.pairingKey = lora_config.pairingKey; // paring key for network
 
         printMacAddress(pairingDataNode.mac_origin);Serial.println();
         Serial.println(pairingDataNode.deviceName);
@@ -177,6 +170,14 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
 
   uint8_t type = incomingData[0];
   
+  // User registered callback
+  LoRaMessageHandlerFunc handler = findHandler(&lora_config, type, 1); // 1 indicates slave
+  if (handler) {
+      // Call the registered handler
+      handler(incomingData);
+  }
+
+  // library predefined handler
   switch (type) {
 
     case PAIRING:    // we received pairing data from server
@@ -201,12 +202,19 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       break;
     
     case POLL_DATA:
+
       if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
         Serial.println("This message is not for me.");
         return;
       };
+
       Serial.println("POLL_DATA Received");
-      sendFileRequest = true; // a flag to indicate that gateway requested data
+
+      memcpy(&signal_msg, incomingData, sizeof(signal_msg));
+      sync_folder_path = signal_msg.path;
+      sync_extension = signal_msg.extension;
+      syncFolderRequest = true; // a flag to indicate that gateway requested data
+
       break;
 
     case POLL_CONFIG:
@@ -215,7 +223,11 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
         Serial.println("This message is not for me.");
         return;
       };
-      sendConfigRequest = true; // a flag to indicate that gateway requested data
+
+      memcpy(&signal_msg, incomingData, sizeof(signal_msg));
+      file_path = signal_msg.path;
+      fileRequest = true; // a flag to indicate that gateway requested data
+
       break;
     
     case ACK:
@@ -234,61 +246,27 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       rej_count++;
       break;
     
-    case TIME_SYNC: {
+    // case DATA_CONFIG:{
+    //   collection_config_message msg;
+    //   memcpy(&msg, incomingData, sizeof(msg));
 
-      Serial.print("\nTime Sync Received. ");
-      time_sync_message msg;
-      memcpy(&msg, incomingData, sizeof(msg));
+    //   updateDataCollectionConfiguration(msg.channel, "pin", msg.pin);
+    //   updateDataCollectionConfiguration(msg.channel, "sensor", msg.sensor);
+    //   updateDataCollectionConfiguration(msg.channel, "enabled", msg.enabled);
+    //   updateDataCollectionConfiguration(msg.channel, "interval", msg.interval);
 
-      // Prepare a struct tm object to hold the received time
-      struct tm timeinfo;
-      timeinfo.tm_year = msg.year - 1900; // years since 1900
-      timeinfo.tm_mon = msg.month - 1;    // months since January (0-11)
-      timeinfo.tm_mday = msg.day;         // day of the month (1-31)
-      timeinfo.tm_hour = msg.hour;        // hours since midnight (0-23)
-      timeinfo.tm_min = msg.minute;       // minutes after the hour (0-59)
-      timeinfo.tm_sec = msg.second;       // seconds after the minute (0-61, allows for leap seconds)
+    //   break;
+    // }
 
-      // Convert struct tm to time_t
-      time_t epoch = mktime(&timeinfo);
+    // case SYS_CONFIG:{
+    //   sysconfig_message msg;
+    //   memcpy(&msg, incomingData, sizeof(msg));
+    //   String key = msg.key;
+    //   String value = msg.value;
+    //   update_system_configuration(key, value);
 
-      // Update system time using settimeofday
-      struct timeval tv;
-      tv.tv_sec = epoch;
-      tv.tv_usec = 0;
-      if (settimeofday(&tv, nullptr) != 0) {
-        Serial.println("Failed to set system time.");
-      } else {
-        Serial.println("System time updated successfully.");
-      }
-      
-      // update RTC Time
-      external_rtc_sync_ntp();
-
-      break;
-    }
-
-    case DATA_CONFIG:{
-      collection_config_message msg;
-      memcpy(&msg, incomingData, sizeof(msg));
-
-      updateDataCollectionConfiguration(msg.channel, "pin", msg.pin);
-      updateDataCollectionConfiguration(msg.channel, "sensor", msg.sensor);
-      updateDataCollectionConfiguration(msg.channel, "enabled", msg.enabled);
-      updateDataCollectionConfiguration(msg.channel, "interval", msg.interval);
-
-      break;
-    }
-
-    case SYS_CONFIG:{
-      sysconfig_message msg;
-      memcpy(&msg, incomingData, sizeof(msg));
-      String key = msg.key;
-      String value = msg.value;
-      update_system_configuration(key, value);
-
-      break;
-    }
+    //   break;
+    // }
 
     default:
       Serial.println("Unknown message type");
