@@ -4,14 +4,6 @@
 #include "lora_slave.h"
 #include "SD.h"
 
-//Define the pins used by the transceiver module
-#define LORA_RST 27
-#define DIO0 4
-#define LORA_SCK 14
-#define LORA_MISO 12
-#define LORA_MOSI 13
-#define LORA_SS 15
-
 bool enableCRC = true; // Default CRC setting
 SPIClass loraSpi(HSPI);// Separate SPI bus for LoRa to avoid conflict with the SD Card
 
@@ -22,41 +14,11 @@ uint8_t MAC_ADDRESS_STA[MAC_ADDR_LENGTH];
 SemaphoreHandle_t xMutex_DataPoll = NULL; // mutex for LoRa hardware usage
 LoRaConfig lora_config;
 
-int addHandler(LoRaConfig *config, uint8_t messageType, LoRaMessageHandlerFunc handlerFunc_slave, LoRaMessageHandlerFunc handlerFunc_gateway) {
-    if (config->handlerCount < MAX_HANDLERS) {
-        config->messageHandlers[config->handlerCount].messageType = messageType;
-        config->messageHandlers[config->handlerCount].slave = handlerFunc_slave;
-        config->messageHandlers[config->handlerCount].gateway = handlerFunc_gateway;
-        config->handlerCount++;
-        return 0;
-    }
-    else{
-      return -1;
-    }
-}
-
-int addSchedule(LoRaConfig *config, LoRaPollFunc func, unsigned long interval, int isBroadcast) {
-    if (config->scheduleCount < MAX_SCHEDULES) {
-        config->schedules[config->scheduleCount].func = func;
-        config->schedules[config->scheduleCount].isBroadcast = isBroadcast;
-        config->schedules[config->scheduleCount].lastPoll = 0;
-        config->schedules[config->scheduleCount].interval = interval;
-        config->scheduleCount++;
-        return 0;
-    }
-    else{
-      return -1;
-    }
-}
-
-LoRaMessageHandlerFunc findHandler(LoRaConfig *config, uint8_t messageType, int isSlave) {
-    for (int i = 0; i < config->handlerCount; i++) {
-        if (config->messageHandlers[i].messageType == messageType) {
-            return isSlave ? config->messageHandlers[i].slave : config->messageHandlers[i].gateway;
-        }
-    }
-    return NULL; // No handler found
-}
+/******************************************************************
+ *                                                                *
+ *                            LORA CORE                           *
+ *                                                                *
+ ******************************************************************/
 
 void lora_init(LoRaConfig *config){
 
@@ -97,7 +59,7 @@ void lora_init(LoRaConfig *config){
 }
 
 void sendLoraMessage(uint8_t* data, size_t size) {
-    uint8_t type = data[0];       // first message byte is the type of message 
+    // uint8_t type = data[0];       // first message byte is the type of message 
     // Serial.print("Lora Message type: "); Serial.println(type);
     LoRa.beginPacket();
     LoRa.write(data, size);
@@ -136,10 +98,11 @@ void taskReceive(void *parameter) {
   }
 }
 
-
-// ***********************
-// * Handle Pairing
-// ***********************
+/******************************************************************
+ *                                                                *
+ *                          AUTO PAIRING                          *
+ *                                                                *
+ ******************************************************************/
 void handle_pairing(const uint8_t *incomingData){
 
   struct_pairing pairingDataGateway;
@@ -207,4 +170,46 @@ void handle_pairing(const uint8_t *incomingData){
 
     Serial.println("End of dir creation.");
   }
+}
+
+/******************************************************************
+ *                                                                *
+ *                      HANDLER REGISTRATION                      *
+ *                                                                *
+ ******************************************************************/
+
+int addHandler(LoRaConfig *config, uint8_t messageType, LoRaMessageHandlerFunc handlerFunc_slave, LoRaMessageHandlerFunc handlerFunc_gateway) {
+    if (config->handlerCount < MAX_HANDLERS) {
+        config->messageHandlers[config->handlerCount].messageType = messageType;
+        config->messageHandlers[config->handlerCount].slave = handlerFunc_slave;
+        config->messageHandlers[config->handlerCount].gateway = handlerFunc_gateway;
+        config->handlerCount++;
+        return 0;
+    }
+    else{
+      return -1;
+    }
+}
+
+int addSchedule(LoRaConfig *config, LoRaPollFunc func, unsigned long interval, int isBroadcast) {
+    if (config->scheduleCount < MAX_SCHEDULES) {
+        config->schedules[config->scheduleCount].func = func;
+        config->schedules[config->scheduleCount].isBroadcast = isBroadcast;
+        config->schedules[config->scheduleCount].lastPoll = 0;
+        config->schedules[config->scheduleCount].interval = interval;
+        config->scheduleCount++;
+        return 0;
+    }
+    else{
+      return -1;
+    }
+}
+
+LoRaMessageHandlerFunc findHandler(LoRaConfig *config, uint8_t messageType, int isSlave) {
+    for (int i = 0; i < config->handlerCount; i++) {
+        if (config->messageHandlers[i].messageType == messageType) {
+            return isSlave ? config->messageHandlers[i].slave : config->messageHandlers[i].gateway;
+        }
+    }
+    return NULL; // No handler found
 }

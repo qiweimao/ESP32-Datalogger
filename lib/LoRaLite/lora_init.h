@@ -101,9 +101,9 @@ typedef struct struct_pairing { // this is a broadcast message
 } struct_pairing;
 
 enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
-enum MessageType {PAIRING, FILE_META, \
+enum MessageType {PAIRING, \
                   FILE_BODY, FILE_ENTIRE, ACK, REJ, TIMEOUT, 
-                  POLL_DATA, POLL_CONFIG, POLL_COMPLETE, APPEND, DATA_CONFIG, SYS_CONFIG,
+                  SYNC_FOLDER, GET_FILE, POLL_COMPLETE,
                   USER_DEFINED_START = 100  // Reserve range for user-defined types
 };
 

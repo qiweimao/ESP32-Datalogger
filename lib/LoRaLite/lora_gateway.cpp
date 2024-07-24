@@ -167,7 +167,7 @@ void lora_gateway_init() {
   );
   Serial.println("Added Data send handler");
 
-  // sync_folder(peers[0].mac);
+  // sync_folder_request(peers[0].mac);
 
   
 }

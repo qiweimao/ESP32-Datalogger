@@ -201,14 +201,14 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
 
       break;
     
-    case POLL_DATA:
+    case SYNC_FOLDER:
 
       if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
         Serial.println("This message is not for me.");
         return;
       };
 
-      Serial.println("POLL_DATA Received");
+      Serial.println("SYNC_FOLDER Received");
 
       memcpy(&signal_msg, incomingData, sizeof(signal_msg));
       sync_folder_path = signal_msg.path;
@@ -217,8 +217,8 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
 
       break;
 
-    case POLL_CONFIG:
-      Serial.println("\nPOLL_CONFIG Received");
+    case GET_FILE:
+      Serial.println("\nGET_FILE Received");
       if(!compareMacAddress(buffer, MAC_ADDRESS_STA)){
         Serial.println("This message is not for me.");
         return;
@@ -246,27 +246,6 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
       rej_count++;
       break;
     
-    // case DATA_CONFIG:{
-    //   collection_config_message msg;
-    //   memcpy(&msg, incomingData, sizeof(msg));
-
-    //   updateDataCollectionConfiguration(msg.channel, "pin", msg.pin);
-    //   updateDataCollectionConfiguration(msg.channel, "sensor", msg.sensor);
-    //   updateDataCollectionConfiguration(msg.channel, "enabled", msg.enabled);
-    //   updateDataCollectionConfiguration(msg.channel, "interval", msg.interval);
-
-    //   break;
-    // }
-
-    // case SYS_CONFIG:{
-    //   sysconfig_message msg;
-    //   memcpy(&msg, incomingData, sizeof(msg));
-    //   String key = msg.key;
-    //   String value = msg.value;
-    //   update_system_configuration(key, value);
-
-    //   break;
-    // }
 
     default:
       Serial.println("Unknown message type");

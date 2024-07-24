@@ -42,6 +42,17 @@ void handle_time_sync(const uint8_t *incomingData){
 
 }
 
+void handle_config_poll(const uint8_t *incomingData){
+  Serial.println("=== data configuration ===");
+  if(sendLoRaData((uint8_t *) &dataConfig, sizeof(dataConfig), "/data.conf")){
+    Serial.println("Sent data collection configuration to gateway.");
+  }
+  Serial.println("=== sys configuration ===");
+  if(sendLoRaData((uint8_t *) &systemConfig, sizeof(systemConfig), "/sys.conf")){
+    Serial.println("Sent sys collection configuration to gateway.");
+  }
+}
+
 /******************************************************************
  *                                                                *
  *                        Gateway Schedules                       *
@@ -54,12 +65,14 @@ void handle_time_sync(const uint8_t *incomingData){
 // ***********************
 
 // sync file with certain extension in a dir
-void sync_folder(int index){
+void sync_folder_request(int index){
   
   uint8_t * mac = peers[index].mac;
   signal_message msg;
-  msg.msgType = POLL_DATA;
+  msg.msgType = SYNC_FOLDER;
   memcpy(&msg.mac, mac, MAC_ADDR_LENGTH);
+  String path = "/data";
+  memcpy(&msg.path, path.c_str(), sizeof(msg.path));
   sendLoraMessage((uint8_t *) &msg, sizeof(msg));
   Serial.printf("Sent data poll message to:");
   printMacAddress(mac);Serial.println();Serial.println();
@@ -74,7 +87,7 @@ void poll_config(int index){
 
   uint8_t * mac = peers[index].mac;
   signal_message msg;
-  msg.msgType = POLL_CONFIG;
+  msg.msgType = GET_CONFIG;
   memcpy(&msg.mac, mac, MAC_ADDR_LENGTH);
   sendLoraMessage((uint8_t *) &msg, sizeof(msg));
   Serial.printf("Sent config poll message to:");
@@ -85,7 +98,7 @@ void poll_config(int index){
 void poll_config(uint8_t * mac){
   
   signal_message msg;
-  msg.msgType = POLL_CONFIG;
+  msg.msgType = GET_CONFIG;
   memcpy(&msg.mac, mac, MAC_ADDR_LENGTH);
   sendLoraMessage((uint8_t *) &msg, sizeof(msg));
   Serial.printf("Sent config poll message to:");
@@ -157,21 +170,24 @@ void send_time_sync_message(int index) {
   memcpy(buffer, &msg, sizeof(time_sync_message));
 
   // only execute if not in data transfer mode
-  if (xSemaphoreTake(xMutex_DataPoll, portMAX_DELAY) == pdTRUE) {
-    sendLoraMessage(buffer, sizeof(time_sync_message));
-    xSemaphoreGive(xMutex_DataPoll);
-  }
+  sendLoraMessage(buffer, sizeof(time_sync_message));
 
 }
+
+/******************************************************************
+ *                                                                *
+ *                         INITIALIZATION                         *
+ *                                                                *
+ ******************************************************************/
 
 
 int lora_initialize(){
     LoRaConfig loraconfig;
     addHandler(&loraconfig, TIME_SYNC, (LoRaMessageHandlerFunc)handle_time_sync, NULL);
-    addSchedule(&loraconfig, sync_folder, 60000, 0);
+    addHandler(&loraconfig, GET_CONFIG, (LoRaMessageHandlerFunc)handle_config_poll, NULL);
+    addSchedule(&loraconfig, sync_folder_request, 60000, 0);
     addSchedule(&loraconfig, poll_config, 60000, 0);
     addSchedule(&loraconfig, send_time_sync_message, 60000, 1);
-
     lora_init(&loraconfig);
     return 0;
 }
