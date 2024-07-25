@@ -192,15 +192,21 @@ int addHandler(LoRaConfig *config, uint8_t messageType, LoRaMessageHandlerFunc h
 }
 
 int addSchedule(LoRaConfig *config, LoRaPollFunc func, unsigned long interval, int isBroadcast) {
+    Serial.print("Schedule count: ");Serial.println(lora_config.scheduleCount);
+    Serial.print("MAX_SCHEDULERS: ");Serial.println(MAX_SCHEDULES);
+
     if (config->scheduleCount < MAX_SCHEDULES) {
         config->schedules[config->scheduleCount].func = func;
         config->schedules[config->scheduleCount].isBroadcast = isBroadcast;
         config->schedules[config->scheduleCount].lastPoll = 0;
         config->schedules[config->scheduleCount].interval = interval;
         config->scheduleCount++;
+        Serial.println("Add scheduler - OK");
+        Serial.print("Schedule count: ");Serial.println(config->scheduleCount);
         return 0;
     }
     else{
+      Serial.println("Add scheduler - FAIL");
       return -1;
     }
 }

@@ -182,14 +182,20 @@ void send_time_sync_message(int index) {
 
 
 int lora_initialize(){
-    LoRaConfig loraconfig;
-    loraconfig.lora_mode = systemConfig.LORA_MODE;
-    loraconfig.pairingKey = systemConfig.PAIRING_KEY;
-    addHandler(&loraconfig, TIME_SYNC, (LoRaMessageHandlerFunc)handle_time_sync, NULL);
-    addHandler(&loraconfig, GET_CONFIG, (LoRaMessageHandlerFunc)handle_config_poll, NULL);
-    addSchedule(&loraconfig, sync_folder_request, 60000, 0);
-    addSchedule(&loraconfig, poll_config, 60000, 0);
-    addSchedule(&loraconfig, send_time_sync_message, 60000, 1);
-    lora_init(&loraconfig);
+    lora_config.lora_mode = systemConfig.LORA_MODE;
+    lora_config.pairingKey = systemConfig.PAIRING_KEY;
+    addHandler(&lora_config, TIME_SYNC, (LoRaMessageHandlerFunc)handle_time_sync, NULL);
+    addHandler(&lora_config, GET_CONFIG, (LoRaMessageHandlerFunc)handle_config_poll, NULL);
+    if(addSchedule(&lora_config, sync_folder_request, 60000, 0) == 0){
+      Serial.println("Added sync folder request handler.");
+    }
+    if(addSchedule(&lora_config, poll_config, 60000, 0) == 0){
+      Serial.println("Added poll config handler.");
+    }
+    if(addSchedule(&lora_config, send_time_sync_message, 60000, 0) == 0){
+      Serial.println("Added send time sync handler.");
+    }
+    Serial.print("Schedule count: ");Serial.println(lora_config.scheduleCount);
+    lora_init(&lora_config);
     return 0;
 }

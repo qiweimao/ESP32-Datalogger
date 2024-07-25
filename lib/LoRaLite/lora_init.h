@@ -39,8 +39,8 @@ typedef struct {
     uint32_t pairingKey;
     LoRaMessageHandler messageHandlers[MAX_HANDLERS];
     LoRaPollSchedule schedules[MAX_SCHEDULES];
-    int handlerCount;
-    int scheduleCount;
+    int handlerCount = 0;
+    int scheduleCount = 0;
 } LoRaConfig;
 
 int addHandler(LoRaConfig *config, uint8_t messageType, LoRaMessageHandlerFunc handlerFunc_slave, LoRaMessageHandlerFunc handlerFunc_gateway);
