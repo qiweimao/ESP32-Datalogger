@@ -183,6 +183,8 @@ void send_time_sync_message(int index) {
 
 int lora_initialize(){
     LoRaConfig loraconfig;
+    loraconfig.lora_mode = systemConfig.LORA_MODE;
+    loraconfig.pairingKey = systemConfig.PAIRING_KEY;
     addHandler(&loraconfig, TIME_SYNC, (LoRaMessageHandlerFunc)handle_time_sync, NULL);
     addHandler(&loraconfig, GET_CONFIG, (LoRaMessageHandlerFunc)handle_config_poll, NULL);
     addSchedule(&loraconfig, sync_folder_request, 60000, 0);
