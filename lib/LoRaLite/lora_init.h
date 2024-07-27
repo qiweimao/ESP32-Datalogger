@@ -111,7 +111,9 @@ extern uint8_t mac_buffer[6];
 extern uint8_t MAC_ADDRESS_STA[6];
 extern int ack_count;
 extern int rej_count;
+extern bool rej_switch;//Flag to indicate if the gateway would send a REJ to incoming file body
 extern SemaphoreHandle_t xMutex_DataPoll; // mutex for LoRa hardware usage
+extern SemaphoreHandle_t xMutex_LoRaHardware; // mutex for LoRa hardware usage
 extern LoRaConfig lora_config;
 
 void onReceive(int packetSize);

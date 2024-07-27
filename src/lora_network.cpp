@@ -95,9 +95,11 @@ void sync_folder_request(int index){
   msg.msgType = SYNC_FOLDER;
   memcpy(&msg.mac, mac, MAC_ADDR_LENGTH);
   String path = "/data";
+  String extension = ".dat";
   memcpy(&msg.path, path.c_str(), sizeof(msg.path));
+  memcpy(&msg.extension, extension.c_str(), sizeof(msg.extension));
   sendLoraMessage((uint8_t *) &msg, sizeof(msg));
-  Serial.printf("Sent data poll message to:");
+  Serial.printf("Sent SYNC_FOLDER to: ");
   printMacAddress(mac);Serial.println();Serial.println();
 
 }
@@ -113,7 +115,7 @@ void poll_config(int index){
   msg.msgType = GET_CONFIG;
   memcpy(&msg.mac, mac, MAC_ADDR_LENGTH);
   sendLoraMessage((uint8_t *) &msg, sizeof(msg));
-  Serial.printf("Sent config poll message to:");
+  Serial.printf("Sent GET_CONFIG to: ");
   printMacAddress(mac);Serial.println();Serial.println();
 
 }
@@ -230,7 +232,7 @@ int lora_initialize(){
     );
     Serial.println("Added Data send handler");
 
-    if(addSchedule(&lora_config, send_time_sync_message, 60000, 0) == 0){
+    if(addSchedule(&lora_config, send_time_sync_message, 60000, 1) == 0){
       Serial.println("Added send time sync handler.");
     }
     Serial.print("Schedule count: ");Serial.println(lora_config.scheduleCount);

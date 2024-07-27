@@ -32,13 +32,15 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
       handle_pairing(incomingData);
       break;
     case FILE_BODY:
-      handle_file_body(incomingData);
+      // Serial.println("Received FILE_BODY");
+        handle_file_body(incomingData);
       break;
     case FILE_ENTIRE:
+      // Serial.println("Received FILE_ENTIRE");
       handle_file_entire(incomingData);
       break;
     case POLL_COMPLETE:
-      Serial.println("Received POLL_COMPLETE");
+      // Serial.println("Received POLL_COMPLETE");
       rssi = LoRa.packetRssi();
       poll_success = true;
       break;
@@ -80,8 +82,7 @@ void scheduled_poll(void *parameter){
       continue;
     }
 
-    for (int i = 0; i < lora_config.scheduleCount; i++)
-    {
+    for (int i = 0; i < lora_config.scheduleCount; i++){
       LoRaPollSchedule schedule = lora_config.schedules[i];
       LoRaPollFunc func = schedule.func;
       unsigned long lastPoll = schedule.lastPoll;
@@ -89,8 +90,18 @@ void scheduled_poll(void *parameter){
       int isBroadcast = schedule.isBroadcast;
 
       if ((currentTime - lastPoll) >= interval) {
-        lastPoll = currentTime;
+        
+        Serial.println();Serial.println("================================");
+        Serial.print("Beging Schedule: "); Serial.print(i);
+        Serial.print(", lastPoll: "); Serial.print(lastPoll);
+        Serial.print(", interval: "); Serial.print(interval);
+        Serial.print(", currentTime: "); Serial.println(currentTime);
+
+        lora_config.schedules[i].lastPoll = currentTime;
         for(int j = 0; j < peerCount; j++){
+          
+          rej_switch = 0; // turn on file transfer
+
           if (xSemaphoreTake(xMutex_DataPoll, portMAX_DELAY) == pdTRUE) {
             poll_success = false;
             func(j);
@@ -98,7 +109,8 @@ void scheduled_poll(void *parameter){
           }
 
           if(isBroadcast){
-            break;
+            Serial.println("Is broadcast, no need to wait for confirmation.");
+            continue;
           }
 
           if(waitForPollAck()){ // check for ack before proceeding to next one
@@ -107,9 +119,31 @@ void scheduled_poll(void *parameter){
             peers[j].lastCommTime = timeinfo;
             peers[j].status = ONLINE;
             peers[j].SignalStrength = rssi;
-          } 
+            Serial.println("Received poll success.");
+            Serial.println("Updated LoRa communication stats.");
+          }
+          else{ // still in transmission or slave is non responsive
+
+            // signal_message ackMessage_gateway;
+            // ackMessage_gateway.msgType = REJ;
+            // memcpy(&ackMessage_gateway.mac, peers[j].mac, sizeof(ackMessage_gateway.mac));
+            // printMacAddress(peers[j].mac);
+            
+            // if (xSemaphoreTake(xMutex_LoRaHardware, portMAX_DELAY) == pdTRUE) {
+            //   sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
+            //   xSemaphoreGive(xMutex_LoRaHardware);
+            //   Serial.println("Schedule Time out. Sent STOP flag to slave.");
+            // }
+            // else{
+            //   Serial.println("Failed to Sent STOP flag to slave.");
+            // }
+            rej_switch = true;
+            Serial.println("rej_switch = true");
+            delay(1000);
+
+          }
         }
-        Serial.println("Completed config synchronization.");
+        Serial.print("Completed Schedule: "); Serial.println(i);
       }
       
     }

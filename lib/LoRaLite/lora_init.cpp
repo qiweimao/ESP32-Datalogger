@@ -10,8 +10,10 @@ SPIClass loraSpi(HSPI);// Separate SPI bus for LoRa to avoid conflict with the S
 volatile int dataReceived = 0;// Flag to indicate data received
 int ack_count = 0;// Flag to indicate ACK for data transfer received
 int rej_count = 0;// Flag to indicate REJ for data transfer received
+bool rej_switch = 0;//Flag to indicate if the gateway would send a REJ to incoming file body
 uint8_t MAC_ADDRESS_STA[MAC_ADDR_LENGTH];
 SemaphoreHandle_t xMutex_DataPoll = NULL; // mutex for LoRa hardware usage
+SemaphoreHandle_t xMutex_LoRaHardware = NULL; // mutex for LoRa hardware usage
 LoRaConfig lora_config;
 
 /******************************************************************
@@ -45,6 +47,7 @@ void lora_init(LoRaConfig *config){
   }
 
   xMutex_DataPoll = xSemaphoreCreateMutex();
+  xMutex_LoRaHardware = xSemaphoreCreateMutex();
   
   // Callback Initialization based on Mode
   if (config->lora_mode == LORA_SLAVE){
@@ -60,9 +63,10 @@ void lora_init(LoRaConfig *config){
 
 void sendLoraMessage(uint8_t* data, size_t size) {
     // uint8_t type = data[0];       // first message byte is the type of message 
-    // Serial.print("Lora Message type: "); Serial.println(type);
+    // Serial.print("Sent Lora Message type: "); Serial.println(type);
     LoRa.beginPacket();
-    LoRa.write(data, size);
+    int bytes_sent = LoRa.write(data, size);
+    // Serial.print("Sent Lora Message size: "); Serial.println(bytes_sent);
     LoRa.endPacket(true);
     LoRa.receive(); // set receive mode
 }
