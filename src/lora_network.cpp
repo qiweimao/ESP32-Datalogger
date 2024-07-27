@@ -11,7 +11,7 @@
  ******************************************************************/
 
 void handle_time_sync(const uint8_t *incomingData){
-      Serial.print("\nTime Sync Received. ");
+      Serial.println(); Serial.println("=== TIME_SYNC === ");
       time_sync_message msg;
       memcpy(&msg, incomingData, sizeof(msg));
 
@@ -42,14 +42,37 @@ void handle_time_sync(const uint8_t *incomingData){
 
 }
 
+int poll_config_flag =0 ;
+
 void handle_config_poll(const uint8_t *incomingData){
-  Serial.println("=== data configuration ===");
-  if(sendLoRaData((uint8_t *) &dataConfig, sizeof(dataConfig), "/data.conf")){
-    Serial.println("Sent data collection configuration to gateway.");
-  }
-  Serial.println("=== sys configuration ===");
-  if(sendLoRaData((uint8_t *) &systemConfig, sizeof(systemConfig), "/sys.conf")){
-    Serial.println("Sent sys collection configuration to gateway.");
+  poll_config_flag = 1;
+  Serial.println(); Serial.println("=== GET_CONFIG === ");
+}
+
+void task_handle_config_poll(void *parameter){
+  while (true)
+  {
+    if (poll_config_flag)
+    {
+      Serial.println("=== data configuration ===");
+      if(sendLoRaData((uint8_t *) &dataConfig, sizeof(dataConfig), "/data.conf")){
+        Serial.println("Sent data collection configuration to gateway.");
+      }
+      Serial.println("=== sys configuration ===");
+      if(sendLoRaData((uint8_t *) &systemConfig, sizeof(systemConfig), "/sys.conf")){
+        Serial.println("Sent sys collection configuration to gateway.");
+      }
+
+      // send end of sync signal
+      signal_message poll_complete_msg;
+      memcpy(&poll_complete_msg.mac, MAC_ADDRESS_STA, MAC_ADDR_LENGTH);
+      poll_complete_msg.msgType = POLL_COMPLETE;
+      sendLoraMessage((uint8_t *)&poll_complete_msg, sizeof(poll_complete_msg));
+
+      poll_config_flag = 0; // reset flag
+    }
+    
+    vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
   }
 }
 
@@ -182,16 +205,31 @@ void send_time_sync_message(int index) {
 
 
 int lora_initialize(){
+
     lora_config.lora_mode = systemConfig.LORA_MODE;
     lora_config.pairingKey = systemConfig.PAIRING_KEY;
+
     addHandler(&lora_config, TIME_SYNC, (LoRaMessageHandlerFunc)handle_time_sync, NULL);
     addHandler(&lora_config, GET_CONFIG, (LoRaMessageHandlerFunc)handle_config_poll, NULL);
+
     if(addSchedule(&lora_config, sync_folder_request, 60000, 0) == 0){
       Serial.println("Added sync folder request handler.");
     }
+
     if(addSchedule(&lora_config, poll_config, 60000, 0) == 0){
       Serial.println("Added poll config handler.");
     }
+    // Create the task for the control loop
+    xTaskCreate(
+      task_handle_config_poll,    // Task function
+      "Hanle Poll Config Task",     // Name of the task
+      10000,              // Stack size in words
+      NULL,               // Task input parameter
+      1,                  // Priority of the task
+      NULL                // Task handle
+    );
+    Serial.println("Added Data send handler");
+
     if(addSchedule(&lora_config, send_time_sync_message, 60000, 0) == 0){
       Serial.println("Added send time sync handler.");
     }

@@ -13,15 +13,18 @@
 int waitForAck() {
   unsigned long startTime = millis();
   while (millis() - startTime < ACK_TIMEOUT) {
-      if(ack_count){
-        ack_count--;
-        return ACK;
-      }
-      if(rej_count){
-        rej_count--;
-        return REJ;
-      }
-        vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
+    // Serial.println("Checking flags");
+    if(ack_count){
+      // Serial.println("Checked ack_count flag");
+      ack_count--;
+      return ACK;
+    }
+    if(rej_count){
+      rej_count--;
+      // Serial.println("Checked rej_count flag");
+      return REJ;
+    }
+    vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
   }
   return TIMEOUT;
 }
@@ -135,7 +138,8 @@ bool sendLoRaFile(const char* filename, LoRaFileTransferMode mode) {
   file.seek(lastSentPosition);// Seek to the last sent position in the data file
   while ((file_body.len = file.read(file_body.data, CHUNK_SIZE)) > 0) {
     if(!sendChunk(file_body)){
-      break;
+      Serial.println("sendLoRaFile: Abort transimission.");
+      return false;
     }
 
     // change the msgType back to SYNC to append to first chunk later
@@ -172,25 +176,26 @@ bool sendChunk(file_body_message file_body) {
 
   while (attempts < MAX_ATTEMPS) {
 
+    ack_count = 0; // reset flag
+    rej_count = 0;
     sendLoraMessage((uint8_t*)&file_body, sizeof(file_body));
-    Serial.print("Sent FILE_BODY, chunk of size: "); Serial.println(file_body.len);
-
+    Serial.print("Sent chunk of size: "); Serial.println(file_body.len);
     int res = waitForAck();
     if (res == ACK) {
       // Serial.println("Received ACK");
       return true;
     } else {
       if (res == REJ){
-        Serial.println("Received REJ, Abort Transmission");
+        Serial.println("Sendchunk: Received REJ, Abort Transmission");
         return false;
       }
       // Check rejection before reattempt
-      Serial.println("Time out. ACK for metadata not received, resending");
+      Serial.println("Sendchunk: Time out. ACK not received.");
       attempts++;
     }
 
   }
-  Serial.println("Failed to send chunk after maximum attempts");
+  // Serial.println("Failed to send chunk after maximum attempts");
   return false;
 }
 

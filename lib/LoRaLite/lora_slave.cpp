@@ -29,12 +29,12 @@ String file_path = "";
 // **************************************
 // * Send All .dat File From Folder
 // **************************************
-void sync_folder(String folderPath, String extension) {
+int sync_folder(String folderPath, String extension) {
   File root = SD.open(folderPath);
 
   if (!root) {
     Serial.println("Failed to open directory: " + folderPath);
-    return;
+    return -1;
   }
 
   File file = root.openNextFile();
@@ -42,18 +42,22 @@ void sync_folder(String folderPath, String extension) {
     String fileName = file.name();
     if (!file.isDirectory() && fileName.endsWith(extension)) {
       String fullFilePath = folderPath + "/" + fileName;
-      if (sendLoRaFile(fullFilePath.c_str(), SYNC)) {// append mode
+      if (!sendLoRaFile(fullFilePath.c_str(), SYNC)) {// append mode
+        Serial.println("sync_folder: send file failed, abort.");
+        file.close();
+        return -2;
       }
       file.close();
     }
     file = root.openNextFile();
   }
   root.close();
+  return 0;
 }
 
 void send_file(String path) {
 
-  Serial.println("=== data configuration ===");
+  Serial.println("=== Sending Single File ===");
   if(sendLoRaFile(path.c_str(), SEND)) {
     Serial.println("Sent data collection configuration to gateway.");
   }
@@ -71,14 +75,18 @@ void sendFilesTask(void * parameter) {
             
       unsigned long startTime = millis();  // Start time
 
-      Serial.println("=== send files in folder /data ===");
-      sync_folder(sync_folder_path, sync_extension);
+      Serial.println();Serial.println("=== SYNC_FOLDER ===");
+      if (sync_folder(sync_folder_path, sync_extension) == 0){
+        // send end of sync signal
+        signal_message poll_complete_msg;
+        memcpy(&poll_complete_msg.mac, MAC_ADDRESS_STA, MAC_ADDR_LENGTH);
+        poll_complete_msg.msgType = POLL_COMPLETE;
+        sendLoraMessage((uint8_t *)&poll_complete_msg, sizeof(poll_complete_msg));
+      }
+      else{
+        Serial.println("sendFilesTask: sync_folder fail.");
+      }
 
-      // send end of sync signal
-      signal_message poll_complete_msg;
-      memcpy(&poll_complete_msg.mac, MAC_ADDRESS_STA, MAC_ADDR_LENGTH);
-      poll_complete_msg.msgType = POLL_COMPLETE;
-      sendLoraMessage((uint8_t *)&poll_complete_msg, sizeof(poll_complete_msg));
 
       unsigned long endTime = millis();  // End time
       unsigned long elapsedTime = endTime - startTime;  // Calculate elapsed time
@@ -169,12 +177,15 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
   memcpy(buffer, incomingData + 1, 6);
 
   uint8_t type = incomingData[0];
+
+  // Serial.print("OnDataRecvNode, type: "); Serial.println(type);
   
   // User registered callback
   LoRaMessageHandlerFunc handler = findHandler(&lora_config, type, 1); // 1 indicates slave
   if (handler) {
       // Call the registered handler
       handler(incomingData);
+      return;
   }
 
   // library predefined handler
@@ -235,6 +246,7 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
         Serial.println("This message is not for me.");
         return;
       };
+      // Serial.println("Received ACK");
       ack_count++;
       break;
 
@@ -243,12 +255,14 @@ void OnDataRecvNode(const uint8_t *incomingData, int len) {
         Serial.println("This message is not for me.");
         return;
       };
+      Serial.println("Received REJ");
       rej_count++;
       break;
     
 
     default:
-      Serial.println("Unknown message type");
+
+      Serial.print("Unknown message:"); Serial.println(type);
       break;
   }
 
@@ -269,7 +283,7 @@ void lora_slave_init() {
   NodeStart = millis();
   pairingStatus = PAIR_REQUEST;
   
-  xTaskCreate(taskReceive, "Data Handler", 10000, (void *)OnDataRecvNode, 1, NULL); // register slave handler with receive task
+  xTaskCreate(taskReceive, "Data Handler", 10000, (void *)OnDataRecvNode, 2, NULL); // register slave handler with receive task
   xTaskCreate(autoPairing, "Pairing Task", 10000, NULL, 1, NULL);
   xTaskCreate(sendFilesTask, "Send File Task", 10000, NULL, 1, NULL);
 

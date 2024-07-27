@@ -14,14 +14,14 @@ unsigned long lastLogTimeADC[CHANNEL_COUNT] = {0};
 bool loggingPaused = false;
 
 String createFilename(String type, int channel) {
-  String filename = "/data/" + String(channel) + ".dat";
+  // String filename = "/data/" + String(channel) + ".dat";
   Serial.print(filename);
   return filename;
 }
 
 void logDataFunction(int channel, String timestamp) {
   String filename = createFilename("ADC", channel);
-  Serial.print(" Opened.");
+  // Serial.print(" Opened.");
   if (!SD.exists(filename)) {
     File dataFile = SD.open(filename, FILE_WRITE);
     if (dataFile) {
@@ -38,10 +38,10 @@ void logDataFunction(int channel, String timestamp) {
     dataFile.println(data);
     dataFile.close();
     unsigned long endTime = millis(); // End timing
-    Serial.print("Time taken for append operation: ");
-    Serial.print(endTime - startTime);
-    Serial.print(" ms.");
-    Serial.println(" Closed ");
+    // Serial.print("Time taken for append operation: ");
+    // Serial.print(endTime - startTime);
+    // Serial.print(" ms.");
+    // Serial.println(" Closed ");
   } else {
     Serial.println("Failed to open file for writing");
   }
