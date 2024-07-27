@@ -209,7 +209,24 @@ void handle_file_body(const uint8_t *incomingData){
 
   file_body_message file_body_gateway;
   memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
-  Serial.print("Received FILE_BODY for: ");
+  Serial.print("handle_file_body Received FILE_BODY for: ");
+
+
+  if (rej_switch)
+  {
+    Serial.print("rej_switch is on, sent REJ.");
+    signal_message ackMessage_gateway;
+    ackMessage_gateway.msgType = REJ;
+    memcpy(&ackMessage_gateway.mac, file_body_gateway.mac, sizeof(file_body_gateway.mac));
+
+    if (xSemaphoreTake(xMutex_LoRaHardware, portMAX_DELAY) == pdTRUE) {
+      sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
+      xSemaphoreGive(xMutex_LoRaHardware);
+      return;
+    }
+    return;
+  }
+  
 
   String filepath = "/node/" + getDeviceNameByMac(file_body_gateway.mac)  + file_body_gateway.filename;
   Serial.print(filepath);
@@ -229,7 +246,11 @@ void handle_file_body(const uint8_t *incomingData){
   signal_message ackMessage_gateway;
   ackMessage_gateway.msgType = ACK;
   memcpy(&ackMessage_gateway.mac, file_body_gateway.mac, sizeof(file_body_gateway.mac));
-  sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
+
+  if (xSemaphoreTake(xMutex_LoRaHardware, portMAX_DELAY) == pdTRUE) {
+    sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
+    xSemaphoreGive(xMutex_LoRaHardware);
+  }
 
   Serial.println("Data written to file successfully");
 
@@ -241,7 +262,7 @@ void handle_file_entire(const uint8_t *incomingData){
 
   file_body_message file_body_gateway;
   memcpy(&file_body_gateway, incomingData, sizeof(file_body_gateway));
-  Serial.print("Received FILE_BODY for: ");
+  Serial.print("handle_file_entire Received FILE_ENTIRE for: ");
 
   String filepath = "/node/" + getDeviceNameByMac(file_body_gateway.mac)  + file_body_gateway.filename;
   Serial.print(filepath);
@@ -257,12 +278,15 @@ void handle_file_entire(const uint8_t *incomingData){
   total_bytes_written += bytes_written;
   Serial.printf(" Wrote %d bytes. ", bytes_written);
   file.close();
+  Serial.println("Data written to file successfully");
   
   signal_message ackMessage_gateway;
   ackMessage_gateway.msgType = ACK;
   memcpy(&ackMessage_gateway.mac, file_body_gateway.mac, sizeof(file_body_gateway.mac));
-  sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
-
-  Serial.println("Data written to file successfully");
+  if (xSemaphoreTake(xMutex_LoRaHardware, portMAX_DELAY) == pdTRUE) {
+    sendLoraMessage((uint8_t *) &ackMessage_gateway, sizeof(ackMessage_gateway));
+    xSemaphoreGive(xMutex_LoRaHardware);
+  }
+  Serial.println("Sent ACK");
 
 }
