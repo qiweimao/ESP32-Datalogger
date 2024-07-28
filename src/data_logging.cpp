@@ -11,16 +11,8 @@
 
 unsigned long lastLogTimeADC[CHANNEL_COUNT] = {0};
 
-bool loggingPaused = false;
-
-String createFilename(String type, int channel) {
-  // String filename = "/data/" + String(channel) + ".dat";
-  Serial.print(filename);
-  return filename;
-}
-
 void logDataFunction(int channel, String timestamp) {
-  String filename = createFilename("ADC", channel);
+  String filename = "/data/" + String(channel) + ".dat";
   // Serial.print(" Opened.");
   if (!SD.exists(filename)) {
     File dataFile = SD.open(filename, FILE_WRITE);
