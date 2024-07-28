@@ -136,10 +136,12 @@ bool sendLoRaFile(const char* filename, LoRaFileTransferMode mode) {
 
   // Pack File Body
   file.seek(lastSentPosition);// Seek to the last sent position in the data file
+  int res;
   while ((file_body.len = file.read(file_body.data, CHUNK_SIZE)) > 0) {
-    if(!sendChunk(file_body)){
+    res = sendChunk(file_body);
+    if(!res){
       Serial.println("sendLoRaFile: Abort transimission.");
-      return false;
+      break;
     }
 
     // change the msgType back to SYNC to append to first chunk later
@@ -165,6 +167,11 @@ bool sendLoRaFile(const char* filename, LoRaFileTransferMode mode) {
   metaFile.close();
 
   Serial.println("File Transfer: SUCCESS");
+
+  if(!res){
+    return false;
+  }
+
   return true;
 }
 
