@@ -132,6 +132,7 @@ void autoPairing(void * parameter){
         pairingDataNode.msgType = PAIRING; // message type
         memcpy(pairingDataNode.mac_origin, MAC_ADDRESS_STA, sizeof(MAC_ADDRESS_STA)); // device mac address
         pairingDataNode.pairingKey = lora_config.pairingKey; // paring key for network
+        memcpy(pairingDataNode.deviceName, lora_config.deviceName.c_str() ,sizeof(pairingDataNode.deviceName));
 
         printMacAddress(pairingDataNode.mac_origin);Serial.println();
         Serial.println(pairingDataNode.deviceName);

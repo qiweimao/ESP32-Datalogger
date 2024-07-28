@@ -36,6 +36,7 @@ typedef struct {
 
 typedef struct {
     int lora_mode;
+    String deviceName;
     uint32_t pairingKey;
     LoRaMessageHandler messageHandlers[MAX_HANDLERS];
     LoRaPollSchedule schedules[MAX_SCHEDULES];
