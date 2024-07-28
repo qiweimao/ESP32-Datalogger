@@ -6,15 +6,23 @@
 
 #define LORA_SLAVE 0
 #define LORA_GATEWAY 1
-#define CHUNK_SIZE 200  // Size of each chunk
-#define ACK_TIMEOUT 5000  // Timeout for ACK in milliseconds
+
 #define MAX_DEVICE_NAME_LEN 10  
 #define MAX_FILENAME_LEN 20
 #define MAX_JSON_LEN_1 20
 #define MAX_JSON_LEN_2 10
 
-#define MAX_HANDLERS 10
-#define MAX_SCHEDULES 10
+#define MAX_HANDLERS 20
+#define MAX_SCHEDULES 20
+#define MAX_ATTEMPS 1 // only attempt at gateway's request
+
+enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
+enum MessageType {PAIRING, \
+                  FILE_BODY, FILE_ENTIRE, ACK, REJ, TIMEOUT, 
+                  SYNC_FOLDER, GET_FILE, POLL_COMPLETE,
+                  USER_DEFINED_START = 100  // Reserve range for user-defined types
+};
+#include "lora_user_settings.h"
 
 
 typedef void (*DataRecvCallback)(const uint8_t *incomingData, int len);
@@ -101,12 +109,6 @@ typedef struct struct_pairing { // this is a broadcast message
   char deviceName[MAX_DEVICE_NAME_LEN];
 } struct_pairing;
 
-enum PairingStatus {NOT_PAIRED, PAIR_REQUEST, PAIR_REQUESTED, PAIR_PAIRED,};
-enum MessageType {PAIRING, \
-                  FILE_BODY, FILE_ENTIRE, ACK, REJ, TIMEOUT, 
-                  SYNC_FOLDER, GET_FILE, POLL_COMPLETE,
-                  USER_DEFINED_START = 100  // Reserve range for user-defined types
-};
 
 extern uint8_t mac_buffer[6];
 extern uint8_t MAC_ADDRESS_STA[6];
@@ -123,7 +125,6 @@ void sendLoraMessage(uint8_t* data, size_t size);
 void handle_pairing(const uint8_t *incomingData);
 void lora_init(LoRaConfig *config);
 
-#include "lora_user_settings.h"
 
 
 #endif

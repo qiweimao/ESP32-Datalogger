@@ -19,4 +19,9 @@ enum UserMessageType {
 #define LORA_MOSI 13
 #define LORA_SS 15
 
+// Time and Size
+#define CHUNK_SIZE 200  // Size of each chunk
+#define ACK_TIMEOUT 5000  // Timeout for ACK in milliseconds
+#define POLL_TIMEOUT 60000  // Timeout for ACK in milliseconds
+
 #endif // USER_MESSAGE_TYPES_H

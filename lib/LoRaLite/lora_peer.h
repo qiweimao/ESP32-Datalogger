@@ -4,9 +4,8 @@
 #include <Arduino.h>
 #include <time.h>
 
-#define MAX_PEERS 30
+#define MAX_PEERS 100
 #define MAC_ADDR_LENGTH 6
-
 #define DEVICE_NAME_MAX_LENGTH 32
 
 enum PeerStatus {ONLINE, OFFLINE, UNKNOWN};

@@ -24,7 +24,7 @@ int waitForAck() {
       // Serial.println("Checked rej_count flag");
       return REJ;
     }
-    vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 1 second
+    vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
   }
   return TIMEOUT;
 }

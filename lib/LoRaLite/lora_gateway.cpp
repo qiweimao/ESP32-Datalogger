@@ -58,7 +58,7 @@ void OnDataRecvGateway(const uint8_t *incomingData, int len) {
 
 int waitForPollAck() {
   unsigned long startTime = millis();
-  while (millis() - startTime < ACK_TIMEOUT) {
+  while (millis() - startTime < POLL_TIMEOUT) {
     if(poll_success){
       poll_success = false;
       return true;
