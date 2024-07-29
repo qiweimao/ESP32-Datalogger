@@ -353,7 +353,7 @@ AsyncCallbackJsonWebHandler* updateCollectionConfig() {
     else if(isDeviceNameValid(deviceName)){
       // Implementation to send the configuration update to remote stations
       collection_config_message msg;
-      msg.msgType = DATA_CONFIG;                                          // msgType
+      msg.msgType = UPDATE_DATA_CONFIG;                                          // msgType
       getMacByDeviceName(deviceName, msg.mac);                            // MAC
       msg.channel = channel;
       msg.pin = pin;
@@ -404,7 +404,7 @@ AsyncCallbackJsonWebHandler* updateSysConfig() {
       else if(isDeviceNameValid(deviceName)){
         // Implementation to send the configuration update to remote stations
         sysconfig_message msg;
-        msg.msgType = SYS_CONFIG;                                          // msgType
+        msg.msgType = UPDATE_SYS_CONFIG;                                          // msgType
         getMacByDeviceName(deviceName, msg.mac);                            // MAC
         strncpy(msg.key, key.c_str(), MAX_JSON_LEN_1 - 1);                    // key
         msg.key[MAX_JSON_LEN_1 - 1] = '\0'; // Null-terminate the string
