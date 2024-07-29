@@ -38,7 +38,6 @@ struct DataCollectionConfig {
   uint8_t pin[CHANNEL_COUNT];
   bool enabled[CHANNEL_COUNT];
   uint16_t interval[CHANNEL_COUNT];
-  float value[CHANNEL_COUNT];
   uint32_t time[CHANNEL_COUNT];
 
 };

@@ -42,7 +42,6 @@ void logDataFunction(int channel, String timestamp) {
 
   time_t now;
   time(&now);  // Get the current time as time_t (epoch time)
-  dataConfig.value[channel] = random(0, 10000);
   dataConfig.time[channel] = now;
 
 }

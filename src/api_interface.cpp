@@ -254,7 +254,6 @@ void getCollectionConfig(AsyncWebServerRequest *request) {
     adcObj["sensor"] = config.type[i];
     adcObj["enabled"] = config.enabled[i];
     adcObj["interval"] = config.interval[i];
-    adcObj["value"] = config.value[i];
     adcObj["time"] = convertTMtoString(config.time[i]);
   }
 
