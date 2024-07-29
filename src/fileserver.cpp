@@ -45,6 +45,7 @@ typedef struct
   String filename;
   String ftype;
   String fsize;
+  String lastmodified;
 } fileinfo;
 
 String   webpage, MessageLine;
@@ -241,6 +242,13 @@ bool Directory(String folderPath) {
       Filenames[numfiles].filename = (String(file.name()).startsWith("/") ? String(file.name()).substring(1) : file.name());
       Filenames[numfiles].ftype    = (file.isDirectory() ? "Dir" : "File");
       Filenames[numfiles].fsize    = ConvBinUnits(file.size(), 1);
+
+      time_t lastWriteTime = file.getLastWrite();
+      struct tm *timeinfo = localtime(&lastWriteTime);
+      char buffer[30];
+      strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+      Filenames[numfiles].lastmodified = String(buffer);
+
       file = root.openNextFile();
       numfiles++;
     }
@@ -295,6 +303,7 @@ AsyncCallbackJsonWebHandler *fileListJson() {
       fileObj["filename"] = Filenames[i].filename;
       fileObj["type"] = Filenames[i].ftype;
       fileObj["size"] = Filenames[i].fsize;
+      fileObj["lastmodified"] = Filenames[i].lastmodified;
     }
     serveJson(request, doc, 200, false);
   });
