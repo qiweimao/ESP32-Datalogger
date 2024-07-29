@@ -42,6 +42,26 @@ void handle_time_sync(const uint8_t *incomingData){
 
 }
 
+void handle_collection_config_update(const uint8_t *incomingData){
+  Serial.println(); Serial.println("=== UPDATE_DATA_CONFIG === ");
+  collection_config_message msg;
+  memcpy(&msg, incomingData, sizeof(msg));
+
+  updateDataCollectionConfiguration(msg.channel, "pin", msg.pin);
+  updateDataCollectionConfiguration(msg.channel, "sensor", msg.sensor);
+  updateDataCollectionConfiguration(msg.channel, "enabled", msg.enabled);
+  updateDataCollectionConfiguration(msg.channel, "interval", msg.interval);
+}
+
+void handle_system_config_update(const uint8_t *incomingData){
+  Serial.println(); Serial.println("=== UPDATE_DATA_CONFIG === ");
+  sysconfig_message msg;
+  memcpy(&msg, incomingData, sizeof(msg));
+  String key = msg.key;
+  String value = msg.value;
+  update_system_configuration(key, value);
+}
+
 int poll_config_flag =0 ;
 
 void handle_config_poll(const uint8_t *incomingData){
@@ -214,6 +234,8 @@ int lora_initialize(){
 
     addHandler(&lora_config, TIME_SYNC, (LoRaMessageHandlerFunc)handle_time_sync, NULL);
     addHandler(&lora_config, GET_CONFIG, (LoRaMessageHandlerFunc)handle_config_poll, NULL);
+    addHandler(&lora_config, UPDATE_DATA_CONFIG, (LoRaMessageHandlerFunc)handle_collection_config_update, NULL);
+    addHandler(&lora_config, UPDATE_SYS_CONFIG, (LoRaMessageHandlerFunc)handle_system_config_update, NULL);
 
     if(addSchedule(&lora_config, sync_folder_request, 60000, 0) == 0){
       Serial.println("Added sync folder request handler.");
