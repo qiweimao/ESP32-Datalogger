@@ -16,7 +16,7 @@ struct SystemConfig {
   uint32_t PAIRING_KEY;
 };
 
-enum SensorType : int {
+enum SensorType : uint8_t {
   Unknown,
   VibratingWire,
   Barometric,
@@ -33,13 +33,13 @@ enum SensorType : int {
   // rain gauge - i2c or uart - no
 struct DataCollectionConfig {
 
-  int channel_count = CHANNEL_COUNT; // read this byte to process config
+  uint8_t channel_count = CHANNEL_COUNT; // read this byte to process config
   SensorType type[CHANNEL_COUNT];
-  int pin[CHANNEL_COUNT];
+  uint8_t pin[CHANNEL_COUNT];
   bool enabled[CHANNEL_COUNT];
   uint16_t interval[CHANNEL_COUNT];
   float value[CHANNEL_COUNT];
-  struct tm time[CHANNEL_COUNT];
+  uint32_t time[CHANNEL_COUNT];
 
 };
 

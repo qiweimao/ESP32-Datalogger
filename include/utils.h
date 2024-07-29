@@ -42,7 +42,7 @@ extern int utcOffset;  // UTC offset in hours (Eastern Time Zone is -5 hours)
 void wifi_setting_reset();
 void wifi_init();
 String get_current_time(bool getFilename = false);
-String convertTMtoString(struct tm timeinfo);
+String convertTMtoString(time_t now);
 void external_rtc_init();
 void external_rtc_sync_ntp();
 void ntp_sync();

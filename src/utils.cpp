@@ -207,8 +207,11 @@ String get_current_time(bool getFilename) {
   }
 }
 
-String convertTMtoString(struct tm timeinfo){
+String convertTMtoString(time_t now){
   char buffer[30];
+  struct tm timeinfo;
+  gmtime_r(&now, &timeinfo);  // Convert time_t to struct tm
+
   snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02d%+03d:00", 
             timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
             timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, systemConfig.utcOffset);

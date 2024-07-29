@@ -39,10 +39,11 @@ void logDataFunction(int channel, String timestamp) {
   }
 
   // update latest data in dataconfig
-  struct tm timeinfo;
-  getLocalTime(&timeinfo);
+
+  time_t now;
+  time(&now);  // Get the current time as time_t (epoch time)
   dataConfig.value[channel] = random(0, 10000);
-  dataConfig.time[channel] = timeinfo;
+  dataConfig.time[channel] = now;
 
 }
 
