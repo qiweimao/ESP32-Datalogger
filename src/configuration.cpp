@@ -13,27 +13,27 @@ Preferences preferences;
  *                                                                *
  ******************************************************************/
 
-void saveSystemConfigToSD() {
-  File file = SD.open("/sys.conf", FILE_WRITE);
-  if (!file) {
-    Serial.println("Failed to open systemConfig.config for writing");
-    return;
-  }
-  file.write((uint8_t*)&systemConfig, sizeof(systemConfig));
-  file.close();
-  Serial.println("System configuration saved to SD card.");
-}
+// void saveSystemConfigToSD() {
+//   File file = SD.open("/sys.conf", FILE_WRITE);
+//   if (!file) {
+//     Serial.println("Failed to open systemConfig.config for writing");
+//     return;
+//   }
+//   file.write((uint8_t*)&systemConfig, sizeof(systemConfig));
+//   file.close();
+//   Serial.println("System configuration saved to SD card.");
+// }
 
-void saveDataConfigToSD() {
-  File file = SD.open("/data.conf", FILE_WRITE);
-  if (!file) {
-    Serial.println("Failed to open dataConfig.config for writing");
-    return;
-  }
-  file.write((uint8_t*)&dataConfig, sizeof(dataConfig));
-  file.close();
-  Serial.println("Data collection configuration saved to SD card.");
-}
+// void saveDataConfigToSD() {
+//   File file = SD.open("/data.conf", FILE_WRITE);
+//   if (!file) {
+//     Serial.println("Failed to open dataConfig.config for writing");
+//     return;
+//   }
+//   file.write((uint8_t*)&dataConfig, sizeof(dataConfig));
+//   file.close();
+//   Serial.println("Data collection configuration saved to SD card.");
+// }
 
 /******************************************************************
  *                                                                *
@@ -75,7 +75,7 @@ void load_system_configuration() {
   Serial.printf("PAIRING_KEY: %lu\n", systemConfig.PAIRING_KEY);
   Serial.printf("utcOffset: %d\n", systemConfig.utcOffset);
 
-  saveSystemConfigToSD();
+  // saveSystemConfigToSD();
 
 }
 
@@ -121,8 +121,8 @@ void update_system_configuration(String key, String value) {
 
   preferences.end();
 
-  load_system_configuration(); // reload configuration
-  saveSystemConfigToSD();
+  // load_system_configuration(); // reload configuration
+  // saveSystemConfigToSD();
 }
 
 
@@ -168,13 +168,15 @@ void loadDataConfigFromPreferences() {
   }
   preferences.end();
   
-  saveDataConfigToSD();
+  // saveDataConfigToSD();
 
   printDataConfig();
 }
 
 void updateDataCollectionConfiguration(int channel, String key, int value) {
-  Serial.println("Updating data collection configuration...");
+  // Serial.println("Updating data collection configuration,");
+  Serial.print("key:");Serial.print(key);
+  Serial.print("; value:");Serial.println(value);
 
   if (!( channel >= 0 && channel < 16)){
     Serial.println("Invalid channel.");
@@ -204,9 +206,9 @@ void updateDataCollectionConfiguration(int channel, String key, int value) {
     Serial.println("Data collection configuration not found. Update Failed.");
   }
   preferences.end();
-  printDataConfig();
+  // printDataConfig();
 
-  saveDataConfigToSD();
-  loadDataConfigFromPreferences(); // reload into struct after update
-  Serial.println("Finished updating data collection configuration.");
+  // saveDataConfigToSD();
+  // loadDataConfigFromPreferences(); // reload into struct after update
+  // Serial.println("Finished updating data collection configuration.");
 }
