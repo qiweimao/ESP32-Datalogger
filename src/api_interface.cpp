@@ -362,6 +362,7 @@ AsyncCallbackJsonWebHandler* updateCollectionConfig() {
       msg.interval = interval;
       sendLoraMessage((uint8_t *) &msg, sizeof(msg));
       request->send(200); // Send an empty response with HTTP status code 200
+      vTaskDelay(1000 / portTICK_PERIOD_MS);
       poll_config(msg.mac);
       return;
     }
