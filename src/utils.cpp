@@ -80,7 +80,6 @@ const char *ntpServers[] = {
 };
 
 const int numNtpServers = sizeof(ntpServers) / sizeof(ntpServers[0]);
-int daylightOffset_sec = 3600;
 RTC_DS1307 rtc;
 bool rtc_mounted = false;
 
@@ -138,38 +137,63 @@ void external_rtc_sync_ntp(){
   }
 }
 
+bool isDST() {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    return false;
+  }
+
+  // Calculate the DST start and end dates
+  struct tm startDST, endDST;
+
+  // Start DST on the second Sunday in March at 2:00 AM
+  startDST = { 0, 0, 2, 0, 2, 0 };  // 2:00 AM on March 0 (March will be corrected)
+  startDST.tm_wday = 0;
+  startDST.tm_mday = 14 - ((startDST.tm_wday - 1) % 7); // Second Sunday in March
+  startDST.tm_year = timeinfo.tm_year;
+
+  // End DST on the first Sunday in November at 2:00 AM
+  endDST = { 0, 0, 2, 0, 10, 0 };  // 2:00 AM on November 0 (November will be corrected)
+  endDST.tm_wday = 0;
+  endDST.tm_mday = 7 - ((endDST.tm_wday - 1) % 7); // First Sunday in November
+  endDST.tm_year = timeinfo.tm_year;
+
+  time_t now = mktime(&timeinfo);
+  time_t start = mktime(&startDST);
+  time_t end = mktime(&endDST);
+
+  return now >= start && now < end;
+}
+
 void ntp_sync() {
+  const int standardOffset_sec = 0;
+  const int daylightOffset_sec = 3600;
   const int maxAttempts = 5;  // Maximum number of attempts per server
   long gmtOffset_sec = systemConfig.utcOffset * 3600;
-  // Serial.println(gmtOffset_sec);
+  long daylightOffset = isDST() ? daylightOffset_sec : standardOffset_sec;
 
   // Attempt synchronization with each NTP server in the list
   for (int i = 0; i < numNtpServers; i++) {
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServers[i]);
-    // Serial.printf("Syncing with NTP server %s...\n", ntpServers[i]);
+    configTime(gmtOffset_sec, daylightOffset, ntpServers[i]);
 
     bool syncSuccess = false;
     for (int attempt = 0; attempt < maxAttempts; attempt++) {
-      
-      vTaskDelay(2000 / portTICK_PERIOD_MS); // Delay for 1 second
+      vTaskDelay(2000 / portTICK_PERIOD_MS); // Delay for 2 seconds
 
       // Check synchronization status
       if (sntp_get_sync_status() == SNTP_SYNC_STATUS_COMPLETED) {
         struct tm timeinfo;
         if (getLocalTime(&timeinfo)) {
-          // Serial.println(&timeinfo, "NTP Time from internet: %A, %B %d %Y %H:%M:%S");
           external_rtc_sync_ntp();
           syncSuccess = true;
           break; // Exit the retry loop if synchronization is successful
         }
-      } else {
-        // Serial.printf("Attempt %d failed to synchronize with NTP server %s\n", attempt + 1, ntpServers[i]);
       }
     }
 
     if (syncSuccess) {
       return; // Exit the function if synchronization is successful
-    } 
+    }
   }
   // If synchronization fails with all servers
   Serial.println("Failed to synchronize with any NTP server.");
@@ -210,11 +234,16 @@ String get_current_time(bool getFilename) {
 String convertTMtoString(time_t now){
   char buffer[30];
   struct tm timeinfo;
-  gmtime_r(&now, &timeinfo);  // Convert time_t to struct tm
+  localtime_r(&now, &timeinfo);  // Convert time_t to struct tm in local time
+
+  const int standardOffset_hour = -5;
+  const int daylightOffset_hour = -4;
 
   snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02d%+03d:00", 
             timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
-            timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, systemConfig.utcOffset);
+            timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec,
+            (isDST() ? daylightOffset_hour : standardOffset_hour)
+);
   return String(buffer);
 }
 
