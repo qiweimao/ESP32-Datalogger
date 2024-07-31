@@ -9,37 +9,45 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 
-unsigned long lastLogTimeADC[CHANNEL_COUNT] = {0};
+unsigned long lastLogTime[CHANNEL_COUNT] = {0};
+
+float generateRandomFloat(float minVal, float maxVal) {
+  uint32_t randomValue = esp_random();
+  float scaledValue = (float)randomValue / (float)UINT32_MAX; // Scale to [0, 1]
+  return minVal + scaledValue * (maxVal - minVal); // Scale to [minVal, maxVal]
+}
 
 void logDataFunction(int channel, String timestamp) {
   String filename = "/data/" + String(channel) + ".dat";
-  // Serial.print(" Opened.");
   if (!SD.exists(filename)) {
     File dataFile = SD.open(filename, FILE_WRITE);
     if (dataFile) {
+        String header = "Time,Frequency (Hz),Temperature(Deg C)";
+          dataFile.println(header);
       dataFile.close();
     } else {
       Serial.println("Failed to create file");
       return;
     }
   }
-  unsigned long startTime = millis(); // Start timing
+
   File dataFile = SD.open(filename, FILE_APPEND);
   if (dataFile) {
-    String data = timestamp + "," + String(channel) + ",ADC data";
+
+    // dummy data
+    float frequency = generateRandomFloat(7000, 8000);
+    float temperature = generateRandomFloat(25, 30);
+    
+    String data = timestamp + "," + String(frequency) + "," + String(temperature);
+
     dataFile.println(data);
     dataFile.close();
     unsigned long endTime = millis(); // End timing
-    // Serial.print("Time taken for append operation: ");
-    // Serial.print(endTime - startTime);
-    // Serial.print(" ms.");
-    // Serial.println(" Closed ");
   } else {
     Serial.println("Failed to open file for writing");
   }
 
   // update latest data in dataconfig
-
   time_t now;
   time(&now);  // Get the current time as time_t (epoch time)
   dataConfig.time[channel] = now;
@@ -51,9 +59,9 @@ void logDataTask(void *parameter) {
     unsigned long currentTime = millis() / 60000; // Convert milliseconds to minutes
 
     for (int i = 0; i < CHANNEL_COUNT; i++) {
-      if (dataConfig.enabled[i] && (currentTime - lastLogTimeADC[i] >= dataConfig.interval[i])) {
-        logDataFunction(i, get_current_time(true));
-        lastLogTimeADC[i] = currentTime;
+      if (dataConfig.enabled[i] && (currentTime - lastLogTime[i] >= dataConfig.interval[i])) {
+        logDataFunction(i, get_current_time(false));
+        lastLogTime[i] = currentTime;
       }
       vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 100 milliseconds
     }
@@ -61,26 +69,19 @@ void logDataTask(void *parameter) {
 }
 
 void log_data_init() {
-  Serial.println("Initializing data logging.");
 
+  Serial.println("Initializing data logging.");
+  // Prepare data folder for logging
   if (!SD.exists("/data")) {
     SD.mkdir("/data");
     Serial.println("Created /data directory on SD card.");
   }
 
-  unsigned long currentTime = millis() / 60000; // Convert milliseconds to minutes
-
   for (int i = 0; i < CHANNEL_COUNT; i++) {
     if (dataConfig.enabled[i]) {
-      Serial.println("ADC channel: is enabled");
-      Serial.println(i);
-      logDataFunction(i, get_current_time(true));
-      lastLogTimeADC[i] = currentTime;
+      Serial.print("Channel: "); Serial.println(i);
     }
   }
-
-
-  Serial.println("Finished Initial Scan.");
 
   xTaskCreate(
     logDataTask,        // Task function
@@ -91,4 +92,5 @@ void log_data_init() {
     NULL                // Task handle
   );
   Serial.println("Added Data Logging Task.");
+
 }
