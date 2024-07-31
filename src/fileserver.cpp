@@ -264,18 +264,18 @@ bool Directory(String folderPath) {
 AsyncCallbackJsonWebHandler *fileListJson() {
   return new AsyncCallbackJsonWebHandler("/api/files", [](AsyncWebServerRequest *request, JsonVariant &json) {
 
-    Serial.println("Received file list request");
+    // Serial.println("Received file list request");
 
     if (!request->hasParam("device")){
       Serial.println("no device specified");
       request->send(400, "application/json", "{\"error\":\"Device query parameter \"device\" is missing\"}");
       return;
     }
-    Serial.println("Checked device parameters");
+    // Serial.println("Checked device parameters");
 
     String deviceName = request->getParam("device")->value();
 
-    Serial.println(deviceName);
+    // Serial.println(deviceName);
     String folderpath;
 
     if (deviceName == "gateway") {
@@ -289,7 +289,7 @@ AsyncCallbackJsonWebHandler *fileListJson() {
       return;
     }
 
-    Serial.println(folderpath);
+    // Serial.println(folderpath);
     if (!Directory(folderpath)){ // failed to open directory
       request->send(400, "application/json", "{\"error\":\"Failed to open directory\"}");
       return;
@@ -436,9 +436,20 @@ void notFound(AsyncWebServerRequest *request) { // Process selected file types
       Serial.println("Download handler started...");
       MessageLine = "";
       File file = SD.open(filename, "r");
+      if (!file) {
+        request->send(404, "text/plain", "File not found");
+        return;
+      }
       String contentType = getContentType("download");
-      AsyncWebServerResponse *response = request->beginResponse(contentType, file.size(), [file](uint8_t *buffer, size_t maxLen, size_t total) mutable ->  size_t
-                                                                { return file.read(buffer, maxLen); });
+      AsyncWebServerResponse *response = request->beginResponse(
+        contentType, file.size(), [file](uint8_t *buffer, size_t maxLen, size_t total) mutable ->  size_t
+        {
+          size_t bytesRead = file.read(buffer, maxLen);
+          if (bytesRead == 0) {
+            file.close();
+          }
+          return bytesRead;
+        });
       response->addHeader("Server", "ESP Async Web Server");
       request->send(response);
       downloadtime = millis() - start;
