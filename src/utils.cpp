@@ -100,7 +100,7 @@ void external_rtc_init(){
 
   DateTime now = rtc.now();
   Serial.print("RTC time: ");
-  Serial.println(get_current_time(false));
+  Serial.println(get_external_rtc_current_time());
 
   // Set the ESP32 system time to the RTC time
   struct tm timeinfo;
@@ -202,23 +202,16 @@ void ntp_sync() {
 String get_current_time(bool getFilename) {
   struct tm timeinfo;
 
-  if (rtc_mounted) {
-    DateTime now = rtc.now();
+  if (getLocalTime(&timeinfo)) {
+    
+    const int standardOffset_hour = systemConfig.utcOffset;
+    const int daylightOffset_hour = standardOffset_hour + 1;
     char buffer[30];
     if (!getFilename) {
-      snprintf(buffer, sizeof(buffer), "%04d/%02d/%02d %02d:%02d:%02d", 
-               now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-    } else {
-      snprintf(buffer, sizeof(buffer), "%04d_%02d_%02d_%02d_%02d_%02d", 
-               now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
-    }
-    return String(buffer);
-  } else if (getLocalTime(&timeinfo)) {
-    char buffer[30];
-    if (!getFilename) {
-      snprintf(buffer, sizeof(buffer), "%04d/%02d/%02d %02d:%02d:%02d", 
-               timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
-               timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+      snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02d%+03d:00", 
+                timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
+                timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec,
+                (isDST() ? daylightOffset_hour : standardOffset_hour));
     } else {
       snprintf(buffer, sizeof(buffer), "%04d_%02d_%02d_%02d_%02d_%02d", 
                timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
@@ -231,13 +224,21 @@ String get_current_time(bool getFilename) {
   }
 }
 
+String get_external_rtc_current_time(){
+  DateTime now = rtc.now();
+  char buffer[30];
+    snprintf(buffer, sizeof(buffer), "%04d/%02d/%02d %02d:%02d:%02d", 
+              now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second());
+  return String(buffer);
+}
+
 String convertTMtoString(time_t now){
   char buffer[30];
   struct tm timeinfo;
   localtime_r(&now, &timeinfo);  // Convert time_t to struct tm in local time
 
-  const int standardOffset_hour = -5;
-  const int daylightOffset_hour = -4;
+  const int standardOffset_hour = systemConfig.utcOffset;
+  const int daylightOffset_hour = standardOffset_hour + 1;
 
   snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02d%+03d:00", 
             timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
@@ -279,6 +280,20 @@ void sd_init(){
     }
   }
 
+}
+
+void renameFolder(const char* oldFolderName, const char* newFolderName) {
+  // Check if the old folder exists
+  if (SD.exists(oldFolderName)) {
+    // Rename the folder
+    if (SD.rename(oldFolderName, newFolderName)) {
+      Serial.println("Folder renamed successfully.");
+    } else {
+      Serial.println("Failed to rename folder.");
+    }
+  } else {
+    Serial.println("Folder does not exist.");
+  }
 }
 
 /******************************************************************

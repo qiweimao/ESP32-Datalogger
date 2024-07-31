@@ -42,6 +42,7 @@ extern int utcOffset;  // UTC offset in hours (Eastern Time Zone is -5 hours)
 void wifi_setting_reset();
 void wifi_init();
 String get_current_time(bool getFilename = false);
+String get_external_rtc_current_time();
 String convertTMtoString(time_t now);
 void external_rtc_init();
 void external_rtc_sync_ntp();
@@ -55,6 +56,9 @@ void oled_print(const char* text, size_t size);
 
 /* SD Card */
 void sd_init();
+
+void renameFolder(const char* oldFolderName, const char* newFolderName);
+
 uint32_t generateRandomNumber();
 
 int sdCardLogOutput(const char *format, va_list args);

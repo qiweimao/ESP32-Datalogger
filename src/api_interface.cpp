@@ -286,13 +286,21 @@ void getLoRaNetworkStatus(AsyncWebServerRequest *request) {
   for(int i = 0; i < peerCount; i++){
     JsonObject obj = doc.add<JsonObject>();
 
+    // Time
     char buffer[30];
     struct tm timeinfo =peers[i].lastCommTime;
     snprintf(buffer, sizeof(buffer), "%04d/%02d/%02d %02d:%02d:%02d", 
               timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday, 
               timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
 
+    // MAC
+    const uint8_t* mac = peers[i].mac;
+    char macStr[18]; // MAC address string length is 17 characters + null terminator
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
     obj["name"] = peers[i].deviceName;
+    obj["mac"] = String(macStr);
     obj["lastCommsTime"] = buffer;
     obj["status"] = peers[i].status;
     obj["rssi"] = peers[i].SignalStrength;
@@ -403,15 +411,33 @@ AsyncCallbackJsonWebHandler* updateSysConfig() {
         update_system_configuration(key, value);
       }
       else if(isDeviceNameValid(deviceName)){
+        
         // Implementation to send the configuration update to remote stations
         sysconfig_message msg;
-        msg.msgType = UPDATE_SYS_CONFIG;                                          // msgType
         getMacByDeviceName(deviceName, msg.mac);                            // MAC
+        msg.msgType = UPDATE_SYS_CONFIG;                                          // msgType
         strncpy(msg.key, key.c_str(), MAX_JSON_LEN_1 - 1);                    // key
         msg.key[MAX_JSON_LEN_1 - 1] = '\0'; // Null-terminate the string
         strncpy(msg.value, value.c_str(), MAX_JSON_LEN_1 - 1);                //value
         msg.value[MAX_JSON_LEN_1 - 1] = '\0'; // Null-terminate the string
         sendLoraMessage((uint8_t *) &msg, sizeof(msg));
+
+        // Device Name Update Also Needs to be reflected in Peers
+        if (key.equals("DEVICE_NAME"))
+        {
+          Serial.print("Updating Slave Device Name");
+          // Peer Device Name upated
+          int index = getIndexByMac(msg.mac);
+          Serial.println("Peer Device index: " + index);
+          value.toCharArray(peers[index].deviceName, sizeof(peers[index].deviceName));
+          Serial.println("Updated struct peer device name to" + value);
+
+          // update folder path for next packets
+          String oldFolderName = String("/node/") + deviceName;
+          String newFolderName = String("/node/") + value;
+          renameFolder(oldFolderName.c_str(), newFolderName.c_str());
+
+        }
       }
       else{
         // Handle other device types or invalid device
