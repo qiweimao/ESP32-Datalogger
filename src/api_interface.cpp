@@ -167,7 +167,7 @@ void serveVoltageHistory(AsyncWebServerRequest *request){
 // **************************
 
 void getSysConfig(AsyncWebServerRequest *request){
-  Serial.println("Received request for System Configuration.");
+  // Serial.println("Received request for System Configuration.");
   SystemConfig config;
 
   if (!request->hasParam("device")) {  // Check if parameter device is received
@@ -175,13 +175,13 @@ void getSysConfig(AsyncWebServerRequest *request){
   }
 
   String deviceName = request->getParam("device")->value();
-  Serial.print("DeviceName ="); Serial.println(deviceName);
+  // Serial.print("DeviceName ="); Serial.println(deviceName);
   if (deviceName == "gateway") {
     config = systemConfig; // load from systemConfig
   }
   else if(isDeviceNameValid(deviceName)){
     String filepath = "/node/" + deviceName + "/sys.conf";
-    Serial.print("Substation config file path ="); Serial.println(filepath);
+    // Serial.print("Substation config file path ="); Serial.println(filepath);
     File file = SD.open(filepath, FILE_READ);
     if (file) {
       file.read((uint8_t*) &config, sizeof(config)); // load from SD card
@@ -215,7 +215,7 @@ void getSysConfig(AsyncWebServerRequest *request){
 
 void getCollectionConfig(AsyncWebServerRequest *request) {
   
-  Serial.println("Received request for data collection configuring, ");
+  // Serial.println("Received request for data collection configuring, ");
   
   DataCollectionConfig config;
 
@@ -281,7 +281,7 @@ void getLoRaNetworkStatus(AsyncWebServerRequest *request) {
 
   JsonDocument doc;
 
-  Serial.println("Received request for lora status");
+  // Serial.println("Received request for lora status");
 
   for(int i = 0; i < peerCount; i++){
     JsonObject obj = doc.add<JsonObject>();
