@@ -4,6 +4,7 @@
 #include "vibrating_wire.h"
 #include "lora_network.h"
 #include "configuration.h"
+#include "mqtt.h"
 
 
 /* Tasks */
@@ -15,6 +16,16 @@ TaskHandle_t blinkTaskHandle; // Task handle for the parsing task
 void taskInitiNTP(void *parameter) {
   ntp_sync();  // Call the initNTP function
   vTaskDelete(NULL);  // Delete the task once initialization is complete
+}
+
+void processFileTask(void * parameter) {
+
+  while (true)
+  {
+    mqtt_process_folder("/data", ".dat");
+    vTaskDelay(10000/portTICK_PERIOD_MS);
+  }
+  
 }
 
 void setup() {
@@ -43,6 +54,17 @@ void setup() {
   ftp_server_init();
   lora_initialize();
   log_data_init();
+
+  mqtt_initialize();
+  // Create the task to process the file
+  xTaskCreate(
+    processFileTask,      // Task function
+    "ProcessFileTask",    // Name of the task (for debugging)
+    4 * 4096,                 // Stack size in words
+    NULL,                 // Task input parameter
+    1,                    // Priority of the task
+    NULL                  // Task handle (can be NULL if not needed)
+  );
 
   Serial.println("\n------------------Boot Completed----------------\n");
 }
