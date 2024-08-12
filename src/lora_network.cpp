@@ -47,10 +47,10 @@ void handle_collection_config_update(const uint8_t *incomingData){
   collection_config_message msg;
   memcpy(&msg, incomingData, sizeof(msg));
 
-  updateDataCollectionConfiguration(msg.channel, "pin", msg.pin);
-  updateDataCollectionConfiguration(msg.channel, "sensor", msg.sensor);
-  updateDataCollectionConfiguration(msg.channel, "enabled", msg.enabled);
-  updateDataCollectionConfiguration(msg.channel, "interval", msg.interval);
+  update_data_collection_configuration(msg.channel, "pin", msg.pin);
+  update_data_collection_configuration(msg.channel, "sensor", msg.sensor);
+  update_data_collection_configuration(msg.channel, "enabled", msg.enabled);
+  update_data_collection_configuration(msg.channel, "interval", msg.interval);
 }
 
 void handle_system_config_update(const uint8_t *incomingData){
@@ -92,8 +92,8 @@ void task_handle_config_poll(void *parameter){
       poll_config_flag = 0; // reset flag
     }
     
-    vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
   }
+    vTaskDelay(1 / portTICK_PERIOD_MS); // Delay for 1 second
 }
 
 /******************************************************************
@@ -237,11 +237,11 @@ int lora_initialize(){
     addHandler(&lora_config, UPDATE_DATA_CONFIG, (LoRaMessageHandlerFunc)handle_collection_config_update, NULL);
     addHandler(&lora_config, UPDATE_SYS_CONFIG, (LoRaMessageHandlerFunc)handle_system_config_update, NULL);
 
-    if(addSchedule(&lora_config, sync_folder_request, 60000, 0) == 0){
+    if(addSchedule(&lora_config, sync_folder_request, 20000, 0) == 0){
       Serial.println("Added sync folder request handler.");
     }
 
-    if(addSchedule(&lora_config, poll_config, 60000, 0) == 0){
+    if(addSchedule(&lora_config, poll_config, 10000, 0) == 0){
       Serial.println("Added poll config handler.");
     }
     // Create the task for the control loop
@@ -255,7 +255,7 @@ int lora_initialize(){
     );
     Serial.println("Added Data send handler");
 
-    if(addSchedule(&lora_config, send_time_sync_message, 60000, 1) == 0){
+    if(addSchedule(&lora_config, send_time_sync_message, 10000, 1) == 0){
       Serial.println("Added send time sync handler.");
     }
     Serial.print("Schedule count: ");Serial.println(lora_config.scheduleCount);

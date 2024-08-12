@@ -9,34 +9,6 @@ Preferences preferences;
 
 /******************************************************************
  *                                                                *
- *                          Save to SD Card                       *
- *                                                                *
- ******************************************************************/
-
-// void saveSystemConfigToSD() {
-//   File file = SD.open("/sys.conf", FILE_WRITE);
-//   if (!file) {
-//     Serial.println("Failed to open systemConfig.config for writing");
-//     return;
-//   }
-//   file.write((uint8_t*)&systemConfig, sizeof(systemConfig));
-//   file.close();
-//   Serial.println("System configuration saved to SD card.");
-// }
-
-// void saveDataConfigToSD() {
-//   File file = SD.open("/data.conf", FILE_WRITE);
-//   if (!file) {
-//     Serial.println("Failed to open dataConfig.config for writing");
-//     return;
-//   }
-//   file.write((uint8_t*)&dataConfig, sizeof(dataConfig));
-//   file.close();
-//   Serial.println("Data collection configuration saved to SD card.");
-// }
-
-/******************************************************************
- *                                                                *
  *                        System Config                           *
  *                                                                *
  ******************************************************************/
@@ -146,7 +118,7 @@ void printDataConfig() {
 
 }
 
-void loadDataConfigFromPreferences() {
+void load_data_collection_configuration() {
   preferences.begin("configurations", false);
   if (preferences.isKey("dataconfig")) {
     preferences.getBytes("dataconfig", &dataConfig, sizeof(dataConfig));
@@ -173,7 +145,7 @@ void loadDataConfigFromPreferences() {
   printDataConfig();
 }
 
-void updateDataCollectionConfiguration(int channel, String key, int value) {
+void update_data_collection_configuration(int channel, String key, int value) {
   // Serial.println("Updating data collection configuration,");
   Serial.print("key:");Serial.print(key);
   Serial.print("; value:");Serial.println(value);
@@ -209,6 +181,77 @@ void updateDataCollectionConfiguration(int channel, String key, int value) {
   // printDataConfig();
 
   // saveDataConfigToSD();
-  // loadDataConfigFromPreferences(); // reload into struct after update
+  // load_data_collection_configuration(); // reload into struct after update
   // Serial.println("Finished updating data collection configuration.");
+}
+
+/******************************************************************
+ *                                                                *
+ *                        InfluxDB Config                         *
+ *                                                                *
+ ******************************************************************/
+
+
+InfluxConfig InfluxDBConfig;
+
+void printInfluxDBConfig() {
+  Serial.println("\n*** InfluxDB Configuration ***");
+  Serial.println(InfluxDBConfig.INFLUXDB_BUCKET);
+  Serial.println(InfluxDBConfig.INFLUXDB_ORG);
+  Serial.println(InfluxDBConfig.INFLUXDB_TOKEN);
+  Serial.println(InfluxDBConfig.INFLUXDB_URL);
+  Serial.println(InfluxDBConfig.TZ_INFO);
+}
+
+void load_influx_db_configuration() {
+  preferences.begin("configurations", false);
+  if (preferences.isKey("influxdbconfig")) {
+    preferences.getBytes("influxdbconfig", &InfluxDBConfig, sizeof(InfluxDBConfig));
+  } else {
+    Serial.println("InfluxDB configuration not found. Using default values.");
+
+    strncpy(InfluxDBConfig.INFLUXDB_BUCKET, "Project-Alpha", sizeof(InfluxDBConfig.INFLUXDB_BUCKET));
+    strncpy(InfluxDBConfig.INFLUXDB_ORG, "SenseLynk", sizeof(InfluxDBConfig.INFLUXDB_ORG));
+    strncpy(InfluxDBConfig.INFLUXDB_TOKEN, "FK5nEElanO-L3D058grTRfcALpX3qs9gu9rpSWeMfIxmLfA9HPLpbGhgZo-Y6N61f774uGFFzhR4QGKTXkiQ8Q==", sizeof(InfluxDBConfig.INFLUXDB_TOKEN));
+    strncpy(InfluxDBConfig.INFLUXDB_URL, "192.168.0.250:8086", sizeof(InfluxDBConfig.INFLUXDB_URL));
+    strncpy(InfluxDBConfig.TZ_INFO, "UTC", sizeof(InfluxDBConfig.TZ_INFO));
+
+    // Save default configuration to preferences
+    preferences.putBytes("influxdbconfig", &InfluxDBConfig, sizeof(InfluxDBConfig));
+  }
+  preferences.end();
+  
+  printInfluxDBConfig();
+}
+
+void update_influx_db_configuration(String key, String value) {
+  Serial.print("key:"); Serial.print(key);
+  Serial.print("; value:"); Serial.println(value);
+
+  if (key.equals("INFLUXDB_BUCKET")) {
+    strncpy(InfluxDBConfig.INFLUXDB_BUCKET, value.c_str(), sizeof(InfluxDBConfig.INFLUXDB_BUCKET));
+  } else if (key.equals("INFLUXDB_ORG")) {
+    strncpy(InfluxDBConfig.INFLUXDB_ORG, value.c_str(), sizeof(InfluxDBConfig.INFLUXDB_ORG));
+  } else if (key.equals("INFLUXDB_TOKEN")) {
+    strncpy(InfluxDBConfig.INFLUXDB_TOKEN, value.c_str(), sizeof(InfluxDBConfig.INFLUXDB_TOKEN));
+  } else if (key.equals("INFLUXDB_URL")) {
+    strncpy(InfluxDBConfig.INFLUXDB_URL, value.c_str(), sizeof(InfluxDBConfig.INFLUXDB_URL));
+  } else if (key.equals("TZ_INFO")) {
+    strncpy(InfluxDBConfig.TZ_INFO, value.c_str(), sizeof(InfluxDBConfig.TZ_INFO));
+  } else {
+    Serial.println("Invalid key.");
+    return;
+  }
+
+  // Ensure null termination
+  InfluxDBConfig.INFLUXDB_BUCKET[sizeof(InfluxDBConfig.INFLUXDB_BUCKET) - 1] = '\0';
+  InfluxDBConfig.INFLUXDB_ORG[sizeof(InfluxDBConfig.INFLUXDB_ORG) - 1] = '\0';
+  InfluxDBConfig.INFLUXDB_TOKEN[sizeof(InfluxDBConfig.INFLUXDB_TOKEN) - 1] = '\0';
+  InfluxDBConfig.INFLUXDB_URL[sizeof(InfluxDBConfig.INFLUXDB_URL) - 1] = '\0';
+  InfluxDBConfig.TZ_INFO[sizeof(InfluxDBConfig.TZ_INFO) - 1] = '\0';
+
+  // Save updated configuration
+  preferences.begin("configurations", false);
+  preferences.putBytes("influxdbconfig", &InfluxDBConfig, sizeof(InfluxDBConfig));
+  preferences.end();
 }

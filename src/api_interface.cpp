@@ -23,10 +23,12 @@ void getNodeSysConfig(AsyncWebServerRequest *request);
 void getNodeCollectionConfig(AsyncWebServerRequest *request);
 void serveRebootLogger(AsyncWebServerRequest *request);
 void getLoRaNetworkStatus(AsyncWebServerRequest *request);
+void getInfluxDBConfig(AsyncWebServerRequest *request);
 
 // POST
 AsyncCallbackJsonWebHandler *updateSysConfig();
 AsyncCallbackJsonWebHandler *updateCollectionConfig();
+AsyncCallbackJsonWebHandler *updateInfluxDBConfig();
 
 void start_http_server(){
   Serial.println("\n*** Starting Server ***");
@@ -45,6 +47,7 @@ void start_http_server(){
   server.on("/api/voltage-history", HTTP_GET, serveVoltageHistory);
   server.on("/api/system-configuration", HTTP_GET, getSysConfig);
   server.on("/api/collection-configuration", HTTP_GET, getCollectionConfig);
+  server.on("/api/influxdb-configuration", HTTP_GET, getInfluxDBConfig);
   server.on("/api/lora-network-status", HTTP_GET, getLoRaNetworkStatus);
   server.on("/reboot", HTTP_GET, serveRebootLogger);// Serve the text file
 
@@ -53,6 +56,7 @@ void start_http_server(){
 // **************************************
   server.addHandler(updateSysConfig());
   server.addHandler(updateCollectionConfig());
+  server.addHandler(updateInfluxDBConfig());
 
 // **************************************
 // * FileServer
@@ -248,14 +252,66 @@ void getCollectionConfig(AsyncWebServerRequest *request) {
   // Adding ADC configurations
   JsonArray adcArray = doc.to<JsonArray>();
   for (int i = 0; i < config.channel_count; i++) {
-    JsonObject adcObj = adcArray.add<JsonObject>();
-    adcObj["channel"] = i;
-    adcObj["pin"] = config.pin[i];
-    adcObj["sensor"] = config.type[i];
-    adcObj["enabled"] = config.enabled[i];
-    adcObj["interval"] = config.interval[i];
-    adcObj["time"] = convertTMtoString(config.time[i]);
+    JsonObject obj = adcArray.add<JsonObject>();
+    obj["channel"] = i;
+    obj["pin"] = config.pin[i];
+    obj["sensor"] = config.type[i];
+    obj["enabled"] = config.enabled[i];
+    obj["interval"] = config.interval[i];
+    obj["time"] = convertTMtoString(config.time[i]);
   }
+
+  // Serve the JSON document
+  serveJson(request, doc, 200, false);
+
+}
+
+// ***********************************
+// * GET Influx DB Configuration
+// ***********************************
+
+void getInfluxDBConfig(AsyncWebServerRequest *request) {
+  
+  // Serial.println("Received request for data collection configuring, ");
+  
+  InfluxConfig config;
+
+  if (!request->hasParam("device")){
+    request->send(400, "application/json", "{\"error\":\"Device query parameter is missing\"}");
+  }
+  
+  String deviceName = request->getParam("device")->value();
+    
+  if (deviceName == "gateway") {
+    config = InfluxDBConfig;
+  }
+  else if(isDeviceNameValid(deviceName)){
+    String filepath = "/node/" + deviceName + "/influxdb.conf";
+    File file = SD.open(filepath, FILE_READ);
+    if (file) {
+      file.read((uint8_t*) &config, sizeof(config));
+      file.close();
+    }
+    else{
+      request->send(400, "application/json", "{\"error\":\"Configuration File not found.\"}");
+    }
+  }
+  else {
+    // Handle case where the query parameter is missing
+    request->send(400, "application/json", "{\"error\":\"Invalid Device Name\"}");
+  }
+
+  JsonDocument doc;
+
+  // Adding ADC configurations
+  JsonArray Array = doc.to<JsonArray>();
+  JsonObject obj = Array.add<JsonObject>();
+
+  obj["INFLUXDB_BUCKET"] = String(config.INFLUXDB_BUCKET);
+  obj["INFLUXDB_ORG"] = String(config.INFLUXDB_ORG);
+  obj["INFLUXDB_TOKEN"] = String(config.INFLUXDB_TOKEN);
+  obj["INFLUXDB_URL"] = String(config.INFLUXDB_URL);
+  obj["TZ_INFO"] = String(config.TZ_INFO);
 
   // Serve the JSON document
   serveJson(request, doc, 200, false);
@@ -351,10 +407,10 @@ AsyncCallbackJsonWebHandler* updateCollectionConfig() {
     if (deviceName == "gateway") {
 
       // Error checking inside the function below
-      updateDataCollectionConfiguration(channel, "pin", pin);
-      updateDataCollectionConfiguration(channel, "sensor", sensor);
-      updateDataCollectionConfiguration(channel, "enabled", enabled);
-      updateDataCollectionConfiguration(channel, "interval", interval);
+      update_data_collection_configuration(channel, "pin", pin);
+      update_data_collection_configuration(channel, "sensor", sensor);
+      update_data_collection_configuration(channel, "enabled", enabled);
+      update_data_collection_configuration(channel, "interval", interval);
       request->send(200); // Send an empty response with HTTP status code 200
 
     }
@@ -372,6 +428,46 @@ AsyncCallbackJsonWebHandler* updateCollectionConfig() {
       request->send(200); // Send an empty response with HTTP status code 200
       vTaskDelay(1000 / portTICK_PERIOD_MS);
       poll_config(msg.mac);
+      return;
+    }
+    else {
+      // Handle other device types or invalid device
+      request->send(400, "application/json", "{\"error\":\"Invalid device parameter\"}");
+      return;
+    }
+  });
+}
+
+// ************************************
+// * Update Influx DB Settings
+// ************************************
+
+AsyncCallbackJsonWebHandler* updateInfluxDBConfig() {
+  return new AsyncCallbackJsonWebHandler("/api/influxdb-configuration/update", [](AsyncWebServerRequest *request, JsonVariant &json) {
+
+    if (!request->hasParam("device")){
+      request->send(400, "application/json", "{\"error\":\"Device query parameter is missing\"}");
+      return;
+    }
+
+    String deviceName = request->getParam("device")->value();
+    Serial.printf("Device: %s\n", deviceName.c_str());
+
+
+    // Handle different device types
+    if (deviceName == "gateway") {
+      // Iterate through the key-value pa
+      JsonObject jsonObj = json.as<JsonObject>();
+      String key, value;
+      for (JsonPair kv : jsonObj) {
+        update_influx_db_configuration(kv.key().c_str(), kv.value().as<String>());
+      }
+
+      request->send(200); // Send an empty response with HTTP status code 200
+
+    }
+    else if(isDeviceNameValid(deviceName)){
+      Serial.printf("TO DO");
       return;
     }
     else {

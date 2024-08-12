@@ -42,13 +42,27 @@ struct DataCollectionConfig {
 
 };
 
+struct InfluxConfig {
+  char INFLUXDB_URL[256];    // Adjust size as needed
+  char INFLUXDB_TOKEN[256];  // Adjust size as needed
+  char INFLUXDB_ORG[64];     // Adjust size as needed
+  char INFLUXDB_BUCKET[64];  // Adjust size as needed
+  char TZ_INFO[64];          // Adjust size as needed
+};
+
 // Expose structs
 extern SystemConfig systemConfig;
 extern DataCollectionConfig dataConfig;
+extern InfluxConfig InfluxDBConfig;
 
 void load_system_configuration();
 void update_system_configuration(String key, String value);
-void loadDataConfigFromPreferences();
-void updateDataCollectionConfiguration(int channel, String key, int value);
+
+void load_data_collection_configuration();
+void update_data_collection_configuration(int channel, String key, int value);
+
+void load_influx_db_configuration();
+void update_influx_db_configuration(String key, String value);
+
 
 #endif

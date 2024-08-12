@@ -46,6 +46,10 @@ typedef struct
   String ftype;
   String fsize;
   String lastmodified;
+  String sensortype;
+  String channel;
+  String timestart;
+  String timeend;
 } fileinfo;
 
 String   webpage, MessageLine;
@@ -168,9 +172,6 @@ void fileserver_init() {
 
   // TO add new pages add a handler here, make  sure the HTML Header has a menu item for it, create a page for it using a function. Copy this one, rename it.
   // ##################### NEW PAGE HANDLER ##########################
-  // server.on("/file_json", HTTP_GET, [](AsyncWebServerRequest * request) {
-  //   fileListJson(request); // Build webpage ready for display
-  // });
 
   server.addHandler(fileListJson());
 
@@ -233,15 +234,25 @@ bool Directory() {
 }
 //#############################################################################################
 bool Directory(String folderPath) {
-  numfiles  = 0; // Reset number of FS files counter
+  numfiles = 0; // Reset number of FS files counter
   File root = SD.open(folderPath);
   if (root) {
     root.rewindDirectory();
     File file = root.openNextFile();
-    while (file) { // Now get all the filenames, file types and sizes
-      Filenames[numfiles].filename = (String(file.name()).startsWith("/") ? String(file.name()).substring(1) : file.name());
-      Filenames[numfiles].ftype    = (file.isDirectory() ? "Dir" : "File");
-      Filenames[numfiles].fsize    = ConvBinUnits(file.size(), 1);
+    while (file) { // Now get all the filenames, file types, sizes, and sensor types
+      String filename = file.name();
+      Filenames[numfiles].filename = (filename.startsWith("/") ? filename.substring(1) : filename);
+      Filenames[numfiles].ftype = (file.isDirectory() ? "Dir" : "File");
+      Filenames[numfiles].fsize = ConvBinUnits(file.size(), 1);
+      
+      // Extract file extension for sensor type
+      int dotIndex = filename.lastIndexOf('.');
+      if (dotIndex != -1) {
+        Filenames[numfiles].sensortype = filename.substring(dotIndex + 1); // Get file extension as sensor type
+        Filenames[numfiles].channel = filename.substring(0, dotIndex);
+      } else {
+        Filenames[numfiles].sensortype = "unknown"; // Default if no extension
+      }
 
       time_t lastWriteTime = file.getLastWrite();
       struct tm *timeinfo = localtime(&lastWriteTime);
@@ -255,16 +266,14 @@ bool Directory(String folderPath) {
     root.close();
 
     return true;
-  }
-  else{
+  } else {
     return false;
   }
 }
+
 //#############################################################################################
 AsyncCallbackJsonWebHandler *fileListJson() {
   return new AsyncCallbackJsonWebHandler("/api/files", [](AsyncWebServerRequest *request, JsonVariant &json) {
-
-    // Serial.println("Received file list request");
 
     if (!request->hasParam("device")){
       Serial.println("no device specified");
@@ -304,6 +313,8 @@ AsyncCallbackJsonWebHandler *fileListJson() {
       fileObj["type"] = Filenames[i].ftype;
       fileObj["size"] = Filenames[i].fsize;
       fileObj["lastmodified"] = Filenames[i].lastmodified;
+      fileObj["sensortype"] = Filenames[i].sensortype;
+      fileObj["channel"] = Filenames[i].channel;
     }
     serveJson(request, doc, 200, false);
   });
@@ -426,11 +437,13 @@ void notFound(AsyncWebServerRequest *request) { // Process selected file types
   if (request->url().startsWith("/downloadhandler") ||
       request->url().startsWith("/streamhandler")   ||
       request->url().startsWith("/deletehandler")   ||
+      request->url().startsWith("/chartdatahandler")   ||
       request->url().startsWith("/renamehandler"))
   {
     // Now get the filename and handle the request for 'delete' or 'download' or 'stream' functions
     if (!request->url().startsWith("/renamehandler")) filename = request->url().substring(request->url().indexOf("~/") + 1);
     start = millis();
+
     if (request->url().startsWith("/downloadhandler"))
     {
       Serial.println("Download handler started...");
@@ -455,6 +468,35 @@ void notFound(AsyncWebServerRequest *request) { // Process selected file types
       downloadtime = millis() - start;
       downloadsize = GetFileSize(filename);
       //request->redirect("/dir");
+    }
+
+    if (request->url().startsWith("/chartdatahandler")) {
+      Serial.println("chartdatahandler handler started...");
+
+      int chart_start = millis();
+      File file = SD.open(filename, "r");
+      if (!file) {
+        request->send(404, "text/plain", "Failed to open file");
+        return;
+      }
+
+      String data = "";
+      int rowCounter = 0;
+      while (file.available()) {
+        String line = file.readStringUntil('\n');
+        if (rowCounter % 100 == 0) { // Adjust the interval as needed
+          data += line + "\n";
+        }
+        rowCounter++;
+      }
+      file.close();
+
+      int chart_end = millis() - chart_start;
+
+      Serial.println("Time taken to traverse file: "); Serial.println(chart_end); Serial.println(*"ms");
+
+      request->send(200, "text/csv", data);
+
     }
     if (request->url().startsWith("/streamhandler"))
     {

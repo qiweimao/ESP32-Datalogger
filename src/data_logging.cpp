@@ -17,8 +17,35 @@ float generateRandomFloat(float minVal, float maxVal) {
   return minVal + scaledValue * (maxVal - minVal); // Scale to [minVal, maxVal]
 }
 
-void logDataFunction(int channel, String timestamp) {
-  String filename = "/data/" + String(channel) + ".dat";
+void logDataFunction(int channel, SensorType type, time_t timestamp) {
+  String extension;
+  switch (type)
+  {
+    case VibratingWire:
+      extension = String(".VibratingWire");
+      break;
+
+    case Barometric:
+      extension = String(".Barometric");
+      break;
+
+    case GeoPhone:
+      extension = String(".GeoPhone");
+      break;
+
+    case Inclinometer:
+      extension = String(".Inclinometer");
+      break;
+
+    case RainGauege:
+      extension = String(".RainGauege");
+      break;
+    
+    default:
+      extension = String(".data");
+      break;
+  }
+  String filename = "/data/" + String(channel) + extension;
   if (!SD.exists(filename)) {
     File dataFile = SD.open(filename, FILE_WRITE);
     if (dataFile) {
@@ -60,7 +87,7 @@ void logDataTask(void *parameter) {
 
     for (int i = 0; i < CHANNEL_COUNT; i++) {
       if (dataConfig.enabled[i] && (currentTime - lastLogTime[i] >= dataConfig.interval[i])) {
-        logDataFunction(i, get_current_time(false));
+        logDataFunction(i, dataConfig.type[i], time(nullptr));
         lastLogTime[i] = currentTime;
       }
       vTaskDelay(100 / portTICK_PERIOD_MS); // Delay for 100 milliseconds
