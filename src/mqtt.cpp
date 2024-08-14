@@ -2,6 +2,8 @@
 #include <PubSubClient.h>
 #include <Wire.h>
 #include <SD.h>
+#include "configuration.h"
+#include "LoRaLite.h"
 
 // Add your MQTT Broker IP address, example:
 //const char* mqtt_server = "192.168.1.144";
@@ -14,13 +16,8 @@ PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
 int value = 0;
+int mqtt_buffer_size = 4096;
 
-int mqtt_buffer_size = 3 * 4096;
-
-void mqtt_initialize() {
-  client.setServer(mqtt_server, 1883);
-  client.setBufferSize(mqtt_buffer_size);
-}
 
 void mqtt_reconnect() {
   // Loop until we're reconnected
@@ -41,7 +38,7 @@ void mqtt_reconnect() {
 }
 
 
-bool mqtt_process_file(const char* filename) {
+bool mqtt_process_file(String filename, String DeviceName) {
 
     // mqtt client prepare
     if (!client.connected()) {
@@ -49,9 +46,14 @@ bool mqtt_process_file(const char* filename) {
     }
     client.loop();
 
+    // Prepare topic
+    int lastSlashIndex = filename.lastIndexOf('/');
+    String extractedFilename = filename.substring(lastSlashIndex + 1);
+    String topic = DeviceName + "-" + extractedFilename;
+
     // load meta file
     size_t lastSentPosition = 0;
-    String filenameStr = String(filename);
+    String filenameStr = filename;
     int dotIndex = filenameStr.lastIndexOf('.');
     if (dotIndex > 0) {
         filenameStr = filenameStr.substring(0, dotIndex);
@@ -79,13 +81,21 @@ bool mqtt_process_file(const char* filename) {
         Serial.println("Failed to open file for reading");
         return false;
     }
-    dataFile.seek(lastSentPosition);// Seek to the last sent position in the data file
+    Serial.println("Processing data file.");
+    if (dataFile.seek(lastSentPosition)) {
+        Serial.println("Seek successful.");
+        // Continue processing the file from this position
+    } else {
+        Serial.println("Seek failed.");
+        // Handle the error, possibly by resetting the position or aborting the operation
+    }
 
 
     // Initialize performance measurement
     unsigned long startTime = millis();
     size_t totalBytesSent = 0;
 
+    Serial.println("Enter publish loop");
     // Read the file line by line
     while (dataFile.available()) {
         String line = dataFile.readStringUntil('\n');  // Read until the newline character
@@ -96,7 +106,7 @@ bool mqtt_process_file(const char* filename) {
         }
 
         // Publish the line to the MQTT topic
-        if (client.publish(filename, line.c_str())) {
+        if (client.publish(topic.c_str(), line.c_str())) {
             // Add the size of the line to the total bytes sent
             totalBytesSent += line.length();
         }
@@ -105,6 +115,7 @@ bool mqtt_process_file(const char* filename) {
     // Close the file
     lastSentPosition = dataFile.position(); // Update the current position
     dataFile.close();
+    Serial.println("Closed data file.");
 
     // Update the meta file with the last sent position
     metaFile = SD.open(metaFilename.c_str(), FILE_WRITE);
@@ -115,6 +126,7 @@ bool mqtt_process_file(const char* filename) {
     metaFile.seek(0);
     metaFile.println(lastSentPosition); // Write the current position to the meta file
     metaFile.close();
+    Serial.println("Updated meta file.");
 
     // Calculate time taken and transfer rate
     unsigned long endTime = millis();
@@ -134,7 +146,7 @@ bool mqtt_process_file(const char* filename) {
 // **************************************
 // * Send All .dat File From Folder
 // **************************************
-bool mqtt_process_folder(String folderPath, String extension){
+bool mqtt_process_folder(String folderPath, String extension, String DeviceName){
   File root = SD.open(folderPath);
 
   if (!root) {
@@ -147,13 +159,14 @@ bool mqtt_process_folder(String folderPath, String extension){
     String fileName = file.name();
     if (!file.isDirectory() && fileName.endsWith(extension)) {
       String fullFilePath = folderPath + "/" + fileName;
-      Serial.print("Process file: "); Serial.println(fullFilePath);
-      if (!mqtt_process_file(fullFilePath.c_str())) {// append mode
+      Serial.print("== Process file: "); Serial.println(fullFilePath);
+      if (!mqtt_process_file(fullFilePath, DeviceName)) {// append mode
         Serial.println("sync_folder: send file failed, abort.");
         file.close();
         return -2;
       }
       file.close();
+      Serial.print("Closed file:"); Serial.println(fullFilePath);
     }
     file = root.openNextFile();
   }
@@ -161,100 +174,83 @@ bool mqtt_process_folder(String folderPath, String extension){
   return 0;
 }
 
-// void mqtt_process_file_in_batches() {
-//     if (!client.connected()) {
-//         mqtt_reconnect();
-//     }
-//     client.loop();
+void publish_system_status() {
+  if (!client.connected()) {
+    mqtt_reconnect();
+  }
+  client.loop();
 
-//     // Specify the filename you want to read
-//     String filename = "/node/STA-01/data/0.dat";
+  // Gather system status
+  int cpuFreq = getCpuFrequencyMhz();
+  uint32_t freeHeap = esp_get_free_heap_size();
+  uint32_t minFreeHeap = esp_get_minimum_free_heap_size();
 
-//     // Open the file for reading
-//     File dataFile = SD.open(filename);
-    
-//     if (!dataFile) {
-//         Serial.println("Failed to open file for reading");
-//         return;
-//     }
+  // Create the message payload
+  String payload = "CPU Frequency: " + String(cpuFreq) + " MHz\n";
+  payload += "Free Heap: " + String(freeHeap) + " bytes\n";
+  payload += "Minimum Free Heap: " + String(minFreeHeap) + " bytes";
 
-//     // Initialize performance measurement
-//     unsigned long startTime = millis();
-//     size_t totalBytesSent = 0;
-//     String batchPayload = "";
-//     const size_t maxBatchSize = mqtt_buffer_size - 10;  // Adjust to a bit less than max to account for MQTT overhead
-//     const int maxRetries = 3;  // Maximum number of retry attempts
+  // Publish the system status to a specific topic
+  if (client.publish("esp32/status", payload.c_str())) {
+    Serial.println("System status published successfully.");
+  } else {
+    Serial.println("Failed to publish system status.");
+  }
+}
 
-//     // Read the file line by line
-//     while (dataFile.available()) {
-//         String line = dataFile.readStringUntil('\n');  // Read until the newline character
+void processFileTask(void * parameter) {
 
-//         // Skip the first line (header)
-//         if (line.startsWith("Time,")) {
-//             continue;
-//         }
+  while (true)
+  {
+    vTaskDelay(10000/portTICK_PERIOD_MS);
+    // Process gateway data
+    Serial.print("Processing mqtt for:"); Serial.println(systemConfig.DEVICE_NAME);
+    mqtt_process_folder("/data", ".dat", systemConfig.DEVICE_NAME);
 
-//         // Check if the current line can be added to the batch
-//         if (batchPayload.length() + line.length() < maxBatchSize) {
-//             batchPayload += line + "\n";
-//         } else {
-//             // Send the current batch with retry logic
-//             bool sent = false;
-//             for (int attempt = 0; attempt < maxRetries; attempt++) {
-//                 if (client.publish("vwpz_reading", batchPayload.c_str())) {
-//                     totalBytesSent += batchPayload.length();
-//                     sent = true;
-//                     break;
-//                 } else {
-//                     Serial.print("Failed to send batch. Attempt ");
-//                     Serial.print(attempt + 1);
-//                     Serial.println(" of 3.");
-//                 }
-//             }
+    // Process slave data
+    for(int i = 0; i < peerCount; i++){
+      String folerPath = "/node/" + String(peers[i].deviceName) + "/data";
+      Serial.print("Processing mqtt for:"); Serial.println(String(peers[i].deviceName));
+      mqtt_process_folder(folerPath, ".dat", String(peers[i].deviceName));
+    }
 
-//             // If sending failed after retries, print an error
-//             if (!sent) {
-//                 Serial.println("Failed to send batch after maximum retries.");
-//             }
+  }
+  
+}
 
-//             // Start a new batch
-//             batchPayload = line + "\n";
-//         }
-//     }
+void systemInfoTask(void * parameter) {
 
-//     // Publish any remaining lines in the batchPayload with retry logic
-//     if (batchPayload.length() > 0) {
-//         bool sent = false;
-//         for (int attempt = 0; attempt < maxRetries; attempt++) {
-//             if (client.publish("vwpz_reading", batchPayload.c_str())) {
-//                 totalBytesSent += batchPayload.length();
-//                 sent = true;
-//                 break;
-//             } else {
-//                 Serial.print("Failed to send final batch. Attempt ");
-//                 Serial.print(attempt + 1);
-//                 Serial.println(" of 3.");
-//             }
-//         }
+  while (true)
+  {
+    publish_system_status();
+    vTaskDelay(1000/portTICK_PERIOD_MS);
+  }
+  
+}
 
-//         // If sending failed after retries, print an error
-//         if (!sent) {
-//             Serial.println("Failed to send final batch after maximum retries.");
-//         }
-//     }
 
-//     // Close the file
-//     dataFile.close();
+void mqtt_initialize() {
+  client.setServer(mqtt_server, 1883);
+  client.setBufferSize(mqtt_buffer_size);
 
-//     // Calculate time taken and transfer rate
-//     unsigned long endTime = millis();
-//     unsigned long duration = endTime - startTime;  // Duration in milliseconds
-//     float transferRateKBps = (totalBytesSent / 1024.0) / (duration / 1000.0);  // KB/s
 
-//     // Output performance metrics
-//     Serial.print("File processing complete. Time taken: ");
-//     Serial.print(duration / 1000.0);  // Convert to seconds
-//     Serial.print(" seconds, Transfer rate: ");
-//     Serial.print(transferRateKBps);
-//     Serial.println(" KB/s");
-// }
+  // Create the task to process the file
+  xTaskCreate(
+    processFileTask,      // Task function
+    "ProcessFileTask",    // Name of the task (for debugging)
+    4 * 4096,                 // Stack size in words
+    NULL,                 // Task input parameter
+    1,                    // Priority of the task
+    NULL                  // Task handle (can be NULL if not needed)
+  );
+
+  // Create the task to process the file
+  xTaskCreate(
+    systemInfoTask,      // Task function
+    "systemInfoTask",    // Name of the task (for debugging)
+    4096,                 // Stack size in words
+    NULL,                 // Task input parameter
+    1,                    // Priority of the task
+    NULL                  // Task handle (can be NULL if not needed)
+  );
+}
