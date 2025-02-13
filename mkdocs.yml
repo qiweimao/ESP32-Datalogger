@@ -1,0 +1,10 @@
+site_name: ESP32 Data Logger Documentation
+nav:
+  - Home: index.md
+  - Setup Guide: setup.md
+  - LoRa Networking: LoRa-networking.md
+  - System Architecture: architecture.md
+  - API Documentation: api.md
+  - Data Logging: data-logging.md
+theme:
+  name: mkdocs

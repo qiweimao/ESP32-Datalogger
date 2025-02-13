@@ -95,10 +95,18 @@ Currently, the setup includes two 0.3W 5V solar panels, capable of supplying a m
 ### NTP Server
 The logger should sync with the NTP server upon power-up using `configTime ` from the `time.h` library. Use `getLocalTime(&timeinfo)` to get the current time. This function should be called within the logging function to get the exact time. However, time would not be kept if power is lost. A RTC module is needed to provide time without WiFi after powerloss.
 Note: not sure if the current implementation (RTClib) will poll the ntp server periodically. However, offical implementations by Espressif does poll periodically. https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/system_time.html
-### External RTC Setup
+### External RTC
 Note that both the DS1307 and the OLED screen are connected to the I2C bus, same bus but different address. The libraries are designed such that they can scan the I2C bus for common addresses.
 Use this guide: https://esp32io.com/tutorials/esp32-ds1307-rtc-module
 Note that the tiny RTC module does not work with 3V3, instead VIN should be supplied.
+
+| **DS1307 RTC Module** | **ESP32**  |
+|----------------------|------------|
+| Vin                | 3.3V       |
+| GND                | **GND**    |
+| SDA                | GPIO21     |
+| SCL                | GPIO22     |
+
 ## File System
 ### Flash Memory Partition
 Espressif documentation on partition tables: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/partition-tables.html
@@ -106,6 +114,18 @@ If using PlatformIO, the default partition can be found in this directory: `.pla
 ### SD Card Setup
 https://components101.com/modules/micro-sd-card-module-pinout-features-datasheet-alternatives
 https://www.electronicwings.com/esp32/microsd-card-interfacing-with-esp32
+https://randomnerdtutorials.com/esp32-microsd-card-arduino/
+
+| **MicroSD Card Module** | **ESP32**  |
+|------------------------|------------|
+| 3V3                   | **3.3V**    |
+| CS                    | **GPIO 5**  |
+| MOSI                  | **GPIO 23** |
+| CLK                   | **GPIO 18** |
+| MISO                  | **GPIO 19** |
+| GND                   | **GND**     |
+
+
 ### Database for Timeseries Data
 Not sure, store files by date may be sufficient.
 ## Internet Access
@@ -142,6 +162,9 @@ The device will be configured via the WiFi manager interface, which is essential
 - The user needs to maintain a table of MAC addresses of each device, either gateway or node
 - Each device will be booted up using the appropriate mode.
 - Each device will be configured by the user to communicate with the gateway using the gateway's MAC address
+## LoRa
+The current wiring definitions are deferred to the LoRaLite Library. `lora_user_settings.h`
+
 ### Hardware
 ESP-32 dev boards with external antenna connections available is recommended: ESP32-WROOM-U. ESP-NOW long-range mode should be investigated in both urban and rural areas.
 ## Data Logging Functions
@@ -199,12 +222,9 @@ The logger should liten on route `/api/readings` for timeseries requests. The cl
 ```
 /api/readings?sensorId=238&start=2024-02-06T13:40:00&end=2024-02-13T13:40:00&readingsOptions=0
 ```
-
-
-
 # License
 Created by Qiwei Mao
 # Useful References
-Random Nerd Tutorials: https://randomnerdtutorials.com/projects-esp32/
-Dashboard: https://github.com/ayushsharma82/ESP-DASH
-Github Reference https://github.com/topics/sensors-data-collection
+Random Nerd Tutorials: https://randomnerdtutorials.com/projects-esp32/  
+Dashboard: https://github.com/ayushsharma82/ESP-DASH  
+Github Reference https://github.com/topics/sensors-data-collection  
